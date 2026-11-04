@@ -116,6 +116,23 @@ table.tb th{background:#eee}
   #planPrint table{border-collapse:collapse;font-size:8pt;width:100%}
   #planPrint td,#planPrint th{border:1px solid #000;padding:1px 4px;text-align:left}
 }
+.symgrid{display:flex;gap:6px;margin-bottom:8px;overflow-x:auto;padding-bottom:4px}
+#plSysTabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}#plSysTabs .chip{white-space:nowrap}
+.symb{flex:0 0 76px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;line-height:1.1;color:var(--ink)}
+.symb.on{border:2px solid var(--acc);background:#eff6ff}
+/* schematy */
+.lc{display:flex;gap:10px;background:#fff;border-radius:10px;padding:8px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer}
+.lc .th{flex:0 0 64px;height:84px;border-radius:6px;overflow:hidden;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:700;color:#6b7280;border:1px solid #e5e7eb}
+.lc .th img{width:100%;height:100%;object-fit:cover;object-position:top}
+.lc .tx{flex:1;min-width:0}.lc .tx b{display:block;margin-bottom:2px}.lc small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
+.lc small.sn{color:#92400e;background:#fffbeb;border-radius:4px;padding:2px 4px}
+.lv{position:fixed;inset:0;background:#374151;z-index:15;display:none;flex-direction:column}
+.lv.on{display:flex}
+.lvbar{display:flex;gap:6px;align-items:center;padding:8px;background:#1f2a37;color:#fff}
+.lvbar b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.lvbar .btn{background:#334155;color:#fff;border-color:#475569}
+#lvBody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 8px}
+#lvBody canvas,#lvBody img{display:block;margin:8px auto;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 /* ampio */
 
 .am{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.06);overflow:hidden}
@@ -195,6 +212,7 @@ table.tb th{background:#eee}
   <button data-t="plan">Rzut</button>
   <button data-t="meas">Pomiary</button>
   <button data-t="amp">Ampio</button>
+  <button data-t="lib">Schematy</button>
   <button data-t="print">Wydruk</button>
   <button data-t="proj">Dane</button>
 </nav>
@@ -259,9 +277,11 @@ table.tb th{background:#eee}
           <button class="btn sm" data-pm="rt">〰 Trasa</button>
           <button class="btn sm" id="plFit">⤢ Cały</button>
         </div>
-        <div id="plInsBar" class="g2" style="display:none">
-          <div class="f"><label>Symbol</label><select id="plSym"></select></div>
-          <div class="f"><label>Obwód (dla elektryki)</label><select id="plObw"></select></div>
+        <div id="plInsBar" style="display:none">
+          <div class="chips" id="plSysTabs" style="margin-bottom:6px"></div>
+          <div class="symgrid" id="plSymGrid"></div>
+          <input type="hidden" id="plSym" value="gn">
+          <div class="f" id="plObwW"><label>Obwód dla nowych symboli</label><select id="plObw"></select></div>
         </div>
         <div id="plRtBar" class="bar" style="display:none;margin:0 0 8px">
           <span class="mut" style="align-self:center">Stukaj kolejne punkty trasy</span>
@@ -299,6 +319,19 @@ table.tb th{background:#eee}
       <button data-as="doc">Dokumentacja</button>
     </div>
     <div id="ampBody"></div>
+  </section>
+
+  <!-- SCHEMATY -->
+  <section class="sec" id="s-lib">
+    <div class="bar" style="margin-top:0">
+      <input id="libQ" type="search" placeholder="Szukaj: Satel, zwora, MSERV, OUT2…" style="flex:1;min-width:150px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px">
+      <label class="btn p">+ Dodaj<input type="file" id="libFile" accept="application/pdf,image/*" multiple hidden></label>
+    </div>
+    <div class="chips" id="libTags" style="margin-bottom:8px"></div>
+    <div id="libMsg" class="mut" style="margin-bottom:6px"></div>
+    <div id="libList"></div>
+    <p class="mut" id="libStore"></p>
+    <p class="mut">Biblioteka jest wspólna dla wszystkich projektów. Szuka w nazwach, tagach, notatkach i w treści PDF-ów (nie w skanach).</p>
   </section>
 
   <!-- WYDRUK -->
@@ -349,6 +382,10 @@ table.tb th{background:#eee}
   </section>
 </main>
 
+<div class="lv" id="libView">
+  <div class="lvbar"><button class="btn sm" id="lvX">✕</button><b id="lvT"></b><button class="btn sm" id="lvM">−</button><button class="btn sm" id="lvP">+</button><button class="btn sm" id="lvI">ℹ Opis</button></div>
+  <div id="lvBody"></div>
+</div>
 <div class="ov" id="ov"><div class="dlg" id="dlg"></div></div>
 
 <script>
@@ -835,6 +872,7 @@ function tab(t){
   if(t==='meas')renderMeas();
   if(t==='amp')renderAmp();
   if(t==='plan')renderPlan();
+  if(t==='lib')renderLib();
   try{history.replaceState(null,'','#'+t);}catch(e){}
   window.scrollTo(0,0);
 }
@@ -1429,17 +1467,17 @@ const SYS={
 const SYM={
   gn:['Gniazdo','el','gn',''],gn2:['Gniazdo podwójne','el','gn','2'],gnh:['Gniazdo hermet. IP44','el','gn','H'],gn3:['Gniazdo siłowe 3F','el','gn','3F'],
   pl:['Punkt świetlny','el','lt',''],kk:['Kinkiet','el','kk',''],led:['Taśma / linia LED','el','box','LED'],
-  la:['Łącznik','el','sw','1'],la2:['Łącznik podwójny','el','sw','2'],lsch:['Łącznik schodowy','el','sw','S'],
+  la:['Łącznik','el','sw','1'],prz:['Przycisk / dzwonek','el','sw','P'],la2:['Łącznik podwójny','el','sw','2'],lsch:['Łącznik schodowy','el','sw','S'],
   pu:['Puszka','el','dot',''],odb:['Odbiornik (płyta, piec…)','el','box','O'],rg:['Rozdzielnica','el','box','RG'],
   pir:['Czujka ruchu PIR','al','tri','PIR','C'],kon:['Kontaktron','al','box','K','K'],man:['Manipulator','al','box','MAN','M'],syg:['Sygnalizator','al','box','SYG','S'],cen:['Centrala alarmowa','al','box','CA','CA'],
-  dym:['Czujka dymu','pz','circ','D','D'],ciep:['Czujka ciepła','pz','circ','T','T'],rop:['ROP (przycisk)','pz','box','R','R'],sp:['Sygnalizator ppoż.','pz','box','SP','SP'],cpp:['Centrala ppoż.','pz','box','CSP','C'],
-  cam:['Kamera','tv','tri','CAM','K'],nvr:['Rejestrator NVR','tv','box','NVR','N'],lan:['Gniazdo LAN','tv','box','RJ','L'],ap:['Access point','tv','circ','AP','AP'],
-  czy:['Czytnik','kd','box','CZ','CZ'],zw:['Zwora / elektrozaczep','kd','box','ZW','ZW'],ppw:['Przycisk wyjścia','kd','box','PW','PW'],dom:['Domofon / wideo','kd','box','DOM','D'],
-  dot:['Panel Ampio DOT','am','box','DOT','DOT'],amod:['Moduł Ampio (puszka)','am','box','A','A'],ts:['Czujnik temp.','am','circ','t°','T']
+  dym:['Czujka dymu','pz','circ','D','D'],ciep:['Czujka ciepła','pz','circ','T','T'],rop:['ROP (przycisk)','pz','box','R','R'],sp:['Sygnalizator ppoż.','pz','box','SP','SP'],cpp:['Centrala ppoż.','pz','box','CSP','CSP'],
+  cam:['Kamera','tv','tri','CAM','CAM'],nvr:['Rejestrator NVR','tv','box','NVR','N'],lan:['Gniazdo LAN','tv','box','RJ','L'],ap:['Access point','tv','circ','AP','AP'],
+  czy:['Czytnik','kd','box','CZ','CZ'],zw:['Zwora / elektrozaczep','kd','box','ZW','ZW'],ppw:['Przycisk wyjścia','kd','box','PW','PW'],dom:['Domofon / wideo','kd','box','DOM','DOM'],
+  dot:['Panel Ampio DOT','am','box','DOT','DOT'],amod:['Moduł Ampio (puszka)','am','box','A','A'],ts:['Czujnik temp.','am','circ','t°','TS']
 };
 const RT_SYS={el:'230 V',al:'Alarm',pz:'Ppoż.',tv:'LAN / CCTV',kd:'Kontrola dostępu',am:'Magistrala CAN'};
 const CIRC_COL=['#e11d48','#2563eb','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#65a30d','#ea580c','#4f46e5','#0d9488','#a16207','#9333ea','#dc2626','#0284c7','#15803d'];
-let PL=null,PM='pan',V={s:1,tx:0,ty:0},RT=null,MOVE=null,LAY={el:1,al:1,pz:1,tv:1,kd:1,am:1};
+let INS_SYS='el',PL=null,PM='pan',V={s:1,tx:0,ty:0},RT=null,MOVE=null,LAY={el:1,al:1,pz:1,tv:1,kd:1,am:1};
 function plans(){if(!P.plans)P.plans=[];return P.plans;}
 function curPlan(){const ps=plans();if(!PL||!ps.find(p=>p.id===PL))PL=ps[0]?ps[0].id:null;return ps.find(p=>p.id===PL)||null;}
 function circList(){return P.layout.flat().map(byId).filter(i=>i&&['mcb','rcbo','other'].includes(i.kind));}
@@ -1450,23 +1488,67 @@ function markLabel(m){
   if(sy[1]==='el'){const it=m.obw&&byId(m.obw);return (it?C.lab[it.id]:'')+(m.lab?' '+m.lab:'');}
   return m.lab||'';
 }
-function symSvg(m,s){
-  const sy=SYM[m.t]||['?','el','box','?'];const c=markCol(m);const sh=sy[2],tx=sy[3];
-  const sw=s*0.12,r=s*0.5,fs=s*0.42;
-  let g='';
-  const T=(t,y,f)=>`<text x="0" y="${y}" font-size="${f||fs}" text-anchor="middle" dominant-baseline="central" fill="${c}" font-weight="700">${esc(t)}</text>`;
-  if(sh==='gn'){g=`<circle r="${r}" fill="#fff" stroke="${c}" stroke-width="${sw}"/><line x1="${-r}" y1="${-r*0.15}" x2="${r}" y2="${-r*0.15}" stroke="${c}" stroke-width="${sw}"/><line x1="0" y1="${-r*0.15}" x2="0" y2="${-r*1.5}" stroke="${c}" stroke-width="${sw}"/>`+(tx?T(tx,r*0.42,fs*0.8):'');}
-  else if(sh==='lt'){const d=r*0.7;g=`<circle r="${r}" fill="#fff" stroke="${c}" stroke-width="${sw}"/><line x1="${-d}" y1="${-d}" x2="${d}" y2="${d}" stroke="${c}" stroke-width="${sw}"/><line x1="${-d}" y1="${d}" x2="${d}" y2="${-d}" stroke="${c}" stroke-width="${sw}"/>`;}
-  else if(sh==='kk'){const d=r*0.7;g=`<circle r="${r}" fill="#fff" stroke="${c}" stroke-width="${sw}"/><line x1="${-d}" y1="${-d}" x2="${d}" y2="${d}" stroke="${c}" stroke-width="${sw}"/><line x1="${-d}" y1="${d}" x2="${d}" y2="${-d}" stroke="${c}" stroke-width="${sw}"/><line x1="${-r}" y1="${r*1.25}" x2="${r}" y2="${r*1.25}" stroke="${c}" stroke-width="${sw*1.4}"/>`;}
-  else if(sh==='sw'){g=`<circle r="${r*0.45}" fill="#fff" stroke="${c}" stroke-width="${sw}"/><line x1="${r*0.3}" y1="${-r*0.3}" x2="${r*1.1}" y2="${-r*1.1}" stroke="${c}" stroke-width="${sw}"/>`+(tx&&tx!=='1'?`<text x="${r*1.2}" y="${-r*0.2}" font-size="${fs*0.8}" fill="${c}" font-weight="700">${tx}</text>`:'');}
-  else if(sh==='dot'){g=`<circle r="${r*0.35}" fill="${c}"/>`;}
-  else if(sh==='circ'){g=`<circle r="${r}" fill="#fff" stroke="${c}" stroke-width="${sw}"/>`+T(tx,0,tx.length>2?fs*0.7:fs);}
-  else if(sh==='tri'){g=`<path d="M0 ${-r*1.1} L${r*1.1} ${r*0.8} L${-r*1.1} ${r*0.8} Z" fill="#fff" stroke="${c}" stroke-width="${sw}"/>`+T(tx,r*0.25,fs*(tx.length>2?0.55:0.8));}
-  else {const w=Math.max(r*2,tx.length*fs*0.62+r*0.4);g=`<rect x="${-w/2}" y="${-r*0.8}" width="${w}" height="${r*1.6}" rx="${r*0.2}" fill="#fff" stroke="${c}" stroke-width="${sw}"/>`+T(tx,0,fs*(tx.length>2?0.8:1));}
-  const lab=markLabel(m);
-  const lt=lab?`<text x="${r*1.2}" y="${r*1.5}" font-size="${s*0.6}" fill="${c}" font-weight="700" stroke="#fff" stroke-width="${fs*0.25}" paint-order="stroke">${esc(lab)}</text>`:'';
-  return g+lt;
+function symDraw(t,c){ // rysunek w jednostkach (ok. -1..1), c = kolor
+  const S=`stroke="${c}" stroke-width="0.14" stroke-linejoin="round" stroke-linecap="round"`;
+  const W=`fill="#fff" ${S}`,N=`fill="none" ${S}`,F=`fill="${c}"`;
+  const tx=(x,y,t,f)=>`<text x="${x}" y="${y}" font-size="${f||0.7}" text-anchor="middle" dominant-baseline="central" fill="${c}" font-weight="700" font-family="Arial,sans-serif">${t}</text>`;
+  const arc=`<path d="M-1 0.25 A1 1 0 0 1 1 0.25 Z" ${W}/>`;
+  const stem=`<line x1="0" y1="0.25" x2="0" y2="0.85" ${S}/>`;
+  const pe=`<line x1="0" y1="-0.75" x2="0" y2="-1.25" ${S}/>`;
+  const X=r=>`<line x1="${-r}" y1="${-r}" x2="${r}" y2="${r}" ${S}/><line x1="${-r}" y1="${r}" x2="${r}" y2="${-r}" ${S}/>`;
+  const sw=(ticks,both)=>{let h=`<circle r="0.32" ${W}/><line x1="0.23" y1="-0.23" x2="1.05" y2="-1.05" ${S}/>`;
+    const tk=(d)=>`<line x1="${d}" y1="${-d}" x2="${d+0.35}" y2="${-d+0.35}" ${S}/>`;
+    h+=tk(1.05);if(ticks>1)h+=tk(0.75);
+    if(both)h+=`<line x1="-0.23" y1="0.23" x2="-1.05" y2="1.05" ${S}/><line x1="-1.05" y1="1.05" x2="-1.4" y2="0.7" ${S}/>`;
+    return h;};
+  const horn=`<rect x="-1" y="-0.4" width="0.55" height="0.8" ${W}/><path d="M-0.45 -0.4 L0.55 -0.95 L0.55 0.95 L-0.45 0.4 Z" ${W}/>`;
+  const box=(w,h)=>`<rect x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="0.12" ${W}/>`;
+  switch(t){
+    case 'gn': return arc+stem+pe;
+    case 'gn2': return arc+stem+pe+`<path d="M-0.6 0.25 A0.6 0.6 0 0 1 0.6 0.25" ${N}/>`;
+    case 'gnh': return `<path d="M-1 0.25 A1 1 0 0 1 1 0.25 Z" ${F} ${S}/>`+stem+pe;
+    case 'gn3': return arc+stem+`<line x1="-0.45" y1="-0.75" x2="-0.6" y2="-1.25" ${S}/>`+pe+`<line x1="0.45" y1="-0.75" x2="0.6" y2="-1.25" ${S}/>`+tx(0,-0.25,'3~',0.55);
+    case 'pl': return `<circle r="0.95" ${W}/>`+X(0.67);
+    case 'kk': return `<circle r="0.8" ${W}/>`+X(0.57)+`<line x1="0" y1="0.8" x2="0" y2="1.15" ${S}/><line x1="-0.7" y1="1.2" x2="0.7" y2="1.2" stroke="${c}" stroke-width="0.22"/>`;
+    case 'led': return `<rect x="-1.6" y="-0.32" width="3.2" height="0.64" ${W}/><line x1="-1.6" y1="0" x2="1.6" y2="0" ${S}/><line x1="-1.6" y1="-0.6" x2="-1.6" y2="0.6" ${S}/><line x1="1.6" y1="-0.6" x2="1.6" y2="0.6" ${S}/>`;
+    case 'la': return sw(1);
+    case 'la2': return sw(2);
+    case 'lsch': return sw(1,true);
+    case 'prz': return `<circle r="0.6" ${W}/><circle r="0.25" ${F}/>`;
+    case 'pu': return `<circle r="0.32" ${F}/>`;
+    case 'odb': return box(1.8,1.3)+tx(0,0,'M',0.8);
+    case 'rg': return box(2.2,1.3)+`<path d="M-1.1 0.65 L1.1 -0.65 L1.1 0.65 Z" ${F}/>`;
+    case 'pir': return `<circle cy="0.45" r="0.42" ${W}/><path d="M-0.55 -0.15 A0.8 0.8 0 0 1 0.55 -0.15" ${N}/><path d="M-0.95 -0.55 A1.3 1.3 0 0 1 0.95 -0.55" ${N}/>`;
+    case 'kon': return `<rect x="-1.1" y="-0.35" width="0.95" height="0.7" ${W}/><rect x="0.15" y="-0.35" width="0.95" height="0.7" ${F} ${S}/>`;
+    case 'man': {let h=box(1.9,1.6);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)h+=`<circle cx="${i*0.45}" cy="${j*0.42+0.05}" r="0.11" ${F}/>`;return h;}
+    case 'syg': return horn;
+    case 'cen': return box(2.4,1.5)+`<rect x="-1.05" y="-0.6" width="2.1" height="1.2" ${N} stroke-width="0.07"/>`+tx(0,0,'CA',0.65);
+    case 'dym': return `<circle r="0.95" ${W}/><circle cx="-0.32" cy="0.22" r="0.17" ${F}/><circle cx="0.32" cy="0.22" r="0.17" ${F}/><circle cx="0" cy="-0.3" r="0.17" ${F}/>`;
+    case 'ciep': return `<circle r="0.95" ${W}/><line x1="0" y1="-0.6" x2="0" y2="0.2" stroke="${c}" stroke-width="0.2"/><circle cy="0.38" r="0.22" ${F}/>`;
+    case 'rop': return `<rect x="-0.95" y="-0.95" width="1.9" height="1.9" ${W}/><rect x="-0.6" y="-0.6" width="1.2" height="1.2" ${N} stroke-width="0.07"/><circle r="0.3" ${F}/>`;
+    case 'sp': return horn+`<path d="M0.8 -0.6 l0.35 -0.25 M0.85 0 h0.4 M0.8 0.6 l0.35 0.25" ${N}/>`;
+    case 'cpp': return box(2.4,1.5)+`<rect x="-1.05" y="-0.6" width="2.1" height="1.2" ${N} stroke-width="0.07"/>`+tx(0,0,'CSP',0.55);
+    case 'cam': return `<rect x="-1.15" y="-0.5" width="1.45" height="0.8" rx="0.1" ${W}/><path d="M0.3 -0.35 L0.95 -0.6 L0.95 0.4 L0.3 0.15 Z" ${W}/><line x1="-0.45" y1="0.3" x2="-0.45" y2="0.85" ${S}/><line x1="-0.85" y1="0.9" x2="-0.05" y2="0.9" ${S}/>`;
+    case 'nvr': return box(2.4,1.1)+`<line x1="-0.9" y1="-0.15" x2="0.3" y2="-0.15" ${S}/><line x1="-0.9" y1="0.2" x2="0.3" y2="0.2" ${S}/><circle cx="0.75" cy="0" r="0.15" ${F}/>`;
+    case 'lan': return `<rect x="-0.9" y="-0.9" width="1.8" height="1.8" rx="0.12" ${W}/><path d="M-0.5 0.45 V-0.2 H-0.25 V-0.45 H0.25 V-0.2 H0.5 V0.45 Z" ${N}/>`;
+    case 'ap': return `<circle cy="0.55" r="0.2" ${F}/><path d="M-0.45 0.15 A0.6 0.6 0 0 1 0.45 0.15" ${N}/><path d="M-0.85 -0.25 A1.15 1.15 0 0 1 0.85 -0.25" ${N}/>`;
+    case 'czy': return `<rect x="-0.6" y="-1" width="1.2" height="2" rx="0.15" ${W}/><rect x="-0.3" y="0.3" width="0.6" height="0.35" ${F}/><path d="M-0.25 -0.45 A0.4 0.4 0 0 1 0.25 -0.45" ${N}/><path d="M-0.4 -0.65 A0.6 0.6 0 0 1 0.4 -0.65" ${N}/>`;
+    case 'zw': return `<rect x="-1.2" y="-0.4" width="2.4" height="0.8" ${W}/><rect x="-1.2" y="-0.4" width="1" height="0.8" ${F}/><line x1="0.1" y1="-0.4" x2="0.1" y2="0.4" ${S}/>`;
+    case 'ppw': return `<rect x="-0.9" y="-0.9" width="1.8" height="1.8" rx="0.12" ${W}/><path d="M-0.5 0 H0.45 M0.15 -0.3 L0.5 0 L0.15 0.3" ${N}/>`;
+    case 'dom': return `<rect x="-0.7" y="-1" width="1.4" height="2" rx="0.15" ${W}/><line x1="-0.35" y1="-0.6" x2="0.35" y2="-0.6" ${S}/><line x1="-0.35" y1="-0.3" x2="0.35" y2="-0.3" ${S}/><circle cy="0.4" r="0.25" ${F}/>`;
+    case 'dot': {let h=`<rect x="-1" y="-1" width="2" height="2" rx="0.3" ${W}/>`;for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)h+=`<circle cx="${i*0.5}" cy="${j*0.5}" r="0.15" ${N} stroke-width="0.09"/>`;return h;}
+    case 'amod': return `<rect x="-0.95" y="-0.95" width="1.9" height="1.9" rx="0.15" ${W}/>`+tx(0,0.05,'A',1.1);
+    case 'ts': return `<rect x="-0.25" y="-1" width="0.5" height="1.35" rx="0.25" ${W}/><circle cy="0.55" r="0.42" ${F}/><line x1="0" y1="-0.7" x2="0" y2="0.3" stroke="${c}" stroke-width="0.16"/>`;
+    default: return box(1.6,1.2)+tx(0,0,'?');
+  }
 }
+function symSvg(m,s){
+  const c=markCol(m),r=s*0.5;
+  const lab=markLabel(m);
+  const lt=lab?`<text x="${r*1.3}" y="${r*1.6}" font-size="${s*0.6}" fill="${c}" font-weight="700" stroke="#fff" stroke-width="${s*0.12}" paint-order="stroke" font-family="Arial,sans-serif">${esc(lab)}</text>`:'';
+  return `<g transform="scale(${r})">${symDraw(m.t,c)}</g>`+lt;
+}
+function symIcon(t,px){const c=SYM[t][1]==='el'?'#111':SYS[SYM[t][1]].col;return `<svg width="${px}" height="${px}" viewBox="-1.8 -1.6 3.6 3.2">${symDraw(t,c)}</svg>`;}
 function overlaySvg(pl,forPrint){
   const s=+pl.sz||Math.max(pl.w,pl.h)/75;let h='';
   (pl.routes||[]).forEach(rt=>{
@@ -1497,9 +1579,12 @@ async function renderPlan(keepView){
   $('plEmpty').style.display=pl?'none':'';$('plUI').style.display=pl?'':'none';$('plCfg').style.display=pl?'':'none';
   if(!pl){return;}
   $('plLayers').innerHTML=Object.keys(SYS).map(k=>`<button class="chip ${LAY[k]?'on':''}" data-lay="${k}"><span class="sw" style="background:${SYS[k].col}"></span>${SYS[k].n}</button>`).join('');
-  const syms=$('plSym').value;
-  $('plSym').innerHTML=Object.keys(SYS).map(k=>`<optgroup label="${SYS[k].n}">${Object.keys(SYM).filter(t=>SYM[t][1]===k).map(t=>`<option value="${t}">${SYM[t][0]}</option>`).join('')}</optgroup>`).join('');
-  if(syms)$('plSym').value=syms;
+  if(!SYM[$('plSym').value]||SYM[$('plSym').value][1]!==INS_SYS)$('plSym').value=Object.keys(SYM).find(t=>SYM[t][1]===INS_SYS);
+  const cur=$('plSym').value;
+  $('plSysTabs').innerHTML=Object.keys(SYS).map(k=>`<button class="chip ${k===INS_SYS?'on':''}" data-isys="${k}"><span class="sw" style="background:${SYS[k].col}"></span>${SYS[k].n}</button>`).join('')+`<button class="chip" data-solo="1" title="Pokaż tylko tę instalację">👁 tylko ta</button>`;
+  $('plSymGrid').innerHTML=Object.keys(SYM).filter(t=>SYM[t][1]===INS_SYS).map(t=>`<button class="symb ${t===cur?'on':''}" data-isym="${t}">${symIcon(t,34)}<span>${esc(SYM[t][0])}</span></button>`).join('');
+  $('plObwW').style.display=INS_SYS==='el'?'':'none';
+  $('plLayers').style.display=PM==='ins'?'none':'';
   const ob=$('plObw').value;
   $('plObw').innerHTML='<option value="">— bez obwodu —</option>'+circList().map(i=>`<option value="${i.id}">${esc(C.lab[i.id]+' '+(i.name||'')+' '+rating(i))}</option>`).join('');
   if(ob)$('plObw').value=ob;
@@ -1602,6 +1687,9 @@ $('plCfg').onclick=()=>{
   $('ov').classList.add('on');
 };
 document.addEventListener('click',e=>{
+  const is=e.target.closest('[data-isys]');if(is){INS_SYS=is.dataset.isys;LAY[INS_SYS]=1;renderPlan(true);return;}
+  const ib=e.target.closest('[data-isym]');if(ib){$('plSym').value=ib.dataset.isym;renderPlan(true);return;}
+  const so=e.target.closest('[data-solo]');if(so){Object.keys(LAY).forEach(k=>LAY[k]=k===INS_SYS?1:0);renderPlan(true);return;}
   const l=e.target.closest('[data-lay]');if(l){LAY[l.dataset.lay]=LAY[l.dataset.lay]?0:1;renderPlan(true);return;}
   const m=e.target.closest('[data-pm]');if(m){PM=m.dataset.pm;MOVE=null;if(PM==='rt'){RT={sys:'el',pts:[]};}else RT=null;renderPlan(true);}
 });
@@ -1668,7 +1756,7 @@ function mkDlg(m){
   if(!m)return;const pl=curPlan();const sy=SYM[m.t];
   const ampOpts=P.ampio?refOptions(m.amp||'',()=>true):'';
   $('dlg').innerHTML=`<h3>${esc(sy[0])}</h3>
-   <div class="f"><label>Symbol</label><select id="mkT">${Object.keys(SYS).map(k=>`<optgroup label="${SYS[k].n}">${Object.keys(SYM).filter(t=>SYM[t][1]===k).map(t=>`<option value="${t}" ${t===m.t?'selected':''}>${SYM[t][0]}</option>`).join('')}</optgroup>`).join('')}</select></div>
+   <div class="f"><label>Symbol</label><select id="mkT">${[sy[1]].map(k=>`<optgroup label="${SYS[k].n}">${Object.keys(SYM).filter(t=>SYM[t][1]===k).map(t=>`<option value="${t}" ${t===m.t?'selected':''}>${SYM[t][0]}</option>`).join('')}</optgroup>`).join('')}</select></div>
    <div class="f" id="mkObwW"><label>Obwód</label><select id="mkO"><option value="">— bez obwodu —</option>${circList().map(i=>`<option value="${i.id}" ${i.id===m.obw?'selected':''}>${esc(C.lab[i.id]+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</select></div>
    <div class="g2"><div class="f"><label>Etykieta</label><input id="mkL" value="${esc(m.lab)}" placeholder="np. adres pętli 1/12"></div>
    <div class="f"><label>Uwagi</label><input id="mkN" value="${esc(m.note)}" placeholder="np. h=110 cm"></div></div>
@@ -1677,7 +1765,7 @@ function mkDlg(m){
   const vis=()=>{$('mkObwW').style.display=SYM[$('mkT').value][1]==='el'?'':'none';};vis();$('mkT').onchange=vis;
   $('mkOk').onclick=()=>{m.t=$('mkT').value;m.obw=SYM[m.t][1]==='el'?$('mkO').value:'';m.lab=$('mkL').value.trim();m.note=$('mkN').value.trim();if($('mkA'))m.amp=$('mkA').value;save();closeDlg();renderPlan(true);};
   $('mkMv').onclick=()=>{MOVE=m.id;closeDlg();renderPlan(true);};
-  $('mkCp').onclick=()=>{$('plSym').value=m.t;if(m.obw)$('plObw').value=m.obw;PM='ins';closeDlg();renderPlan(true);};
+  $('mkCp').onclick=()=>{INS_SYS=SYM[m.t][1];$('plSym').value=m.t;if(m.obw)$('plObw').value=m.obw;PM='ins';closeDlg();renderPlan(true);};
   $('mkDel').onclick=()=>{pl.marks=pl.marks.filter(q=>q.id!==m.id);save();closeDlg();renderPlan(true);};
   $('ov').classList.add('on');
 }
@@ -1701,7 +1789,7 @@ function planPrintHtml(){
   return `<div style="display:flex;justify-content:space-between;font-size:10pt;border-bottom:1.5px solid #000;margin-bottom:2mm"><b>${esc(P.name)} – ${esc(pl.name)}</b><span>${esc(P.addr)} · ${esc(today())}</span></div>
    <svg class="pmain" viewBox="0 0 ${pl.w} ${pl.h}" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif"><image href="${IMG[pl.id]}" width="${pl.w}" height="${pl.h}"/>${overlaySvg(pl,true)}</svg>
    <div style="margin-top:2mm;font-size:8pt;page-break-inside:avoid;display:grid;gap:1mm">
-    <div><b>Legenda</b><br>${[...used].map(t=>{const s=+pl.sz;return `<svg width="16" height="16" viewBox="${-s*1.6} ${-s*1.6} ${s*3.2} ${s*3.2}" style="vertical-align:middle">${symSvg({t,obw:'',lab:''},s)}</svg> ${esc(SYM[t][0])}`;}).join(' &nbsp; ')}</div>
+    <div><b>Legenda</b><br>${[...used].map(t=>`<span style="white-space:nowrap">${symIcon(t,18).replace('<svg','<svg style="vertical-align:middle"')} ${esc(SYM[t][0])}</span>`).join(' &nbsp; ')}</div>
     <div><b>Obwody</b><br>${circ.map(i=>`<span class="sw" style="background:${circCol(i.id)}"></span>${esc(C.lab[i.id]+' '+(i.name||'')+' '+rating(i))}`).join(' &nbsp; ')||'—'}</div>
    </div>`;
 }
@@ -1709,10 +1797,143 @@ $('plPrint').onclick=()=>{$('planPrint').innerHTML=planPrintHtml();try{window.pr
 window.addEventListener('beforeprint',()=>{if(document.querySelector('#s-plan.on'))$('planPrint').innerHTML=planPrintHtml();});
 window.addEventListener('resize',()=>{if(document.querySelector('#s-plan.on'))fitV();});
 
+// ---------- BIBLIOTEKA SCHEMATÓW ----------
+let LIBTXT={},LIBTXT_OK=false,TAGF='',PINF=false,LV=null,LZ=1;
+function LIB(){if(!DB.lib)DB.lib=[];return DB.lib;}
+function pins(){if(!P.libPins)P.libPins=[];return P.libPins;}
+async function loadLibTxt(){if(LIBTXT_OK)return;for(const d of LIB()){if(LIBTXT[d.id]==null)LIBTXT[d.id]=(await IDB.get('libtxt_'+d.id))||'';}LIBTXT_OK=true;}
+function allTags(){const m={};LIB().forEach(d=>(d.tags||[]).forEach(t=>m[t]=(m[t]||0)+1));return Object.keys(m).sort((a,b)=>m[b]-m[a]||a.localeCompare(b));}
+const fmtMB=b=>b>1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' kB';
+async function renderLib(){
+  await loadLibTxt();
+  const tags=allTags();
+  $('libTags').innerHTML=(pins().length?`<button class="chip ${PINF?'on':''}" data-pinf="1">📌 Ten projekt (${pins().length})</button>`:'')+tags.map(t=>`<button class="chip ${t===TAGF?'on':''}" data-tagf="${esc(t)}">${esc(t)}</button>`).join('');
+  const q=$('libQ').value.trim().toLowerCase();const words=q.split(/\s+/).filter(Boolean);
+  let list=LIB().slice();
+  if(TAGF)list=list.filter(d=>(d.tags||[]).includes(TAGF));
+  if(PINF)list=list.filter(d=>pins().includes(d.id));
+  const res=[];
+  list.forEach(d=>{
+    const meta=[d.name,(d.tags||[]).join(' '),d.note].join(' ').toLowerCase();const txt=(LIBTXT[d.id]||'');
+    let snip='';
+    if(words.length){
+      let ok=true;for(const w of words){if(meta.includes(w))continue;const i=txt.indexOf(w);if(i<0){ok=false;break;}if(!snip)snip='…'+txt.slice(Math.max(0,i-40),i+w.length+50).replace(/\s+/g,' ')+'…';}
+      if(!ok)return;
+    }
+    res.push({d,snip});
+  });
+  res.sort((a,b)=>(pins().includes(b.d.id)-pins().includes(a.d.id))||((b.d.used||b.d.added)-(a.d.used||a.d.added)));
+  $('libList').innerHTML=res.map(({d,snip})=>`<div class="lc" data-lib="${d.id}">
+    <div class="th">${d.thumb?`<img src="${d.thumb}" alt="">`:`<span>${d.type==='pdf'?'PDF':'IMG'}</span>`}</div>
+    <div class="tx"><b>${pins().includes(d.id)?'📌 ':''}${esc(d.name)}</b>
+     <div>${(d.tags||[]).map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div>
+     ${d.note?`<small>${esc(d.note.slice(0,90))}${d.note.length>90?'…':''}</small>`:''}
+     ${snip?`<small class="sn">${esc(snip)}</small>`:''}
+     <small>${d.type==='pdf'?(d.pages||'?')+' str. · ':''}${fmtMB(d.size||0)}</small></div></div>`).join('')
+    ||(LIB().length?'<p class="mut">Nic nie znaleziono.</p>':'<div class="card mut">Biblioteka jest pusta. Dodaj PDF-y instrukcji i schematów albo zdjęcia (np. schemat z pokrywy centrali). Potem nadaj im tagi, np. „Satel”, „zwora”, „Ampio”.</div>');
+  try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();$('libStore').textContent=`Zajęte miejsce: ${fmtMB(e.usage||0)}${e.quota?' z '+fmtMB(e.quota):''}. Pliki są tylko w tym telefonie.`;}}catch(e){}
+}
+async function pdfThumbAndText(buf){
+  const lib=await pdfLib();const doc=await lib.getDocument({data:buf}).promise;
+  const pg=await doc.getPage(1);const v=pg.getViewport({scale:1});const sc=200/v.width;const vp=pg.getViewport({scale:sc});
+  const cv=document.createElement('canvas');cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
+  const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);await pg.render({canvasContext:cx,viewport:vp}).promise;
+  let txt='';
+  for(let i=1;i<=Math.min(doc.numPages,300)&&txt.length<300000;i++){try{const p=await doc.getPage(i);const tc=await p.getTextContent();txt+=' '+tc.items.map(x=>x.str).join(' ');}catch(e){}}
+  return {thumb:cv.toDataURL('image/jpeg',0.7),text:txt.toLowerCase().replace(/\s+/g,' '),pages:doc.numPages};
+}
+function imgThumb(blob){return new Promise(res=>{const u=URL.createObjectURL(blob);const im=new Image();im.onload=()=>{const k=200/im.width;const cv=document.createElement('canvas');cv.width=200;cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv.toDataURL('image/jpeg',0.7));};im.onerror=()=>res('');im.src=u;});}
+$('libFile').onchange=async e=>{
+  const files=[...e.target.files];e.target.value='';if(!files.length)return;
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(err){}
+  const added=[];
+  for(const [k,f] of files.entries()){
+    $('libMsg').textContent=`Dodaję ${k+1}/${files.length}: ${f.name}…`;
+    const id=uid();const isPdf=/pdf/i.test(f.type)||/\.pdf$/i.test(f.name);
+    const d={id,name:f.name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' '),type:isPdf?'pdf':'img',mime:f.type||(isPdf?'application/pdf':'image/jpeg'),fname:f.name,tags:TAGF?[TAGF]:[],note:'',added:Date.now(),size:f.size,pages:isPdf?0:1,thumb:''};
+    const okSave=await IDB.put('lib_'+id,f);
+    if(!okSave){$('libMsg').textContent='Nie udało się zapisać pliku (brak miejsca?).';continue;}
+    try{
+      if(isPdf){const r=await pdfThumbAndText(await f.arrayBuffer());d.thumb=r.thumb;d.pages=r.pages;LIBTXT[id]=r.text;await IDB.put('libtxt_'+id,r.text);}
+      else d.thumb=await imgThumb(f);
+    }catch(err){LIBTXT[id]='';}
+    LIB().push(d);added.push(d);save();
+  }
+  $('libMsg').textContent=added.length?`Dodano ${added.length} plik(ów).`:'';
+  await renderLib();
+  if(added.length===1)libInfo(added[0]);
+};
+$('libQ').addEventListener('input',()=>renderLib());
+$('s-lib').addEventListener('click',e=>{
+  const t=e.target.closest('[data-tagf]');if(t){TAGF=TAGF===t.dataset.tagf?'':t.dataset.tagf;renderLib();return;}
+  const pf=e.target.closest('[data-pinf]');if(pf){PINF=!PINF;renderLib();return;}
+  const c=e.target.closest('[data-lib]');if(c){libOpen(LIB().find(d=>d.id===c.dataset.lib));}
+});
+async function libOpen(d){
+  if(!d)return;const blob=await IDB.get('lib_'+d.id);
+  if(!blob){$('libMsg').textContent='Brak pliku w pamięci telefonu.';return;}
+  d.used=Date.now();save();
+  LV={d,blob,doc:null,url:null};LZ=1;
+  $('lvT').textContent=d.name;$('libView').classList.add('on');$('lvBody').innerHTML='<p style="color:#fff;padding:12px">Wczytuję…</p>';
+  try{history.pushState({lv:1},'');}catch(e){}
+  if(d.type==='pdf'){try{const lib=await pdfLib();LV.doc=await lib.getDocument({data:await blob.arrayBuffer()}).promise;}catch(e){$('lvBody').innerHTML='<p style="color:#fff;padding:12px">Nie udało się otworzyć PDF-a.</p>';return;}}
+  else LV.url=URL.createObjectURL(blob);
+  lvRender();
+}
+let LVIO=null;
+async function lvRender(){
+  if(!LV)return;const body=$('lvBody');const W=Math.round((body.clientWidth-16)*LZ);
+  if(LV.url){body.innerHTML=`<img src="${LV.url}" style="width:${W}px">`;return;}
+  const doc=LV.doc;const p1=await doc.getPage(1);const v1=p1.getViewport({scale:1});
+  body.innerHTML=Array.from({length:doc.numPages},(_,i)=>`<canvas data-pg="${i+1}" style="width:${W}px;height:${Math.round(W*v1.height/v1.width)}px"></canvas>`).join('')+`<div style="color:#d1d5db;text-align:center;padding:8px 0 24px;font-size:13px">${doc.numPages} str.</div>`;
+  if(LVIO)LVIO.disconnect();
+  LVIO=new IntersectionObserver(ents=>ents.forEach(async en=>{
+    if(!en.isIntersecting)return;const cv=en.target;if(cv.dataset.done)return;cv.dataset.done=1;
+    try{const pg=await doc.getPage(+cv.dataset.pg);const v=pg.getViewport({scale:1});
+      const dpr=Math.min(window.devicePixelRatio||1,2.5);let sc=W*dpr/v.width;if(v.width*sc>4096)sc=4096/v.width;
+      const vp=pg.getViewport({scale:sc});cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);cv.style.height=Math.round(W*v.height/v.width)+'px';
+      const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);await pg.render({canvasContext:cx,viewport:vp}).promise;}catch(e){}
+  }),{root:body,rootMargin:'600px'});
+  body.querySelectorAll('canvas').forEach(c=>LVIO.observe(c));
+}
+function lvClose(){if(!LV)return;if(LV.url)URL.revokeObjectURL(LV.url);if(LV.doc)try{LV.doc.destroy();}catch(e){}LV=null;if(LVIO)LVIO.disconnect();$('libView').classList.remove('on');$('lvBody').innerHTML='';renderLib();}
+$('lvX').onclick=()=>{try{if(history.state&&history.state.lv){history.back();return;}}catch(e){}lvClose();};
+window.addEventListener('popstate',()=>{if(LV)lvClose();});
+const lvZoom=f=>{const b=$('lvBody');const rx=(b.scrollLeft+b.clientWidth/2)/b.scrollWidth,ry=(b.scrollTop+b.clientHeight/2)/b.scrollHeight;
+  LZ=Math.max(0.5,Math.min(5,LZ*f));lvRender().then(()=>{b.scrollLeft=rx*b.scrollWidth-b.clientWidth/2;b.scrollTop=ry*b.scrollHeight-b.clientHeight/2;});};
+$('lvP').onclick=()=>lvZoom(1.4);$('lvM').onclick=()=>lvZoom(1/1.4);
+$('lvI').onclick=()=>{if(LV)libInfo(LV.d);};
+function libInfo(d){
+  const tags=d.tags.slice();
+  $('dlg').innerHTML=`<h3>Opis schematu</h3>
+   <div class="f"><label>Nazwa</label><input id="liN" value="${esc(d.name)}"></div>
+   <div class="f"><label>Tagi (oddziel przecinkami)</label><input id="liT" value="${esc(tags.join(', '))}" placeholder="np. Satel, centrala, alarm"></div>
+   <div class="chips" id="liSug" style="margin:-4px 0 10px">${allTags().filter(t=>!tags.includes(t)).slice(0,20).map(t=>`<button class="chip" type="button" data-addtag="${esc(t)}">+ ${esc(t)}</button>`).join('')}</div>
+   <div class="f"><label>Moje notatki</label><textarea id="liNo" rows="4" placeholder="np. przy tym modelu zworka J3 na 12 V, wyjście OUT2 = zwora">${esc(d.note)}</textarea></div>
+   <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="liPin" ${pins().includes(d.id)?'checked':''} style="width:22px;height:22px"> 📌 Przypnij do projektu „${esc(P.name)}”</label>
+   <p class="mut">${esc(d.fname||'')} · ${fmtMB(d.size||0)} · dodano ${new Date(d.added).toLocaleDateString('pl-PL')}</p>
+   <div class="bar"><button class="btn p" id="liOk">Zapisz</button>${LV?'':'<button class="btn" id="liOpen">Otwórz</button>'}<button class="btn" id="liSh">Udostępnij</button><button class="btn d" id="liDel">Usuń</button></div><div id="liMsg" class="mut"></div>`;
+  $('liSug').onclick=e=>{const b=e.target.closest('[data-addtag]');if(!b)return;const cur=$('liT').value.split(',').map(x=>x.trim()).filter(Boolean);if(!cur.includes(b.dataset.addtag))cur.push(b.dataset.addtag);$('liT').value=cur.join(', ');b.remove();};
+  $('liOk').onclick=()=>{d.name=$('liN').value.trim()||d.name;d.tags=[...new Set($('liT').value.split(',').map(x=>x.trim()).filter(Boolean))];d.note=$('liNo').value.trim();
+    const pp=pins();const i=pp.indexOf(d.id);if($('liPin').checked&&i<0)pp.push(d.id);if(!$('liPin').checked&&i>=0)pp.splice(i,1);
+    save();closeDlg();if(LV)$('lvT').textContent=d.name;renderLib();};
+  if($('liOpen'))$('liOpen').onclick=()=>{closeDlg();libOpen(d);};
+  $('liSh').onclick=async()=>{
+    const blob=await IDB.get('lib_'+d.id);if(!blob)return;
+    const file=new File([blob],d.fname||(d.name+(d.type==='pdf'?'.pdf':'.jpg')),{type:d.mime||blob.type});
+    try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:d.name});return;}}catch(e){if(e&&e.name==='AbortError')return;}
+    try{const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();$('liMsg').textContent='Pobrano plik.';}catch(e){$('liMsg').textContent='Udostępnianie niedostępne.';}
+  };
+  $('liDel').onclick=()=>{if(!$('liDel').dataset.c){$('liDel').dataset.c=1;$('liDel').textContent='Na pewno usunąć?';return;}
+    DB.lib=LIB().filter(x=>x.id!==d.id);DB.projects.forEach(p=>{if(p.libPins)p.libPins=p.libPins.filter(x=>x!==d.id);});
+    IDB.del('lib_'+d.id);IDB.del('libtxt_'+d.id);delete LIBTXT[d.id];save();closeDlg();if(LV)lvClose();else renderLib();};
+  $('ov').classList.add('on');
+}
+
 // ---------- start ----------
 load();render();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
-const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','print','proj'].includes(h))tab(h);
+const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','lib','print','proj'].includes(h))tab(h);
 </script>
 </body>
 </html>
