@@ -133,6 +133,25 @@ table.tb th{background:#eee}
 .lvbar .btn{background:#334155;color:#fff;border-color:#475569}
 #lvBody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 8px}
 #lvBody canvas,#lvBody img{display:block;margin:8px auto;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.bbar{display:flex;gap:6px;align-items:center;margin-bottom:10px;background:#fff;border-radius:10px;padding:6px 8px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.bbar select{flex:1;min-width:0;font:inherit;font-weight:600;padding:8px;border:1px solid var(--line);border-radius:8px}
+/* zadania */
+.kb{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px;margin:0 -12px;padding-left:12px;padding-right:12px}
+.kcol{flex:0 0 82%;max-width:330px;scroll-snap-align:start;background:#e5e7eb;border-radius:12px;padding:8px;align-self:flex-start}
+.kh{font-weight:700;margin:2px 4px 8px}
+.kc{background:#fff;border-radius:8px;padding:8px;margin-bottom:6px;border-left:5px solid #9ca3af;box-shadow:0 1px 2px rgba(0,0,0,.08);cursor:pointer}
+.kt{font-weight:600}.kd{font-size:13px;color:var(--mut);margin-top:2px}
+.km{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut);margin-top:4px;flex-wrap:wrap}
+.km .late{color:var(--bad);font-weight:700}
+.kmv{border:1px solid var(--line);background:#f9fafb;border-radius:6px;padding:2px 9px;font-size:13px}
+.kadd input{width:100%;font:inherit;padding:9px;border:1px dashed #9ca3af;border-radius:8px;background:#f9fafb}
+.shg{font-weight:700;color:var(--mut);font-size:13px;margin:10px 2px 4px;text-transform:uppercase}
+.shq{white-space:nowrap;font-size:14px}
+.vr{display:flex;gap:6px;align-items:center;margin-top:6px}.vr .mut{min-width:46px;font-size:13px}
+.vr code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;background:#f3f4f6;padding:5px 8px;border-radius:6px;font-size:15px}
+.cdot{width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #9ca3af}
+.cdot.on{box-shadow:0 0 0 3px var(--acc)}
+.nopt{display:grid;gap:8px}
 /* ampio */
 
 .am{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.06);overflow:hidden}
@@ -212,11 +231,18 @@ table.tb th{background:#eee}
   <button data-t="plan">Rzut</button>
   <button data-t="meas">Pomiary</button>
   <button data-t="amp">Ampio</button>
+  <button data-t="notes">Zadania</button>
   <button data-t="lib">Schematy</button>
   <button data-t="print">Wydruk</button>
   <button data-t="proj">Dane</button>
 </nav>
 <main>
+  <div class="bbar noprint" id="bBar">
+    <span class="mut">Rozdzielnica:</span>
+    <select id="bSel"></select>
+    <button class="btn sm" id="bAddB">+ Nowa</button>
+    <button class="btn sm" id="bCfgB">⚙</button>
+  </div>
   <!-- TABLICA -->
   <section class="sec on" id="s-board">
     <div class="bar">
@@ -265,7 +291,7 @@ table.tb th{background:#eee}
     <div class="pv">
       <div class="bar" style="margin-top:0">
         <select id="plSel" style="flex:1;min-width:120px;font:inherit;padding:9px;border:1px solid var(--line);border-radius:10px"></select>
-        <label class="btn">+ Rzut<input type="file" id="plFile" accept="application/pdf,image/*" hidden></label>
+        <button class="btn" id="plNew">+ Rzut</button><input type="file" id="plFile" accept="application/pdf,image/*" hidden>
         <button class="btn" id="plCfg">⚙</button>
       </div>
       <div id="plEmpty" class="card mut">Wczytaj projekt jako <b>PDF</b> albo <b>zdjęcie</b> (JPG/PNG). Plik DWG najpierw wyeksportuj do PDF (np. w darmowym DWG TrueView albo w programie projektanta).</div>
@@ -275,6 +301,7 @@ table.tb th{background:#eee}
           <button class="btn sm on" data-pm="pan">✋ Przesuń</button>
           <button class="btn sm" data-pm="ins">➕ Wstaw</button>
           <button class="btn sm" data-pm="rt">〰 Trasa</button>
+          <button class="btn sm" data-pm="draw">✏️ Rysuj</button>
           <button class="btn sm" id="plFit">⤢ Cały</button>
         </div>
         <div id="plInsBar" style="display:none">
@@ -282,6 +309,10 @@ table.tb th{background:#eee}
           <div class="symgrid" id="plSymGrid"></div>
           <input type="hidden" id="plSym" value="gn">
           <div class="f" id="plObwW"><label>Obwód dla nowych symboli</label><select id="plObw"></select></div>
+        </div>
+        <div id="plDrBar" style="display:none;margin-bottom:6px">
+          <div class="chips" id="plDrTools" style="flex-wrap:nowrap;overflow-x:auto;margin-bottom:6px"></div>
+          <div class="bar" id="plDrOpts" style="margin:0;align-items:center"></div>
         </div>
         <div id="plRtBar" class="bar" style="display:none;margin:0 0 8px">
           <span class="mut" style="align-self:center">Stukaj kolejne punkty trasy</span>
@@ -319,6 +350,17 @@ table.tb th{background:#eee}
       <button data-as="doc">Dokumentacja</button>
     </div>
     <div id="ampBody"></div>
+  </section>
+
+  <!-- ZADANIA -->
+  <section class="sec" id="s-notes">
+    <div class="sub" id="nsub">
+      <button data-ns="kb" class="on">📋 Tablica</button>
+      <button data-ns="shop">🛒 Zakupy</button>
+      <button data-ns="note">📝 Notatki</button>
+      <button data-ns="vault">🔒 Hasła</button>
+    </div>
+    <div id="notesBody"></div>
   </section>
 
   <!-- SCHEMATY -->
@@ -438,9 +480,26 @@ function defMods(k,poles){
   if(k==='spd')return 4;
   return 1;
 }
-function newProject(name){
-  return {id:uid(),name:name||'Nowa rozdzielnica',addr:'',author:'',date:today(),note:'',mpr:12,rows:3,items:[],layout:[],manual:false,modW:'17.5'};
+const BK=['items','layout','mpr','rows','manual','modW','kj','rcdMax','rcdMin','note'];
+function newBoard(name,desc){return {id:uid(),name:name||'RG',desc:desc||'',feed:'',items:[],layout:[],mpr:12,rows:3,manual:false,modW:'17.5',note:''};}
+function bOf(p){return p.boards.find(b=>b.id===p.curB)||p.boards[0];}
+function attachP(p){
+  if(!Array.isArray(p.boards)||!p.boards.length){
+    const b=newBoard('RG','Rozdzielnica główna');
+    BK.forEach(k=>{if(Object.prototype.hasOwnProperty.call(p,k)){if(p[k]!==undefined)b[k]=p[k];delete p[k];}});
+    p.boards=[b];p.curB=b.id;
+  }else BK.forEach(k=>{if(Object.prototype.hasOwnProperty.call(p,k)&&Object.getOwnPropertyDescriptor(p,k).value!==undefined)delete p[k];});
+  p.boards.forEach(b=>{b.items=b.items||[];b.layout=b.layout||[];if(!b.mpr)b.mpr=12;if(!b.rows)b.rows=3;});
+  if(!p.boards.some(b=>b.id===p.curB))p.curB=p.boards[0].id;
+  BK.forEach(k=>Object.defineProperty(p,k,{get(){return bOf(p)[k];},set(v){bOf(p)[k]=v;},configurable:true,enumerable:false}));
+  return p;
 }
+function newProject(name){return attachP({id:uid(),name:name||'Nowy projekt',addr:'',author:'',date:today()});}
+const curB=()=>bOf(P);
+function withBoard(b,fn){const pv=P.curB;P.curB=b.id;try{return fn();}finally{P.curB=pv;}}
+function byIdAll(id){if(!id)return undefined;for(const b of P.boards){const it=b.items.find(i=>i.id===id);if(it)return it;}return undefined;}
+function boardOf(id){return P.boards.find(b=>b.items.some(i=>i.id===id));}
+function allLayout(){return P.boards.flatMap(b=>b.layout.flat()).filter(id=>byIdAll(id));}
 function newItem(k,o){
   const d={id:uid(),kind:k,name:'',poles:1,mods:1,In:'',char:'B',idn:30,rtype:'A',cable:'',phase:'auto',rcd:'',pkw:'',lbl:'',spdt:'T1+T2',note:''};
   if(k==='mcb'){d.In=16;d.cable='2.5';}
@@ -456,6 +515,7 @@ function newItem(k,o){
 function load(){
   try{const s=localStorage.getItem(KEY);if(s)DB=JSON.parse(s);}catch(e){}
   if(!DB.projects||!DB.projects.length){const p=newProject();DB={projects:[p],current:p.id};}
+  DB.projects.forEach(attachP);
   P=DB.projects.find(p=>p.id===DB.current)||DB.projects[0];DB.current=P.id;
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
@@ -563,6 +623,11 @@ function poleTxt(it){
 // ---------- ostrzeżenia ----------
 function warnings(){
   const w=[];const M=+P.mpr;
+  {const B=curB();const f=B.feed&&byIdAll(B.feed);
+   if(B.feed&&!f)w.push(['w','Obwód zasilający tę rozdzielnicę został usunięty – ustaw go w ⚙.']);
+   if(f&&+f.In){const mx=Math.max(0,...P.items.filter(i=>['mcb','rcbo','main'].includes(i.kind)&&i.kind!=='main').map(i=>+i.In||0));
+     if(mx&&+f.In<=mx)w.push(['w',`Zasilanie z ${C.glab[f.id]} (${rating(f)}) nie jest większe od największego zabezpieczenia w tej rozdzielnicy (${mx} A) – brak selektywności.`]);
+     const mn=P.items.find(i=>i.kind==='main');if(mn&&+mn.In&&+mn.In<+f.In)w.push(['w',`Rozłącznik ${C.lab[mn.id]} ${mn.In} A jest mniejszy niż zabezpieczenie zasilające ${f.In} A.`]);}}
   P.layout.forEach((r,i)=>{const u=r.reduce((s,id)=>s+byId(id).mods,0);if(u>M)w.push(['e',`Rząd ${i+1}: ${u} modułów, a mieści się ${M}.`]);});
   if(P.layout.length>+P.rows)w.push(['e',`Potrzeba ${P.layout.length} rzędów, a tablica ma ${P.rows}. Zmień rozmiar w zakładce „Dane”.`]);
   P.items.forEach(it=>{
@@ -601,8 +666,11 @@ function rcdSize(r){
   return {need:I,rec,n:mem.length,over:I>100};
 }
 function render(){
-  syncAmpBoard();ensureLayout();
+  syncAmpBoard();
+  C.glab={};const multi=P.boards.length>1;
+  P.boards.forEach(bd=>withBoard(bd,()=>{ensureLayout();const l=labels();Object.keys(l).forEach(id=>C.glab[id]=(multi?bd.name+'/':'')+l[id]);}));
   const b=balance();C.ph=b.ph;C.lab=labels();
+  renderBBar();
   P.items.forEach(r=>{if(r.kind==='rcd'&&r.autoIn!==false){const z=rcdSize(r);if(z)r.In=z.rec;}});
   $('hName').textContent=P.name||'—';
   $('hAddr').textContent=P.addr||'';
@@ -610,6 +678,7 @@ function render(){
   if(document.querySelector('#s-meas.on')&&!$('measBody').contains(document.activeElement))renderMeas();
   if(document.querySelector('#s-amp.on')&&!$('ampBody').contains(document.activeElement))renderAmp();
   if(document.querySelector('#s-plan.on'))renderPlan(true);
+  if(document.querySelector('#s-notes.on')&&!$('notesBody').contains(document.activeElement)&&!$('ov').classList.contains('on'))renderNotes();
 }
 function phCls(p){return p==='3F'?'F3':p;}
 function renderBoard(L){
@@ -664,7 +733,8 @@ function renderList(){
 function renderPrint(){
   const mw=parseFloat(P.modW||'17.5');$('pModW').value=P.modW||'17.5';
   const what=$('pWhat').value;
-  const head=`<div class="ph-head"><div><b>${esc(P.name)}</b><br>${esc(P.addr)}</div><div style="text-align:right">${esc(P.author?'Wykonał: '+P.author:'')}<br>${esc(P.date)}</div></div>`;
+  const B=curB(),fd=B.feed&&byIdAll(B.feed);
+  const head=`<div class="ph-head"><div><b>${esc(P.name)} – rozdzielnica ${esc(B.name)}${B.desc?' ('+esc(B.desc)+')':''}</b><br>${esc(P.addr)}${fd?' · zasilana z '+esc(C.glab[fd.id]+' '+rating(fd)+(fd.cable?' '+fd.cable+' mm²':'')):''}</div><div style="text-align:right">${esc(P.author?'Wykonał: '+P.author:'')}<br>${esc(P.date)}</div></div>`;
   let strip=`<div class="pt">Opis listwy (wytnij i wsuń pod osłonę)</div>`;
   P.layout.forEach((row,r)=>{
     const used=row.reduce((s,id)=>s+byId(id).mods,0);
@@ -693,7 +763,7 @@ function schematic(){
   const ord=P.layout.flat().map(byId);
   const main=ord.find(i=>i.kind==='main');
   // zasilanie + rozłącznik
-  s+=T(40,12,'Zasilanie',{fs:10});
+  {const B=curB(),fd=B.feed&&byIdAll(B.feed);s+=T(8,12,fd?'Zasilanie z '+C.glab[fd.id]+' '+rating(fd):'Zasilanie',{fs:10,a:'start'});}
   s+=`<line x1="40" y1="18" x2="40" y2="35" stroke="#000"/>`;
   if(main){s+=box(40,35,34,C.lab[main.id],rating(main))+`<line x1="40" y1="69" x2="40" y2="${busY}" stroke="#000"/>`;}
   else s+=`<line x1="40" y1="35" x2="40" y2="${busY}" stroke="#000"/>`;
@@ -869,10 +939,12 @@ function tab(t){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));
   if(t==='proj')fillProj();
+  $('bBar').style.display=['board','list','print','proj'].includes(t)?'':'none';
   if(t==='meas')renderMeas();
   if(t==='amp')renderAmp();
   if(t==='plan')renderPlan();
   if(t==='lib')renderLib();
+  if(t==='notes')renderNotes();
   try{history.replaceState(null,'','#'+t);}catch(e){}
   window.scrollTo(0,0);
 }
@@ -973,13 +1045,13 @@ $('bPrint').onclick=()=>{try{window.print();}catch(e){}};
 
 function projDlg(){
   $('dlg').innerHTML=`<h3>Projekty</h3>
-   ${DB.projects.map(p=>`<div class="proj ${p.id===P.id?'cur':''}"><div class="tx"><b>${esc(p.name)}</b><br><small class="mut">${esc(p.addr||'')} ${esc(p.date||'')} · ${p.items.length} ap.</small></div>
+   ${DB.projects.map(p=>`<div class="proj ${p.id===P.id?'cur':''}"><div class="tx"><b>${esc(p.name)}</b><br><small class="mut">${esc(p.addr||'')} ${esc(p.date||'')} · ${p.boards.reduce((a,b)=>a+b.items.length,0)} ap.${(p.kb&&p.kb.cards.filter(c=>c.col!=='done').length)?` · 📋 ${p.kb.cards.filter(c=>c.col!=='done').length} zadań`:''}</small></div>
      <button class="btn sm" data-po="${p.id}">Otwórz</button><button class="btn sm" data-pc="${p.id}">Kopiuj</button>${DB.projects.length>1?`<button class="btn sm d" data-pd="${p.id}">Usuń</button>`:''}</div>`).join('')}
    <div class="bar"><button class="btn p" id="pNew">+ Nowy projekt</button><button class="btn" id="pClose">Zamknij</button></div>`;
   $('pNew').onclick=()=>{const p=newProject();DB.projects.unshift(p);DB.current=p.id;P=p;SEL=null;closeDlg();render();tab('proj');};
   $('pClose').onclick=closeDlg;
   $('dlg').querySelectorAll('[data-po]').forEach(b=>b.onclick=()=>{DB.current=b.dataset.po;P=DB.projects.find(p=>p.id===DB.current);SEL=null;closeDlg();render();});
-  $('dlg').querySelectorAll('[data-pc]').forEach(b=>b.onclick=()=>{const s=DB.projects.find(p=>p.id===b.dataset.pc);const c=JSON.parse(JSON.stringify(s));c.id=uid();c.name+=' (kopia)';(c.plans||[]).forEach(pl=>{const nid=uid();const old=pl.id;pl.id=nid;IDB.get(old).then(d=>{if(d){IMG[nid]=d;IDB.put(nid,d);}});});DB.projects.unshift(c);save();projDlg();});
+  $('dlg').querySelectorAll('[data-pc]').forEach(b=>b.onclick=()=>{const s=DB.projects.find(p=>p.id===b.dataset.pc);const c=attachP(JSON.parse(JSON.stringify(s)));c.id=uid();c.name+=' (kopia)';(c.plans||[]).forEach(pl=>{const nid=uid();const old=pl.id;pl.id=nid;IDB.get(old).then(d=>{if(d){IMG[nid]=d;IDB.put(nid,d);}});});DB.projects.unshift(c);save();projDlg();});
   $('dlg').querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{
     if(!b.dataset.c){b.dataset.c=1;b.textContent='Na pewno?';return;}
     DB.projects=DB.projects.filter(p=>p.id!==b.dataset.pd);
@@ -1007,14 +1079,71 @@ $('bCopy').onclick=()=>{
   $('jClose').onclick=closeDlg;$('ov').classList.add('on');
 };
 function importP(o){
-  if(!o||!Array.isArray(o.items))throw 0;
+  if(!o||(!Array.isArray(o.items)&&!Array.isArray(o.boards)))throw 0;
+  attachP(o);
   const imgs=o._imgs||{};delete o._imgs;
   (o.plans||[]).forEach(pl=>{const nid=uid();if(imgs[pl.id]){IMG[nid]=imgs[pl.id];IDB.put(nid,imgs[pl.id]);}pl.id=nid;});
-  o.id=uid();o.layout=o.layout||[];DB.projects.unshift(o);DB.current=o.id;P=o;SEL=null;render();tab('board');
+  o.id=uid();DB.projects.unshift(o);DB.current=o.id;P=o;SEL=null;render();tab('board');
 }
 $('fImp').onchange=e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{importP(JSON.parse(r.result));}catch(err){}};r.readAsText(f);e.target.value='';
+};
+
+// ---------- KILKA ROZDZIELNIC ----------
+function renderBBar(){
+  $('bSel').innerHTML=P.boards.map(b=>{const f=b.feed&&byIdAll(b.feed);return `<option value="${b.id}" ${b.id===P.curB?'selected':''}>${esc(b.name)}${b.desc?' – '+esc(b.desc):''}${f?' ← '+esc(C.glab[f.id]||''):''}</option>`;}).join('');
+}
+$('bSel').onchange=()=>{P.curB=$('bSel').value;SEL=null;render();if(document.querySelector('#s-proj.on'))fillProj();};
+function feedOptions(b,sel){
+  return '<option value="">— z sieci / złącza —</option>'+P.boards.filter(x=>x.id!==b.id).map(x=>`<optgroup label="${esc(x.name)}">${withBoard(x,()=>x.layout.flat().map(byId).filter(i=>i&&['mcb','rcbo','other'].includes(i.kind))).map(i=>`<option value="${i.id}" ${i.id===sel?'selected':''}>${esc((C.glab[i.id]||'')+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</optgroup>`).join('');
+}
+$('bAddB').onclick=()=>{
+  const cur=curB();const n=P.boards.length+1;
+  $('dlg').innerHTML=`<h3>Nowa rozdzielnica</h3>
+   <div class="g2"><div class="f"><label>Oznaczenie</label><input id="nbN" value="${n===2?'RP':'R'+n}"></div>
+   <div class="f"><label>Opis</label><input id="nbD" placeholder="np. Piętro, Garaż, Kotłownia"></div></div>
+   <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" id="nbFeed" checked style="width:22px;height:22px"> Dodaj w <b>${esc(cur.name)}</b> obwód zasilający tę rozdzielnicę</label>
+   <div class="g3" id="nbFeedW">
+    <div class="f"><label>Zabezp.</label><select id="nbC"><option>B</option><option selected>C</option></select></div>
+    <div class="f"><label>Prąd [A]</label><input id="nbI" type="number" value="25"></div>
+    <div class="f"><label>Bieguny</label><select id="nbP"><option value="3" selected>3P</option><option value="1">1P</option></select></div>
+    <div class="f"><label>Przewód [mm²]</label><select id="nbW">${Object.keys(CABLE_MAX).map(c=>`<option ${c==='6'?'selected':''}>${c}</option>`).join('')}</select></div>
+   </div>
+   <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="nbMain" checked style="width:22px;height:22px"> Rozłącznik główny w nowej rozdzielnicy</label>
+   <div class="bar"><button class="btn p" id="nbOk">Utwórz</button><button class="btn" id="nbNo">Anuluj</button></div>`;
+  $('nbFeed').onchange=()=>{$('nbFeedW').style.display=$('nbFeed').checked?'':'none';};
+  $('nbNo').onclick=closeDlg;
+  $('nbOk').onclick=()=>{
+    const b=newBoard($('nbN').value.trim()||('R'+n),$('nbD').value.trim());b.mpr=cur.mpr;b.rows=2;
+    if($('nbFeed').checked){
+      const poles=+$('nbP').value;
+      const f=newItem('mcb',{name:'Zasilanie '+b.name+(b.desc?' ('+b.desc+')':''),char:$('nbC').value,In:+$('nbI').value||25,poles,cable:$('nbW').value,noRcd:true});
+      f.mods=defMods('mcb',poles);cur.items.push(f);b.feed=f.id;
+    }
+    if($('nbMain').checked){const In=+$('nbI').value||40;const st=[25,32,40,63,80,100].find(x=>x>=In)||63;b.items.push(newItem('main',{poles:+$('nbP').value===1?2:3,In:st}));b.items[0].mods=defMods('main',b.items[0].poles);}
+    P.boards.push(b);P.curB=b.id;SEL=null;closeDlg();render();
+  };
+  $('ov').classList.add('on');
+};
+$('bCfgB').onclick=()=>{
+  const b=curB();
+  $('dlg').innerHTML=`<h3>Rozdzielnica ${esc(b.name)}</h3>
+   <div class="g2"><div class="f"><label>Oznaczenie</label><input id="cbN" value="${esc(b.name)}"></div>
+   <div class="f"><label>Opis</label><input id="cbD" value="${esc(b.desc||'')}"></div></div>
+   <div class="f"><label>Zasilana z obwodu</label><select id="cbF">${feedOptions(b,b.feed)}</select></div>
+   <p class="mut">Wymiary tablicy, liczba rzędów i ustawienia RCD są w zakładce „Dane” – osobno dla każdej rozdzielnicy.</p>
+   <div class="bar"><button class="btn p" id="cbOk">Zapisz</button><button class="btn" id="cbNo">Anuluj</button>${P.boards.length>1?'<button class="btn d" id="cbDel">Usuń rozdzielnicę</button>':''}</div>`;
+  $('cbNo').onclick=closeDlg;
+  $('cbOk').onclick=()=>{b.name=$('cbN').value.trim()||b.name;b.desc=$('cbD').value.trim();b.feed=$('cbF').value;closeDlg();render();};
+  if($('cbDel'))$('cbDel').onclick=()=>{
+    if(!$('cbDel').dataset.c){$('cbDel').dataset.c=1;$('cbDel').textContent=`Na pewno? (${b.items.length} aparatów)`;return;}
+    const ids=new Set(b.items.map(i=>i.id));
+    P.boards=P.boards.filter(x=>x.id!==b.id);P.boards.forEach(x=>{if(ids.has(x.feed))x.feed='';});
+    if(P.ampio)P.ampio.mods.forEach(m=>{if(m.board===b.id)m.board='';});
+    P.curB=P.boards[0].id;SEL=null;closeDlg();render();
+  };
+  $('ov').classList.add('on');
 };
 
 // ---------- POMIARY ----------
@@ -1062,9 +1191,9 @@ function num(v){
 }
 const fmt=(n,d=2)=>n==null?'':(n===Infinity?'∞':(+n.toFixed(d)).toString().replace('.',','));
 const isoMin=()=>MP().isoU<=250?0.5:1;
-const zsItems=()=>P.layout.flat().map(byId).filter(i=>(i.kind==='mcb'||i.kind==='rcbo')&&+i.In>0);
-const isoItems=()=>P.layout.flat().map(byId).filter(i=>i.kind==='mcb'||i.kind==='rcbo'||(i.kind==='other'&&i.In));
-const rcdItems=()=>P.layout.flat().map(byId).filter(i=>i.kind==='rcd'||i.kind==='rcbo');
+const zsItems=()=>allLayout().map(byIdAll).filter(i=>(i.kind==='mcb'||i.kind==='rcbo')&&+i.In>0);
+const isoItems=()=>allLayout().map(byIdAll).filter(i=>i.kind==='mcb'||i.kind==='rcbo'||(i.kind==='other'&&i.In));
+const rcdItems=()=>allLayout().map(byIdAll).filter(i=>i.kind==='rcd'||i.kind==='rcbo');
 function zsEval(it){
   const k={B:5,C:10,D:20}[it.char]||5;const Ia=k*(+it.In);const m=MP();
   const dop=(+m.u0||230)/Ia*(m.corr?2/3:1);const z=num(IM(it).zs);
@@ -1099,25 +1228,25 @@ function sumBox(){const s=summary();return `<div class="sumr"><div><b style="col
 function renderMeas(){
   document.querySelectorAll('#msub button').forEach(b=>b.classList.toggle('on',b.dataset.ms===MS));
   const m=MP();let h='';
-  if(!P.items.length){$('measBody').innerHTML='<div class="card mut">Najpierw dodaj obwody w zakładce „Obwody” (albo zaprojektuj rozdzielnicę).</div>';return;}
+  if(!allLayout().length){$('measBody').innerHTML='<div class="card mut">Najpierw dodaj obwody w zakładce „Obwody” (albo zaprojektuj rozdzielnicę).</div>';return;}
   if(MS==='zs'){
     h=helpBox()+sumBox()+`<p class="mut">Impedancja pętli zwarcia L-PE. U₀=${m.u0} V${m.corr?', z poprawką 2/3':''}. Dla obwodów 3-faz. wpisz najgorszy wynik.</p>`;
     zsItems().forEach(it=>{const e=zsEval(it);
-      h+=`<div class="mc"><div class="hd"><b>${esc(C.lab[it.id])}</b><span class="nm">${esc(circName(it))}</span><span id="bd-zs-${it.id}">${badge(e.ok)}</span></div>
+      h+=`<div class="mc"><div class="hd"><b>${esc(C.glab[it.id])}</b><span class="nm">${esc(circName(it))}</span><span id="bd-zs-${it.id}">${badge(e.ok)}</span></div>
       <div class="inf">${it.char}${it.In} · Ia = ${fmt(e.Ia,0)} A · Zs dop = ${fmt(e.dop)} Ω</div>
       <div class="mi">${inp(it,'zs','Zs zmierzone [Ω]','np. 0,85')}</div></div>`;});
   }
   if(MS==='iso'){
     h=helpBox()+sumBox()+`<p class="mut">Napięcie probiercze ${m.isoU} V DC, wymagane ≥ ${fmt(isoMin(),1)} MΩ. Możesz wpisać np. „>999”.</p>`;
     isoItems().forEach(it=>{const e=isoEval(it);
-      h+=`<div class="mc"><div class="hd"><b>${esc(C.lab[it.id])}</b><span class="nm">${esc(circName(it))}</span><span id="bd-iso-${it.id}">${badge(e.ok)}</span></div>
+      h+=`<div class="mc"><div class="hd"><b>${esc(C.glab[it.id])}</b><span class="nm">${esc(circName(it))}</span><span id="bd-iso-${it.id}">${badge(e.ok)}</span></div>
       <div class="inf">${poleTxt(it)}${it.cable?' · '+it.cable+' mm²':''} · wyniki w MΩ${it.poles>=3?' (najniższy z faz)':''}</div>
       <div class="mi">${inp(it,'lpe','L-PE')}${inp(it,'npe','N-PE')}${inp(it,'ln','L-N')}${it.poles>=3?inp(it,'ll','L-L'):''}</div></div>`;});
   }
   if(MS==='rcd'){
     h=helpBox()+sumBox()+`<p class="mut">Warunki: 0,5·IΔn ≤ IΔ ≤ IΔn, czas ≤ ${m.tmax} ms, U<sub>B</sub> ≤ ${m.ul} V.</p>`;
     rcdItems().forEach(it=>{const e=rcdEval(it);
-      h+=`<div class="mc"><div class="hd"><b>${esc(C.lab[it.id])}</b><span class="nm">${esc(it.kind==='rcbo'?circName(it):'RCD '+poleTxt(it))}</span><span id="bd-rcd-${it.id}">${badge(e.ok)}</span></div>
+      h+=`<div class="mc"><div class="hd"><b>${esc(C.glab[it.id])}</b><span class="nm">${esc(it.kind==='rcbo'?circName(it):'RCD '+poleTxt(it))}</span><span id="bd-rcd-${it.id}">${badge(e.ok)}</span></div>
       <div class="inf">${esc(rating(it))} · IΔ powinno być ${fmt(it.idn*0.5,0)}–${it.idn} mA</div>
       <div class="mi">${inp(it,'ia','IΔ [mA]')}${inp(it,'ta','t [ms]')}${inp(it,'ub','UB [V]')}</div></div>`;});
   }
@@ -1173,21 +1302,21 @@ function protocol(){
   if(zs.length){
     h+=`<h2>1. Ochrona przy uszkodzeniu – samoczynne wyłączenie zasilania (pomiar impedancji pętli zwarcia)</h2>
     <table><tr><th>Lp</th><th>Ozn.</th><th>Nazwa obwodu</th><th>Zabezp.</th><th>I<sub>a</sub> [A]</th><th>Z<sub>s</sub> dop. [Ω]</th><th>Z<sub>s</sub> zmierz. [Ω]</th><th>Ocena</th></tr>`;
-    zs.forEach((it,i)=>{const e=zsEval(it);h+=`<tr><td>${i+1}</td><td>${esc(C.lab[it.id])}</td><td class="l">${esc(circName(it))}</td><td>${it.char}${it.In}</td><td>${fmt(e.Ia,0)}</td><td>${fmt(e.dop)}</td><td>${v(IM(it).zs)}</td><td>${ev(e.ok)}</td></tr>`;});
+    zs.forEach((it,i)=>{const e=zsEval(it);h+=`<tr><td>${i+1}</td><td>${esc(C.glab[it.id])}</td><td class="l">${esc(circName(it))}</td><td>${it.char}${it.In}</td><td>${fmt(e.Ia,0)}</td><td>${fmt(e.dop)}</td><td>${v(IM(it).zs)}</td><td>${ev(e.ok)}</td></tr>`;});
     h+=`</table><div class="note">Warunek: Z<sub>s</sub> ≤ ${m.corr?'2/3 · ':''}U₀/I<sub>a</sub>; I<sub>a</sub> = 5·I<sub>n</sub> (B), 10·I<sub>n</sub> (C), 20·I<sub>n</sub> (D).</div>`;
   }
   const iso=isoItems();
   if(iso.length){
     h+=`<h2>2. Pomiar rezystancji izolacji</h2><div class="note">Napięcie probiercze ${m.isoU} V DC, wymagana rezystancja ≥ ${fmt(isoMin(),1)} MΩ. Wyniki w MΩ.</div>
     <table><tr><th>Lp</th><th>Ozn.</th><th>Nazwa obwodu</th><th>L-PE</th><th>N-PE</th><th>L-N</th><th>L-L</th><th>R wym.</th><th>Ocena</th></tr>`;
-    iso.forEach((it,i)=>{const mm=IM(it),e=isoEval(it);h+=`<tr><td>${i+1}</td><td>${esc(C.lab[it.id])}</td><td class="l">${esc(circName(it))}</td><td>${v(mm.lpe)}</td><td>${v(mm.npe)}</td><td>${v(mm.ln)}</td><td>${it.poles>=3?v(mm.ll):'—'}</td><td>${fmt(e.mn,1)}</td><td>${ev(e.ok)}</td></tr>`;});
+    iso.forEach((it,i)=>{const mm=IM(it),e=isoEval(it);h+=`<tr><td>${i+1}</td><td>${esc(C.glab[it.id])}</td><td class="l">${esc(circName(it))}</td><td>${v(mm.lpe)}</td><td>${v(mm.npe)}</td><td>${v(mm.ln)}</td><td>${it.poles>=3?v(mm.ll):'—'}</td><td>${fmt(e.mn,1)}</td><td>${ev(e.ok)}</td></tr>`;});
     h+='</table>';
   }
   const rc=rcdItems();
   if(rc.length){
     h+=`<h2>3. Badanie wyłączników różnicowoprądowych</h2>
     <table><tr><th>Lp</th><th>Ozn.</th><th>Typ</th><th>I<sub>n</sub> [A]</th><th>I<sub>Δn</sub> [mA]</th><th>I<sub>Δ</sub> zmierz. [mA]</th><th>t<sub>a</sub> [ms]</th><th>U<sub>B</sub> [V]</th><th>Ocena</th></tr>`;
-    rc.forEach((it,i)=>{const mm=IM(it),e=rcdEval(it);h+=`<tr><td>${i+1}</td><td>${esc(C.lab[it.id])}</td><td>${it.kind==='rcbo'?'RCBO':'RCD'} ${poleTxt(it)} ${esc(it.rtype)}</td><td>${v(it.In)}</td><td>${it.idn}</td><td>${v(mm.ia)}</td><td>${v(mm.ta)}</td><td>${v(mm.ub)}</td><td>${ev(e.ok)}</td></tr>`;});
+    rc.forEach((it,i)=>{const mm=IM(it),e=rcdEval(it);h+=`<tr><td>${i+1}</td><td>${esc(C.glab[it.id])}</td><td>${it.kind==='rcbo'?'RCBO':'RCD'} ${poleTxt(it)} ${esc(it.rtype)}</td><td>${v(it.In)}</td><td>${it.idn}</td><td>${v(mm.ia)}</td><td>${v(mm.ta)}</td><td>${v(mm.ub)}</td><td>${ev(e.ok)}</td></tr>`;});
     h+=`</table><div class="note">Warunki: 0,5·I<sub>Δn</sub> ≤ I<sub>Δ</sub> ≤ I<sub>Δn</sub>; t<sub>a</sub> ≤ ${m.tmax} ms; U<sub>B</sub> ≤ U<sub>L</sub> = ${m.ul} V.</div>`;
   }
   h+=`<h2>Orzeczenie</h2><p>${esc(m.verdict||autoVerdict())}</p>${m.note?`<p><b>Uwagi:</b> ${esc(m.note)}</p>`:''}
@@ -1201,7 +1330,7 @@ function saveMe(){const m=MP();DB.me=DB.me||{};ME_KEYS.forEach(k=>DB.me[k]=JSON.
 $('measBody').addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset.mid){
-    const it=byId(t.dataset.mid);IM(it)[t.dataset.mf]=t.value.trim();
+    const it=byIdAll(t.dataset.mid);IM(it)[t.dataset.mf]=t.value.trim();
     const kind=['zs'].includes(t.dataset.mf)?'zs':['lpe','npe','ln','ll'].includes(t.dataset.mf)?'iso':'rcd';
     const e2=kind==='zs'?zsEval(it):kind==='iso'?isoEval(it):rcdEval(it);
     const b=$('bd-'+kind+'-'+it.id);if(b)b.innerHTML=badge(e2.ok);
@@ -1257,13 +1386,15 @@ function resizeCh(m,o,i,b){
   m.ch=m.ch||{out:[],in:[],btn:[]};rs(m.ch.out,o);rs(m.ch.in,i);rs(m.ch.btn,b);
 }
 function syncAmpBoard(){
-  if(!P.ampio){P.items=P.items.filter(i=>i.kind!=='ampio');return;}
-  const want=P.ampio.mods.filter(m=>+m.din>0);
-  P.items=P.items.filter(i=>i.kind!=='ampio'||want.some(m=>m.id===i.ampio));
-  want.forEach(m=>{
-    let it=P.items.find(i=>i.kind==='ampio'&&i.ampio===m.id);
-    if(!it){it=newItem('ampio',{ampio:m.id,mods:+m.din});P.items.push(it);}
-    it.mods=+m.din;it.lbl=m.short;it.name=m.name||m.type;
+  const bs=P.boards,mods=P.ampio?P.ampio.mods:[];
+  bs.forEach(b=>{
+    const want=mods.filter(m=>+m.din>0&&((m.board&&bs.some(x=>x.id===m.board))?m.board:bs[0].id)===b.id);
+    b.items=b.items.filter(i=>i.kind!=='ampio'||want.some(m=>m.id===i.ampio));
+    want.forEach(m=>{
+      let it=b.items.find(i=>i.kind==='ampio'&&i.ampio===m.id);
+      if(!it){it=newItem('ampio',{ampio:m.id,mods:+m.din});b.items.push(it);}
+      it.mods=+m.din;it.lbl=m.short;it.name=m.name||m.type;
+    });
   });
 }
 function usedBy(ref){ // kto steruje tym wyjściem
@@ -1273,7 +1404,7 @@ function scenesWith(ref){return AP().scenes.filter(s=>(s.tg||[]).includes(ref));
 function chRow(m,x){
   const c=x.c;let sub=[];
   if(x.t==='out'){
-    if(c.obw){const it=byId(c.obw);if(it)sub.push('zasila '+(C.lab[it.id]||'')+' '+(it.name||''));}
+    if(c.obw){const it=byIdAll(c.obw);if(it)sub.push('zasila '+(C.glab[it.id]||'')+' '+(it.name||''));}
     const u=usedBy(x.ref);if(u.length)sub.push('← '+u.map(chLabel).join(', '));
   }else{
     if(c.act)sub.push(c.act);
@@ -1330,9 +1461,9 @@ function findRes(){
   if(!q){$('aRes').innerHTML='<p class="mut">Wpisz np. „kuchnia”, „roleta”, „F5” albo nazwę przycisku. Pokażę, co czym steruje.</p>';return;}
   let h='';
   A.mods.forEach(m=>chList(m).forEach(x=>{
-    const c=x.c,obw=c.obw&&byId(c.obw);
+    const c=x.c,obw=c.obw&&byIdAll(c.obw);
     const desc=c.n||c.room||c.note||c.act||c.obw||(c.tg||[]).length;
-    const hay=(desc?[m.short,m.type,m.name,m.loc,c.n,c.room,c.note,c.act,obw?(C.lab[obw.id]+' '+obw.name):'',chLabel({m,...x}),(c.tg||[]).map(r=>chText(chByRef(r))).join(' ')]:[chLabel({m,...x})]).join(' ').toLowerCase();
+    const hay=(desc?[m.short,m.type,m.name,m.loc,c.n,c.room,c.note,c.act,obw?(C.glab[obw.id]+' '+obw.name):'',chLabel({m,...x}),(c.tg||[]).map(r=>chText(chByRef(r))).join(' ')]:[chLabel({m,...x})]).join(' ').toLowerCase();
     if(hay.includes(q))h+=`<div class="am">${chRow(m,x)}</div>`;
   }));
   A.scenes.forEach(s=>{if([s.name,s.desc,s.trig,s.integ].join(' ').toLowerCase().includes(q))h+=`<div class="card" data-scn="${s.id}"><b>Scena: ${esc(s.name)}</b> <span class="st s${s.st||0}">${ST[s.st||0]}</span><div class="mut">${esc(s.desc||'')}</div></div>`;});
@@ -1350,6 +1481,7 @@ function modDlg(m){
    <div class="f"><label>ID / MAC (z Designera)</label><input id="mAddr" value="${esc(E.addr)}"></div></div>
    <div class="g2"><div class="f"><label>Wersja oprogr.</label><input id="mVer" value="${esc(E.ver)}"></div>
    <div class="f"><label>Szerokość DIN (mod.)</label><input id="mDin" type="number" min="0" inputmode="numeric" value="${esc(E.din)}" placeholder="0 = nie na tablicy"></div></div>
+   ${P.boards.length>1?`<div class="f"><label>W rozdzielnicy</label><select id="mBoard">${P.boards.map(b=>`<option value="${b.id}" ${b.id===(E.board||P.boards[0].id)?'selected':''}>${esc(b.name+(b.desc?' – '+b.desc:''))}</option>`).join('')}</select></div>`:''}
    <div class="g3"><div class="f"><label>Wyjścia</label><input id="mO" type="number" min="0" value="${E.ch.out.length}"></div>
    <div class="f"><label>Wejścia</label><input id="mI" type="number" min="0" value="${E.ch.in.length}"></div>
    <div class="f"><label>Pola dotykowe</label><input id="mB" type="number" min="0" value="${E.ch.btn.length}"></div></div>
@@ -1365,7 +1497,7 @@ function modDlg(m){
   };
   $('mSave').onclick=()=>{
     E.type=$('mType').value;E.name=$('mName').value.trim();E.loc=$('mLoc').value.trim();E.addr=$('mAddr').value.trim();E.ver=$('mVer').value.trim();
-    E.din=$('mDin').value;E.note=$('mNote').value.trim();
+    E.din=$('mDin').value;E.note=$('mNote').value.trim();if($('mBoard'))E.board=$('mBoard').value;
     resizeCh(E,Math.max(0,+$('mO').value||0),Math.max(0,+$('mI').value||0),Math.max(0,+$('mB').value||0));
     let sh=$('mShort').value.trim();
     if(!sh){const base=E.type.replace(/^M-/,'').replace(/-.*$/,'');let n=1;while(A.mods.some(x=>x.id!==E.id&&x.short===base+n))n++;sh=base+n;}
@@ -1390,11 +1522,11 @@ function tagEditor(id,list){
 function rooms(){const s=new Set();AP().mods.forEach(m=>chList(m).forEach(x=>{if(x.c.room)s.add(x.c.room);}));['Salon','Kuchnia','Łazienka','Sypialnia','Korytarz','Garaż','Wiatrołap','Pokój','Ogród'].forEach(r=>s.add(r));return [...s];}
 function chDlg(ref){
   const x=chByRef(ref);if(!x)return;const c=JSON.parse(JSON.stringify(x.c));c.tg=c.tg||[];
-  const circ=P.layout.flat().map(byId).filter(i=>['mcb','rcbo','other'].includes(i.kind));
+  const circ=allLayout().map(byIdAll).filter(i=>['mcb','rcbo','other'].includes(i.kind));
   $('dlg').innerHTML=`<h3>${esc(x.m.short)} · ${CH_T[x.t].n} ${x.i+1}</h3>
    <div class="g2"><div class="f"><label>Opis</label><input id="cN" value="${esc(c.n)}" placeholder="${x.t==='out'?'np. Światło sufit':'np. Klawisz lewy przy drzwiach'}"></div>
    <div class="f"><label>Pomieszczenie</label><input id="cR" list="rooms" value="${esc(c.room)}"><datalist id="rooms">${rooms().map(r=>`<option value="${esc(r)}">`).join('')}</datalist></div></div>
-   ${x.t==='out'?`<div class="f"><label>Zasilane z obwodu (rozdzielnica)</label><select id="cO"><option value="">—</option>${circ.map(i=>`<option value="${i.id}" ${i.id===c.obw?'selected':''}>${esc((C.lab[i.id]||'')+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</select></div>
+   ${x.t==='out'?`<div class="f"><label>Zasilane z obwodu (rozdzielnica)</label><select id="cO"><option value="">—</option>${circ.map(i=>`<option value="${i.id}" ${i.id===c.obw?'selected':''}>${esc((C.glab[i.id]||'')+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</select></div>
      <div class="mut" style="margin-bottom:8px">Sterowane przez: ${esc(usedBy(ref).map(chText).join(', ')||'nic (jeszcze)')}</div>`
    :`<div class="f"><label>Akcja</label><input id="cA" list="acts" value="${esc(c.act)}"><datalist id="acts">${ACTIONS.map(a=>`<option value="${a}">`).join('')}</datalist></div>
      <div class="f"><label>Steruje wyjściami</label><div id="cTL" style="margin-bottom:6px"></div><select id="cTS">${refOptions('',y=>y.t==='out')}</select></div>`}
@@ -1433,7 +1565,7 @@ function ampDoc(){
   const outs=[],ins=[];
   A.mods.forEach(m=>chList(m).forEach(x=>{(x.t==='out'?outs:ins).push({m,...x});}));
   if(outs.length){h+=`<h2>Wyjścia</h2><table><tr><th>Kanał</th><th>Opis</th><th>Pomieszczenie</th><th>Obwód</th><th>Sterowane przez</th><th>Uwagi</th></tr>`;
-    outs.forEach(x=>{const o=x.c.obw&&byId(x.c.obw);h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${o?esc(C.lab[o.id]+' '+(o.name||'')):''}</td><td>${esc(usedBy(x.ref).map(chLabel).join(', '))}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
+    outs.forEach(x=>{const o=x.c.obw&&byIdAll(x.c.obw);h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${o?esc(C.glab[o.id]+' '+(o.name||'')):''}</td><td>${esc(usedBy(x.ref).map(chLabel).join(', '))}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
   if(ins.length){h+=`<h2>Wejścia i przyciski</h2><table><tr><th>Kanał</th><th>Opis</th><th>Pomieszczenie</th><th>Akcja</th><th>Steruje</th><th>Uwagi</th></tr>`;
     ins.forEach(x=>{h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${esc(x.c.act)}</td><td>${esc((x.c.tg||[]).map(r=>chText(chByRef(r))).join('; '))}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
   if(A.scenes.length){h+=`<h2>Sceny i automatyka</h2>`;A.scenes.forEach(s=>{h+=`<h3>${esc(s.name)} <small>(${ST[s.st||0]})</small></h3><div>${s.trig?'<b>Wyzwalacz:</b> '+esc(s.trig)+'<br>':''}${esc(s.desc)}${(s.tg||[]).length?'<br><b>Kanały:</b> '+esc(s.tg.map(r=>chText(chByRef(r))).join('; ')):''}${s.integ?'<br><b>Integracje:</b> '+esc(s.integ):''}</div>`;});}
@@ -1480,12 +1612,12 @@ const CIRC_COL=['#e11d48','#2563eb','#16a34a','#d97706','#7c3aed','#0891b2','#be
 let INS_SYS='el',PL=null,PM='pan',V={s:1,tx:0,ty:0},RT=null,MOVE=null,LAY={el:1,al:1,pz:1,tv:1,kd:1,am:1};
 function plans(){if(!P.plans)P.plans=[];return P.plans;}
 function curPlan(){const ps=plans();if(!PL||!ps.find(p=>p.id===PL))PL=ps[0]?ps[0].id:null;return ps.find(p=>p.id===PL)||null;}
-function circList(){return P.layout.flat().map(byId).filter(i=>i&&['mcb','rcbo','other'].includes(i.kind));}
+function circList(){return allLayout().map(byIdAll).filter(i=>i&&['mcb','rcbo','other'].includes(i.kind));}
 function circCol(id){const l=circList();const i=l.findIndex(x=>x.id===id);return i<0?'#111':CIRC_COL[i%CIRC_COL.length];}
 function markCol(m){const sy=SYM[m.t];if(!sy)return '#111';return sy[1]==='el'?(m.obw?circCol(m.obw):'#111'):SYS[sy[1]].col;}
 function markLabel(m){
   const sy=SYM[m.t];if(!sy)return m.lab||'';
-  if(sy[1]==='el'){const it=m.obw&&byId(m.obw);return (it?C.lab[it.id]:'')+(m.lab?' '+m.lab:'');}
+  if(sy[1]==='el'){const it=m.obw&&byIdAll(m.obw);return (it?C.glab[it.id]:'')+(m.lab?' '+m.lab:'');}
   return m.lab||'';
 }
 function symDraw(t,c){ // rysunek w jednostkach (ok. -1..1), c = kolor
@@ -1550,13 +1682,14 @@ function symSvg(m,s){
 }
 function symIcon(t,px){const c=SYM[t][1]==='el'?'#111':SYS[SYM[t][1]].col;return `<svg width="${px}" height="${px}" viewBox="-1.8 -1.6 3.6 3.2">${symDraw(t,c)}</svg>`;}
 function overlaySvg(pl,forPrint){
-  const s=+pl.sz||Math.max(pl.w,pl.h)/75;let h='';
+  const s=+pl.sz||Math.max(pl.w,pl.h)/75;let h=drawSvg(pl);
+  if(WALL&&WALL.pts.length&&!forPrint&&PM==='draw'){h+=`<path d="${pathD(WALL.pts)}" fill="none" stroke="${DC}" stroke-width="${dWidth(pl,'wall')}" stroke-linecap="square" opacity="0.7"/>`+WALL.pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${s*0.18}" fill="#f59e0b"/>`).join('');}
   (pl.routes||[]).forEach(rt=>{
     if(!LAY[rt.sys]&&!forPrint)return;
     const c=rt.sys==='el'&&rt.obw?circCol(rt.obw):SYS[rt.sys].col;
     const pts=rt.pts.map(p=>p.join(',')).join(' ');
     h+=`<g data-rt="${rt.id}"><polyline points="${pts}" fill="none" stroke="transparent" stroke-width="${s*0.8}"/><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="${s*0.14}" stroke-dasharray="${rt.sys==='el'?'none':s*0.5+' '+s*0.25}" stroke-linejoin="round"/>`;
-    const lab=(rt.sys==='el'&&rt.obw&&byId(rt.obw)?C.lab[rt.obw]+' ':'')+(rt.lab||'');
+    const lab=(rt.sys==='el'&&rt.obw&&byIdAll(rt.obw)?C.glab[rt.obw]+' ':'')+(rt.lab||'');
     if(lab&&rt.pts.length>1){const a=rt.pts[0],b=rt.pts[1];h+=`<text x="${(a[0]+b[0])/2}" y="${(a[1]+b[1])/2-s*0.25}" font-size="${s*0.42}" fill="${c}" text-anchor="middle" stroke="#fff" stroke-width="${s*0.1}" paint-order="stroke" font-weight="700">${esc(lab)}</text>`;}
     h+='</g>';
   });
@@ -1586,15 +1719,17 @@ async function renderPlan(keepView){
   $('plObwW').style.display=INS_SYS==='el'?'':'none';
   $('plLayers').style.display=PM==='ins'?'none':'';
   const ob=$('plObw').value;
-  $('plObw').innerHTML='<option value="">— bez obwodu —</option>'+circList().map(i=>`<option value="${i.id}">${esc(C.lab[i.id]+' '+(i.name||'')+' '+rating(i))}</option>`).join('');
+  $('plObw').innerHTML='<option value="">— bez obwodu —</option>'+circList().map(i=>`<option value="${i.id}">${esc(C.glab[i.id]+' '+(i.name||'')+' '+rating(i))}</option>`).join('');
   if(ob)$('plObw').value=ob;
   document.querySelectorAll('[data-pm]').forEach(b=>b.classList.toggle('on',b.dataset.pm===PM));
-  $('plInsBar').style.display=PM==='ins'?'':'none';$('plRtBar').style.display=PM==='rt'?'':'none';
+  $('plInsBar').style.display=PM==='ins'?'':'none';$('plRtBar').style.display=PM==='rt'?'':'none';$('plDrBar').style.display=PM==='draw'?'':'none';
   if(!IMG[pl.id]){IMG[pl.id]=await IDB.get(pl.id);}
   const img=$('plImg');
   if(img.dataset.pid!==pl.id){img.dataset.pid=pl.id;img.src=IMG[pl.id]||'';img.style.width=pl.w+'px';img.style.height=pl.h+'px';if(!keepView)setTimeout(fitV,0);}
   $('plSvg').setAttribute('width',pl.w);$('plSvg').setAttribute('height',pl.h);$('plSvg').setAttribute('viewBox',`0 0 ${pl.w} ${pl.h}`);
   $('plSvg').innerHTML=overlaySvg(pl,false);
+  img.style.opacity=pl.bg||1;
+  if(PM==='draw'){renderDrawBar();renderPlanSum();return;}
   if(!IMG[pl.id])$('plMsg').textContent='Brak obrazu rzutu w tym telefonie – wczytaj plik projektu z obrazami albo dodaj rzut ponownie.';
   else if(PM==='ins')$('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':'Stuknij na rzucie, żeby wstawić symbol. Stuknij symbol, żeby go edytować.';
   else if(PM==='rt')$('plMsg').textContent='';
@@ -1613,10 +1748,10 @@ function renderPlanSum(){
   const {per,tot}=planStats();
   let h='<table class="sumt"><tr><th>Obwód</th><th>Elementy (wszystkie rzuty)</th></tr>';
   const order=[...circList().map(i=>i.id),''];
-  order.forEach(k=>{if(!per[k])return;const it=k&&byId(k);
+  order.forEach(k=>{if(!per[k])return;const it=k&&byIdAll(k);
     const n=Object.values(per[k]).reduce((a,b)=>a+b,0);
     const gn=Object.keys(per[k]).filter(t=>t.startsWith('gn')).reduce((a,t)=>a+per[k][t],0);
-    h+=`<tr><td><span class="sw" style="background:${k?circCol(k):'#111'}"></span><b>${it?esc(C.lab[it.id]):'bez obwodu'}</b> ${it?esc(it.name||''):''}</td><td>${Object.keys(per[k]).map(t=>`${SYM[t][0]}: ${per[k][t]}`).join(', ')}${gn>10?' <span style="color:var(--warn)">⚠ dużo gniazd</span>':''}</td></tr>`;});
+    h+=`<tr><td><span class="sw" style="background:${k?circCol(k):'#111'}"></span><b>${it?esc(C.glab[it.id]):'bez obwodu'}</b> ${it?esc(it.name||''):''}</td><td>${Object.keys(per[k]).map(t=>`${SYM[t][0]}: ${per[k][t]}`).join(', ')}${gn>10?' <span style="color:var(--warn)">⚠ dużo gniazd</span>':''}</td></tr>`;});
   h+='</table>';
   if(Object.keys(tot).length){h+='<h3 style="margin-top:12px">Ilości (do zamówienia)</h3><table class="sumt">'+Object.keys(SYM).filter(t=>tot[t]).map(t=>`<tr><td><span class="sw" style="background:${SYS[SYM[t][1]].col}"></span>${SYM[t][0]}</td><td><b>${tot[t]}</b> szt.</td></tr>`).join('')+'</table>';}
   else h='<p class="mut">Brak symboli.</p>';
@@ -1635,8 +1770,8 @@ async function addPlanImage(dataUrl,w,h,name){
   const id=uid();IMG[id]=dataUrl;await IDB.put(id,dataUrl);
   plans().push({id,name,w,h,sz:Math.round(Math.max(w,h)/75),marks:[],routes:[]});PL=id;save();renderPlan();
 }
-$('plFile').onchange=async e=>{
-  const f=e.target.files[0];e.target.value='';if(!f)return;
+$('plFile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)handlePlanFile(f);};
+async function handlePlanFile(f){
   const base=f.name.replace(/\.[^.]+$/,'');
   if(/pdf/i.test(f.type)||/\.pdf$/i.test(f.name)){
     $('plEmpty').style.display='';$('plEmpty').textContent='Wczytuję PDF…';
@@ -1672,14 +1807,16 @@ $('plFile').onchange=async e=>{
       await addPlanImage(canvasJpeg(cv),cv.width,cv.height,base);
     };im.src=url;
   }
-};
+}
 $('plSel').onchange=()=>{PL=$('plSel').value;RT=null;MOVE=null;renderPlan();};
 $('plCfg').onclick=()=>{
   const pl=curPlan();if(!pl)return;
   $('dlg').innerHTML=`<h3>Rzut</h3><div class="f"><label>Nazwa</label><input id="pcN" value="${esc(pl.name)}"></div>
    <div class="f"><label>Wielkość symboli</label><input id="pcS" type="range" min="${Math.round(pl.w/300)}" max="${Math.round(pl.w/40)}" value="${pl.sz}"></div>
+   <div class="f"><label>Wyblaknięcie tła (żeby Twoje symbole były wyraźniejsze)</label><input id="pcB" type="range" min="15" max="100" value="${Math.round((pl.bg||1)*100)}"></div>
    <div class="bar"><button class="btn p" id="pcOk">Zapisz</button><button class="btn" id="pcNo">Anuluj</button><button class="btn d" id="pcDel">Usuń rzut</button></div>`;
   $('pcS').oninput=()=>{pl.sz=+$('pcS').value;$('plSvg').innerHTML=overlaySvg(pl,false);};
+  $('pcB').oninput=()=>{pl.bg=+$('pcB').value/100;$('plImg').style.opacity=pl.bg;};
   $('pcOk').onclick=()=>{pl.name=$('pcN').value.trim()||pl.name;save();closeDlg();renderPlan(true);};
   $('pcNo').onclick=()=>{closeDlg();renderPlan(true);};
   $('pcDel').onclick=()=>{if(!$('pcDel').dataset.c){$('pcDel').dataset.c=1;$('pcDel').textContent='Na pewno? (symbole też)';return;}
@@ -1691,7 +1828,7 @@ document.addEventListener('click',e=>{
   const ib=e.target.closest('[data-isym]');if(ib){$('plSym').value=ib.dataset.isym;renderPlan(true);return;}
   const so=e.target.closest('[data-solo]');if(so){Object.keys(LAY).forEach(k=>LAY[k]=k===INS_SYS?1:0);renderPlan(true);return;}
   const l=e.target.closest('[data-lay]');if(l){LAY[l.dataset.lay]=LAY[l.dataset.lay]?0:1;renderPlan(true);return;}
-  const m=e.target.closest('[data-pm]');if(m){PM=m.dataset.pm;MOVE=null;if(PM==='rt'){RT={sys:'el',pts:[]};}else RT=null;renderPlan(true);}
+  const m=e.target.closest('[data-pm]');if(m&&m.classList.contains('btn')&&m.closest('#plUI')){PM=m.dataset.pm;MOVE=null;if(PM==='draw'&&DT==='wall')WALL=WALL||{pts:[]};if(PM==='rt'){RT={sys:'el',pts:[]};}else RT=null;renderPlan(true);}
 });
 $('plFit').onclick=fitV;
 $('plRtUndo').onclick=()=>{if(RT&&RT.pts.length){RT.pts.pop();renderPlan(true);}};
@@ -1700,14 +1837,103 @@ $('plRtEnd').onclick=()=>{
   const pl=curPlan();const rt={id:uid(),sys:'el',pts:RT.pts,obw:$('plObw').value||'',lab:'',note:''};
   pl.routes=pl.routes||[];pl.routes.push(rt);RT={sys:'el',pts:[]};save();renderPlan(true);rtDlg(rt,true);
 };
+// ---- rysowanie: ołówek, ściany, tekst, korektor, gumka
+let DT='pen',DC='#111',DW='m',WALL=null,LIVE=null;
+const DCOLS=['#111','#dc2626','#2563eb','#16a34a','#f59e0b'];
+function dWidth(pl,k){const s=+pl.sz||20;if(k==='white')return s*(DW==='g'?1.6:0.8);if(k==='wall')return s*(DW==='g'?0.35:0.22);return s*(DW==='c'?0.06:DW==='g'?0.22:0.12);}
+function pathD(pts){return pts.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ')+(pts.length===1?' l0.1 0':'');}
+function drawSvg(pl){
+  let h='';const d=pl.draw||[];
+  d.filter(x=>x.k==='white').forEach(x=>{h+=`<path d="${pathD(x.pts)}" fill="none" stroke="#fff" stroke-width="${x.w}" stroke-linecap="round" stroke-linejoin="round"/>`;});
+  d.filter(x=>x.k!=='white').forEach(x=>{h+=`<path d="${pathD(x.pts)}" fill="none" stroke="${x.c}" stroke-width="${x.w}" stroke-linecap="${x.k==='wall'?'square':'round'}" stroke-linejoin="round"/>`;});
+  (pl.texts||[]).forEach(t=>{h+=`<text x="${t.x}" y="${t.y}" font-size="${t.fs}" fill="${t.c||'#111'}" font-family="Arial,sans-serif" font-weight="700" text-anchor="middle" dominant-baseline="central" stroke="#fff" stroke-width="${t.fs*0.12}" paint-order="stroke">${esc(t.t)}</text>`;});
+  return h;
+}
+function snapWall(pl,x,y){
+  const thr=18/V.s;
+  // do końców istniejących ścian
+  for(const w of (pl.draw||[]).filter(q=>q.k==='wall'))for(const p of w.pts)if(Math.hypot(p[0]-x,p[1]-y)<thr)return [p[0],p[1]];
+  if(WALL&&WALL.pts.length){const [px,py]=WALL.pts[WALL.pts.length-1];for(const p of WALL.pts)if(Math.hypot(p[0]-x,p[1]-y)<thr)return [p[0],p[1]];
+    const ang=Math.atan2(y-py,x-px),L=Math.hypot(x-px,y-py);const st=Math.PI/4;const a=Math.round(ang/st)*st;
+    if(Math.abs(a-ang)<0.14){x=px+Math.cos(a)*L;y=py+Math.sin(a)*L;}}
+  if(pl.grid){const g=pl.grid/2;x=Math.round(x/g)*g;y=Math.round(y/g)*g;}
+  return [Math.round(x),Math.round(y)];
+}
+function eraseAt(pl,x,y){
+  const r=Math.max(14/V.s,(+pl.sz||20)*0.4);let ch=false;
+  const near=(pts,w)=>{for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[i+1]||a;const dx=b[0]-a[0],dy=b[1]-a[1];const L=dx*dx+dy*dy||1;let t=((x-a[0])*dx+(y-a[1])*dy)/L;t=Math.max(0,Math.min(1,t));if(Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy)<r+w/2)return true;}return false;};
+  const n0=(pl.draw||[]).length;pl.draw=(pl.draw||[]).filter(q=>!near(q.pts,q.w));if(pl.draw.length!==n0)ch=true;
+  const t0=(pl.texts||[]).length;pl.texts=(pl.texts||[]).filter(t=>Math.hypot(t.x-x,t.y-y)>Math.max(r,t.fs*0.8));if(pl.texts.length!==t0)ch=true;
+  if(ch){$('plSvg').innerHTML=overlaySvg(pl,false);}
+  return ch;
+}
+function textDlg(pl,x,y,t){
+  const isNew=!t;t=t||{id:uid(),x,y,t:'',fs:Math.round((+pl.sz||20)*1.4),c:DC};
+  const S=+pl.sz||20;
+  $('dlg').innerHTML=`<h3>${isNew?'Dodaj tekst':'Tekst'}</h3><div class="f"><input id="txT" value="${esc(t.t)}" placeholder="np. SALON, h=110, skrzynka"></div>
+   <div class="f"><label>Wielkość</label><select id="txS"><option value="${Math.round(S*0.9)}">mały</option><option value="${Math.round(S*1.4)}">średni</option><option value="${Math.round(S*2.2)}">duży</option></select></div>
+   <div class="bar"><button class="btn p" id="txOk">Zapisz</button><button class="btn" id="txNo">Anuluj</button>${isNew?'':'<button class="btn d" id="txDel">Usuń</button>'}</div>`;
+  const so=[...$('txS').options].reduce((b,o)=>Math.abs(+o.value-t.fs)<Math.abs(+b.value-t.fs)?o:b);$('txS').value=so.value;
+  $('txNo').onclick=closeDlg;
+  $('txOk').onclick=()=>{const v=$('txT').value.trim();if(!v){closeDlg();return;}t.t=v;t.fs=+$('txS').value;if(isNew){pl.texts=pl.texts||[];pl.texts.push(t);}save();closeDlg();renderPlan(true);};
+  if($('txDel'))$('txDel').onclick=()=>{pl.texts=pl.texts.filter(q=>q.id!==t.id);save();closeDlg();renderPlan(true);};
+  $('ov').classList.add('on');setTimeout(()=>{if($('txT'))$('txT').focus();},50);
+}
+function renderDrawBar(){
+  const tools=[['pen','✏️ Ołówek'],['wall','🧱 Ściana'],['text','🔤 Tekst'],['white','⬜ Korektor'],['erase','🧽 Gumka']];
+  $('plDrTools').innerHTML=tools.map(([k,n])=>`<button class="chip ${k===DT?'on':''}" data-dt="${k}">${n}</button>`).join('');
+  $('plDrOpts').innerHTML=(['pen','wall','text'].includes(DT)?DCOLS.map(c=>`<button class="cdot ${c===DC?'on':''}" data-dc="${c}" style="background:${c}"></button>`).join(''):'')+
+    (['pen','wall','white'].includes(DT)?[['c','cienko'],['m','średnio'],['g','grubo']].filter(x=>DT!=='wall'||x[0]!=='c').map(([k,n])=>`<button class="chip ${k===DW?'on':''}" data-dw="${k}">${n}</button>`).join(''):'')+
+    `<span style="flex:1"></span><button class="btn sm" id="plDrUndo">↶ Cofnij</button>`+(WALL&&WALL.pts.length?`<button class="btn sm p" id="plWallEnd">✔ Koniec ściany</button>`:'');
+  const hint={pen:'Rysuj jednym palcem. Dwoma palcami przesuwasz i przybliżasz.',wall:'Stukaj kolejne narożniki – linie przyciągają się do kątów 45°/90° i do istniejących ścian.',text:'Stuknij miejsce, żeby wpisać tekst. Stuknij istniejący tekst, żeby go zmienić.',white:'Zamaluj na biało niepotrzebne bazgroły na zdjęciu (nie zmienia oryginału).',erase:'Przeciągnij po kresce, korektorze albo tekście, żeby je usunąć.'}[DT];
+  $('plMsg').textContent=hint;
+  if($('plDrUndo'))$('plDrUndo').onclick=()=>{const pl=curPlan();if(WALL&&WALL.pts.length){WALL.pts.pop();}else if(pl.draw&&pl.draw.length)pl.draw.pop();save();renderPlan(true);};
+  if($('plWallEnd'))$('plWallEnd').onclick=()=>{const pl=curPlan();if(WALL.pts.length>1){pl.draw=pl.draw||[];pl.draw.push({id:uid(),k:'wall',c:DC,w:dWidth(pl,'wall'),pts:WALL.pts});save();}WALL={pts:[]};renderPlan(true);};
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-dt]');if(t){DT=t.dataset.dt;if(DT!=='wall')WALL=null;else WALL=WALL||{pts:[]};renderPlan(true);return;}
+  const c=e.target.closest('[data-dc]');if(c){DC=c.dataset.dc;renderPlan(true);return;}
+  const w=e.target.closest('[data-dw]');if(w){DW=w.dataset.dw;renderPlan(true);return;}
+});
+// nowy rzut: plik / zdjęcie / kratka
+function blankSheet(fmt){
+  const W=3200,H=fmt==='p'?Math.round(3200*1.414):Math.round(3200/1.414);const g=80;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,W,H);
+  for(let x=0;x<=W;x+=g){cx.strokeStyle=(x/g)%5?'#e5edf5':'#c7d6e6';cx.lineWidth=(x/g)%5?1:2;cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke();}
+  for(let y=0;y<=H;y+=g){cx.strokeStyle=(y/g)%5?'#e5edf5':'#c7d6e6';cx.lineWidth=(y/g)%5?1:2;cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke();}
+  return {url:cv.toDataURL('image/jpeg',0.85),W,H,g};
+}
+$('plNew').onclick=()=>{
+  $('dlg').innerHTML=`<h3>Nowy rzut / szkic</h3>
+   <div class="nopt"><label class="btn" style="text-align:left">📄 Projekt z pliku (PDF / zdjęcie / zrzut z CAD)<input type="file" id="plFile2" accept="application/pdf,image/*" hidden></label>
+   <label class="btn" style="text-align:left">📷 Zrób zdjęcie (ściana, pomieszczenie, papierowy rzut)<input type="file" id="plCam" accept="image/*" capture="environment" hidden></label>
+   <button class="btn" style="text-align:left" id="plBlank">✏️ Pusta kartka w kratkę – narysuję sam</button></div>
+   <div class="f" id="plBlankW" style="display:none;margin-top:10px"><label>Nazwa szkicu</label><input id="plBN" value="Szkic ${plans().length+1}">
+    <div class="bar"><button class="btn p" data-bl="l">Poziomo</button><button class="btn p" data-bl="p">Pionowo</button></div></div>
+   <div class="bar"><button class="btn" id="plNNo">Anuluj</button></div>`;
+  $('plNNo').onclick=closeDlg;
+  const pass=inp=>inp.onchange=e=>{const f=e.target.files[0];closeDlg();if(f)handlePlanFile(f);};
+  pass($('plFile2'));pass($('plCam'));
+  $('plBlank').onclick=()=>{$('plBlankW').style.display='';};
+  $('dlg').querySelectorAll('[data-bl]').forEach(b=>b.onclick=async()=>{const s=blankSheet(b.dataset.bl);const nm=$('plBN').value.trim()||'Szkic';closeDlg();
+    await addPlanImage(s.url,s.W,s.H,nm);const pl=curPlan();pl.grid=s.g;save();PM='draw';DT='wall';WALL={pts:[]};renderPlan();});
+  $('ov').classList.add('on');
+};
 // ---- gesty
 (function(){
   const vp=$('plVP');const pts=new Map();let st=null;
   const imgPt=(cx,cy)=>{const r=vp.getBoundingClientRect();return [(cx-r.left-V.tx)/V.s,(cy-r.top-V.ty)/V.s];};
+  const drawing=()=>PM==='draw'&&['pen','white','erase'].includes(DT);
   vp.addEventListener('pointerdown',e=>{
     pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===1)st={x:e.clientX,y:e.clientY,tx:V.tx,ty:V.ty,t:Date.now(),moved:0};
-    if(pts.size===2){const [a,b]=[...pts.values()];st={pinch:1,d:Math.hypot(a.x-b.x,a.y-b.y),s:V.s,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,tx:V.tx,ty:V.ty,moved:99};}
+    if(pts.size===1&&drawing()){const pl=curPlan();if(!pl)return;const [x,y]=imgPt(e.clientX,e.clientY);
+      if(DT==='erase'){st.erase=1;if(eraseAt(pl,x,y))st.ch=1;}
+      else{LIVE={id:uid(),k:DT==='white'?'white':'pen',c:DT==='white'?'#fff':DC,w:dWidth(pl,DT==='white'?'white':'pen'),pts:[[Math.round(x),Math.round(y)]]};
+        const el=document.createElementNS('http://www.w3.org/2000/svg','path');el.id='livePath';el.setAttribute('fill','none');el.setAttribute('stroke',LIVE.c);el.setAttribute('stroke-width',LIVE.w);el.setAttribute('stroke-linecap','round');el.setAttribute('stroke-linejoin','round');el.setAttribute('d',pathD(LIVE.pts));
+        if(LIVE.k==='white')$('plSvg').insertBefore(el,$('plSvg').firstChild);else $('plSvg').appendChild(el);st.draw=1;}
+      return;}
+    if(pts.size===2){if(LIVE){LIVE=null;const lp=$('livePath');if(lp)lp.remove();}const [a,b]=[...pts.values()];st={pinch:1,d:Math.hypot(a.x-b.x,a.y-b.y),s:V.s,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,tx:V.tx,ty:V.ty,moved:99};}
   });
   window.addEventListener('pointermove',e=>{
     if(!pts.has(e.pointerId)||!st)return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -1716,6 +1942,10 @@ $('plRtEnd').onclick=()=>{
       const r=vp.getBoundingClientRect();const mx=(a.x+b.x)/2-r.left,my=(a.y+b.y)/2-r.top;
       const ix=(st.mx-r.left-st.tx)/st.s,iy=(st.my-r.top-st.ty)/st.s;
       V={s,tx:mx-ix*s,ty:my-iy*s};applyV();
+    }else if(st.draw&&LIVE){
+      const [x,y]=imgPt(e.clientX,e.clientY);const l=LIVE.pts[LIVE.pts.length-1];
+      if(Math.hypot(x-l[0],y-l[1])>2/V.s){LIVE.pts.push([Math.round(x),Math.round(y)]);const lp=$('livePath');if(lp)lp.setAttribute('d',pathD(LIVE.pts));}
+    }else if(st.erase){const [x,y]=imgPt(e.clientX,e.clientY);if(eraseAt(curPlan(),x,y))st.ch=1;
     }else if(!st.pinch){
       const dx=e.clientX-st.x,dy=e.clientY-st.y;st.moved=Math.max(st.moved,Math.hypot(dx,dy));
       if(st.moved>6){V.tx=st.tx+dx;V.ty=st.ty+dy;applyV();}
@@ -1723,6 +1953,8 @@ $('plRtEnd').onclick=()=>{
   });
   const up=e=>{
     if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);
+    if(st&&st.draw&&LIVE&&pts.size===0){const pl=curPlan();pl.draw=pl.draw||[];pl.draw.push(LIVE);LIVE=null;save();renderPlan(true);st=null;return;}
+    if(st&&st.erase&&pts.size===0){if(st.ch){save();renderPlan(true);}st=null;return;}
     if(st&&!st.pinch&&pts.size===0&&st.moved<=6&&Date.now()-st.t<600)tap(e.clientX,e.clientY);
     if(pts.size===0)st=null;
     else if(pts.size===1){const p=[...pts.values()][0];st={x:p.x,y:p.y,tx:V.tx,ty:V.ty,t:0,moved:99};}
@@ -1734,6 +1966,10 @@ $('plRtEnd').onclick=()=>{
     const pl=curPlan();if(!pl)return;
     const [x,y]=imgPt(cx,cy);
     if(PM==='rt'){RT.pts.push([Math.round(x),Math.round(y)]);renderPlan(true);return;}
+    if(PM==='draw'){
+      if(DT==='wall'){WALL=WALL||{pts:[]};WALL.pts.push(snapWall(pl,x,y));renderPlan(true);return;}
+      if(DT==='text'){const t=(pl.texts||[]).find(q=>Math.hypot(q.x-x,q.y-y)<Math.max(20/V.s,q.fs));textDlg(pl,Math.round(x),Math.round(y),t);return;}
+      return;}
     if(MOVE){const m=(pl.marks||[]).find(q=>q.id===MOVE);if(m){m.x=Math.round(x);m.y=Math.round(y);}MOVE=null;save();renderPlan(true);return;}
     const thr=Math.max(16/V.s,(+pl.sz||20)*0.7);
     let best=null,bd=thr;
@@ -1757,7 +1993,7 @@ function mkDlg(m){
   const ampOpts=P.ampio?refOptions(m.amp||'',()=>true):'';
   $('dlg').innerHTML=`<h3>${esc(sy[0])}</h3>
    <div class="f"><label>Symbol</label><select id="mkT">${[sy[1]].map(k=>`<optgroup label="${SYS[k].n}">${Object.keys(SYM).filter(t=>SYM[t][1]===k).map(t=>`<option value="${t}" ${t===m.t?'selected':''}>${SYM[t][0]}</option>`).join('')}</optgroup>`).join('')}</select></div>
-   <div class="f" id="mkObwW"><label>Obwód</label><select id="mkO"><option value="">— bez obwodu —</option>${circList().map(i=>`<option value="${i.id}" ${i.id===m.obw?'selected':''}>${esc(C.lab[i.id]+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</select></div>
+   <div class="f" id="mkObwW"><label>Obwód</label><select id="mkO"><option value="">— bez obwodu —</option>${circList().map(i=>`<option value="${i.id}" ${i.id===m.obw?'selected':''}>${esc(C.glab[i.id]+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</select></div>
    <div class="g2"><div class="f"><label>Etykieta</label><input id="mkL" value="${esc(m.lab)}" placeholder="np. adres pętli 1/12"></div>
    <div class="f"><label>Uwagi</label><input id="mkN" value="${esc(m.note)}" placeholder="np. h=110 cm"></div></div>
    ${P.ampio&&P.ampio.mods.length?`<div class="f"><label>Kanał Ampio</label><select id="mkA">${ampOpts}</select></div>`:''}
@@ -1773,7 +2009,7 @@ function rtDlg(rt,isNew){
   if(!rt)return;const pl=curPlan();
   $('dlg').innerHTML=`<h3>${isNew?'Nowa trasa':'Trasa'}</h3>
    <div class="f"><label>Instalacja</label><select id="rS">${Object.keys(RT_SYS).map(k=>`<option value="${k}" ${k===rt.sys?'selected':''}>${RT_SYS[k]}</option>`).join('')}</select></div>
-   <div class="f" id="rOW"><label>Obwód</label><select id="rO"><option value="">—</option>${circList().map(i=>`<option value="${i.id}" ${i.id===rt.obw?'selected':''}>${esc(C.lab[i.id]+' '+(i.name||''))}</option>`).join('')}</select></div>
+   <div class="f" id="rOW"><label>Obwód</label><select id="rO"><option value="">—</option>${circList().map(i=>`<option value="${i.id}" ${i.id===rt.obw?'selected':''}>${esc(C.glab[i.id]+' '+(i.name||''))}</option>`).join('')}</select></div>
    <div class="g2"><div class="f"><label>Przewód / opis</label><input id="rL" list="cabs" value="${esc(rt.lab)}" placeholder="np. YnTKSY 1x2x0,8"><datalist id="cabs"><option value="YDYp 3x1,5"><option value="YDYp 3x2,5"><option value="YDY 5x2,5"><option value="YnTKSY 1x2x0,8"><option value="HTKSHekw PH90 1x2x0,8"><option value="YTDY 6x0,5"><option value="UTP kat. 6"><option value="Ampio CAN"></datalist></div>
    <div class="f"><label>Uwagi</label><input id="rN" value="${esc(rt.note)}" placeholder="np. pętla 1, w rurce RL 18"></div></div>
    <div class="bar"><button class="btn p" id="rOk">Zapisz</button><button class="btn d" id="rDel">Usuń trasę</button></div>`;
@@ -1787,15 +2023,213 @@ function planPrintHtml(){
   const used=new Set((pl.marks||[]).map(m=>m.t));
   const circ=circList().filter(i=>(pl.marks||[]).some(m=>m.obw===i.id)||(pl.routes||[]).some(r=>r.obw===i.id));
   return `<div style="display:flex;justify-content:space-between;font-size:10pt;border-bottom:1.5px solid #000;margin-bottom:2mm"><b>${esc(P.name)} – ${esc(pl.name)}</b><span>${esc(P.addr)} · ${esc(today())}</span></div>
-   <svg class="pmain" viewBox="0 0 ${pl.w} ${pl.h}" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif"><image href="${IMG[pl.id]}" width="${pl.w}" height="${pl.h}"/>${overlaySvg(pl,true)}</svg>
+   <svg class="pmain" viewBox="0 0 ${pl.w} ${pl.h}" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif"><image href="${IMG[pl.id]}" width="${pl.w}" height="${pl.h}" opacity="${pl.bg||1}"/>${overlaySvg(pl,true)}</svg>
    <div style="margin-top:2mm;font-size:8pt;page-break-inside:avoid;display:grid;gap:1mm">
     <div><b>Legenda</b><br>${[...used].map(t=>`<span style="white-space:nowrap">${symIcon(t,18).replace('<svg','<svg style="vertical-align:middle"')} ${esc(SYM[t][0])}</span>`).join(' &nbsp; ')}</div>
-    <div><b>Obwody</b><br>${circ.map(i=>`<span class="sw" style="background:${circCol(i.id)}"></span>${esc(C.lab[i.id]+' '+(i.name||'')+' '+rating(i))}`).join(' &nbsp; ')||'—'}</div>
+    <div><b>Obwody</b><br>${circ.map(i=>`<span class="sw" style="background:${circCol(i.id)}"></span>${esc(C.glab[i.id]+' '+(i.name||'')+' '+rating(i))}`).join(' &nbsp; ')||'—'}</div>
    </div>`;
 }
 $('plPrint').onclick=()=>{$('planPrint').innerHTML=planPrintHtml();try{window.print();}catch(e){}};
 window.addEventListener('beforeprint',()=>{if(document.querySelector('#s-plan.on'))$('planPrint').innerHTML=planPrintHtml();});
 window.addEventListener('resize',()=>{if(document.querySelector('#s-plan.on'))fitV();});
+
+// ---------- ZADANIA / ZAKUPY / NOTATKI / HASŁA ----------
+const KB_COLS=[['todo','Do zrobienia'],['doing','W trakcie'],['wait','Czeka (materiał / klient)'],['done','Zrobione']];
+const PRIO=[['','zwykłe','#9ca3af'],['hi','ważne','#f59e0b'],['urg','pilne','#dc2626']];
+let NS='kb';
+function KB(){if(!P.kb)P.kb={cards:[]};return P.kb;}
+function SHOP(){if(!P.shop)P.shop=[];return P.shop;}
+function NOTES(){if(!P.notes)P.notes=[];return P.notes;}
+function renderNotes(){
+  document.querySelectorAll('#nsub button').forEach(b=>b.classList.toggle('on',b.dataset.ns===NS));
+  let h='';
+  if(NS==='kb'){
+    const cards=KB().cards;const td=today();
+    h=`<div class="kb">${KB_COLS.map(([c,n],ci)=>{const L=cards.filter(x=>x.col===c);
+      return `<div class="kcol"><div class="kh">${n} <span class="mut">${L.length}</span></div>
+      ${L.map(x=>`<div class="kc" data-card="${x.id}" style="border-left-color:${(PRIO.find(p=>p[0]===(x.pr||''))||PRIO[0])[2]}">
+        <div class="kt">${esc(x.t)}</div>
+        ${x.d?`<div class="kd">${esc(x.d.slice(0,80))}${x.d.length>80?'…':''}</div>`:''}
+        <div class="km">${x.due?`<span class="${x.due<td&&c!=='done'?'late':''}">📅 ${esc(x.due)}</span>`:''}${x.who?`<span>👤 ${esc(x.who)}</span>`:''}
+        <span style="flex:1"></span>${ci>0?`<button class="kmv" data-mv="${x.id}" data-dir="-1">◀</button>`:''}${ci<KB_COLS.length-1?`<button class="kmv" data-mv="${x.id}" data-dir="1">▶</button>`:''}</div></div>`).join('')}
+      <div class="kadd"><input placeholder="+ Dodaj kartę" data-kadd="${c}" enterkeyhint="done"></div></div>`;}).join('')}</div>
+      <p class="mut">Przesuwaj tablicę w bok. Strzałki ◀ ▶ przenoszą kartę między kolumnami, a stuknięcie w kartę otwiera szczegóły.</p>`;
+  }
+  if(NS==='shop'){
+    const L=SHOP();const left=L.filter(x=>!x.done).length;
+    h=`<div class="card"><div class="g3" style="grid-template-columns:2fr 1fr 1fr">
+       <div class="f"><label>Co kupić</label><input id="shN" list="shopSug" placeholder="np. YDYp 3x2,5"></div>
+       <div class="f"><label>Ilość</label><input id="shQ" inputmode="decimal" placeholder="1"></div>
+       <div class="f"><label>Jedn.</label><input id="shU" list="units" placeholder="szt."><datalist id="units"><option value="szt."><option value="m"><option value="kpl."><option value="op."><option value="krąg"></datalist></div></div>
+       <datalist id="shopSug">${[...new Set(DB.projects.flatMap(p=>(p.shop||[]).map(x=>x.n)))].slice(0,200).map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+       <div class="bar" style="margin:0"><button class="btn p" id="shAdd">Dodaj</button><button class="btn" id="shGen">⚡ Z projektu</button><button class="btn" id="shShare">Wyślij listę</button></div><div id="shMsg" class="mut"></div></div>
+      <div class="mut" style="margin-bottom:6px">Do kupienia: <b>${left}</b> z ${L.length}</div>`;
+    const grp={};L.forEach(x=>{const g=x.grp||'Inne';(grp[g]=grp[g]||[]).push(x);});
+    Object.keys(grp).forEach(g=>{
+      h+=`<div class="shg">${esc(g)}</div>`+grp[g].sort((a,b)=>a.done-b.done).map(x=>`<label class="todo ${x.done?'dn':''}"><input type="checkbox" data-shd="${x.id}" ${x.done?'checked':''}><span>${esc(x.n)}</span><b class="shq">${esc(x.q||'')} ${esc(x.u||'')}</b><button class="btn sm" type="button" data-she="${x.id}">✎</button></label>`).join('');
+    });
+    if(L.some(x=>x.done))h+=`<div class="bar"><button class="btn sm" id="shClr">Usuń kupione</button></div>`;
+  }
+  if(NS==='note'){
+    h=`<div class="bar" style="margin-top:0"><button class="btn p" id="ntAdd">+ Notatka</button></div>`;
+    NOTES().slice().sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||b.ts-a.ts).forEach(n=>{h+=`<div class="card" data-note="${n.id}" style="cursor:pointer"><b>${n.pin?'📌 ':''}${esc(n.t||'Notatka')}</b><div class="mut" style="white-space:pre-wrap;margin-top:4px">${esc((n.x||'').slice(0,240))}${(n.x||'').length>240?'…':''}</div><small class="mut">${new Date(n.ts).toLocaleString('pl-PL')}</small></div>`;});
+    if(!NOTES().length)h+='<div class="card mut">Notatki do projektu, np. ustalenia z klientem, wymiary, numery seryjne, telefony do innych ekip.</div>';
+  }
+  if(NS==='vault')h=vaultHtml();
+  $('notesBody').innerHTML=h;
+  bindNotes();
+}
+function cardDlg(x,col){
+  const isNew=!x;x=x||{id:uid(),col:col||'todo',t:'',d:'',due:'',who:'',pr:'',ts:Date.now()};
+  const E=JSON.parse(JSON.stringify(x));
+  $('dlg').innerHTML=`<h3>${isNew?'Nowa karta':'Karta'}</h3>
+   <div class="f"><label>Tytuł</label><input id="kT" value="${esc(E.t)}" placeholder="np. Dokupić RCD 4P 40A"></div>
+   <div class="f"><label>Opis</label><textarea id="kD" rows="4">${esc(E.d)}</textarea></div>
+   <div class="g3"><div class="f"><label>Termin</label><input id="kDue" type="date" value="${esc(E.due)}"></div>
+   <div class="f"><label>Kto</label><input id="kW" list="whos" value="${esc(E.who)}"><datalist id="whos">${[...new Set(KB().cards.map(c=>c.who).filter(Boolean))].map(w=>`<option value="${esc(w)}">`).join('')}</datalist></div>
+   <div class="f"><label>Priorytet</label><select id="kP">${PRIO.map(p=>`<option value="${p[0]}" ${p[0]===(E.pr||'')?'selected':''}>${p[1]}</option>`).join('')}</select></div></div>
+   <div class="f"><label>Kolumna</label><div class="chips">${KB_COLS.map(([c,n])=>`<button type="button" class="chip ${c===E.col?'on':''}" data-kcol="${c}">${n}</button>`).join('')}</div></div>
+   <div class="bar"><button class="btn p" id="kOk">Zapisz</button><button class="btn" id="kNo">Anuluj</button>${isNew?'':'<button class="btn d" id="kDel">Usuń</button>'}</div>`;
+  $('dlg').querySelectorAll('[data-kcol]').forEach(b=>b.onclick=()=>{E.col=b.dataset.kcol;$('dlg').querySelectorAll('[data-kcol]').forEach(q=>q.classList.toggle('on',q===b));});
+  $('kNo').onclick=closeDlg;
+  $('kOk').onclick=()=>{E.t=$('kT').value.trim()||'(bez tytułu)';E.d=$('kD').value.trim();E.due=$('kDue').value;E.who=$('kW').value.trim();E.pr=$('kP').value;
+    const cs=KB().cards;const i=cs.findIndex(c=>c.id===E.id);if(i<0)cs.push(E);else cs[i]=E;save();closeDlg();renderNotes();};
+  if($('kDel'))$('kDel').onclick=()=>{KB().cards=KB().cards.filter(c=>c.id!==E.id);save();closeDlg();renderNotes();};
+  $('ov').classList.add('on');
+}
+function shopGen(){
+  const key=it=>{
+    if(it.kind==='mcb')return ['Aparaty',`Wyłącznik nadprądowy ${it.char}${it.In} ${it.poles}P`];
+    if(it.kind==='rcbo')return ['Aparaty',`RCBO ${it.char}${it.In} ${it.idn}mA ${it.poles>=3?'3P+N':'1P+N'}`];
+    if(it.kind==='rcd')return ['Aparaty',`Wyłącznik różnicowoprądowy ${it.poles>=3?'4P':'2P'} ${it.In}A ${it.idn}mA typ ${it.rtype}`];
+    if(it.kind==='main')return ['Aparaty',`Rozłącznik izolacyjny ${it.poles}P ${it.In}A`];
+    if(it.kind==='spd')return ['Aparaty',`Ogranicznik przepięć SPD ${it.spdt}`];
+    if(it.kind==='lamp')return ['Aparaty','Lampki kontrolne faz'];
+    if(it.kind==='ampio'){const m=ampMod(it.ampio);return ['Ampio',m?m.type:'Moduł Ampio'];}
+    return ['Aparaty',it.name||'Inny aparat'];
+  };
+  const cnt={};const add=(g,n,q,u)=>{const k=g+'|'+n;cnt[k]=cnt[k]||{g,n,q:0,u};cnt[k].q+=q;};
+  P.boards.forEach(b=>{
+    if(b.items.length)add('Rozdzielnice',`Obudowa rozdzielnicy ${b.rows}×${b.mpr} mod. (${b.name})`,1,'szt.');
+    b.items.forEach(it=>{const [g,n]=key(it);add(g,n,1,'szt.');});
+  });
+  if(P.ampio)P.ampio.mods.filter(m=>!(+m.din>0)).forEach(m=>add('Ampio',m.type,1,'szt.'));
+  (P.plans||[]).forEach(pl=>(pl.marks||[]).forEach(m=>{const sy=SYM[m.t];if(sy)add('Osprzęt – '+SYS[sy[1]].n,sy[0],1,'szt.');}));
+  const L=SHOP();let nNew=0,nUpd=0;
+  Object.values(cnt).forEach(c=>{
+    const ak=c.g+'|'+c.n;const ex=L.find(x=>x.auto===ak);
+    if(ex){if(+ex.q!==c.q){ex.q=String(c.q);nUpd++;}}else{L.push({id:uid(),n:c.n,q:String(c.q),u:c.u,grp:c.g,auto:ak,done:false});nNew++;}
+  });
+  save();renderNotes();$('shMsg').textContent=`Dodano ${nNew}, zaktualizowano ${nUpd} pozycji (z rozdzielnic, rzutów i Ampio).`;
+}
+function shopText(){
+  const L=SHOP().filter(x=>!x.done);const grp={};L.forEach(x=>{(grp[x.grp||'Inne']=grp[x.grp||'Inne']||[]).push(x);});
+  return `Lista zakupów – ${P.name}${P.addr?' ('+P.addr+')':''}\n`+Object.keys(grp).map(g=>`\n${g}:\n`+grp[g].map(x=>`- ${x.n}${x.q?' – '+x.q+' '+(x.u||''):''}`).join('\n')).join('\n');
+}
+function shopEdit(x){
+  $('dlg').innerHTML=`<h3>Pozycja</h3><div class="f"><label>Nazwa</label><input id="seN" value="${esc(x.n)}"></div>
+   <div class="g3"><div class="f"><label>Ilość</label><input id="seQ" value="${esc(x.q||'')}"></div><div class="f"><label>Jedn.</label><input id="seU" value="${esc(x.u||'')}"></div><div class="f"><label>Grupa</label><input id="seG" value="${esc(x.grp||'')}" placeholder="np. Kable"></div></div>
+   <div class="bar"><button class="btn p" id="seOk">Zapisz</button><button class="btn d" id="seDel">Usuń</button></div>`;
+  $('seOk').onclick=()=>{x.n=$('seN').value.trim()||x.n;x.q=$('seQ').value.trim();x.u=$('seU').value.trim();x.grp=$('seG').value.trim();delete x.auto;save();closeDlg();renderNotes();};
+  $('seDel').onclick=()=>{P.shop=SHOP().filter(q=>q.id!==x.id);save();closeDlg();renderNotes();};
+  $('ov').classList.add('on');
+}
+function noteDlg(n){
+  const isNew=!n;n=n||{id:uid(),t:'',x:'',ts:Date.now(),pin:false};
+  $('dlg').innerHTML=`<h3>${isNew?'Nowa notatka':'Notatka'}</h3><div class="f"><label>Tytuł</label><input id="nT" value="${esc(n.t)}"></div>
+   <div class="f"><label>Treść</label><textarea id="nX" rows="10">${esc(n.x)}</textarea></div>
+   <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="nP" ${n.pin?'checked':''} style="width:22px;height:22px"> 📌 Przypnij na górze</label>
+   <div class="bar"><button class="btn p" id="nOk">Zapisz</button><button class="btn" id="nNo">Anuluj</button>${isNew?'':'<button class="btn d" id="nDel">Usuń</button>'}</div>`;
+  $('nNo').onclick=closeDlg;
+  $('nOk').onclick=()=>{n.t=$('nT').value.trim();n.x=$('nX').value;n.pin=$('nP').checked;n.ts=Date.now();if(isNew)NOTES().push(n);save();closeDlg();renderNotes();};
+  if($('nDel'))$('nDel').onclick=()=>{if(!$('nDel').dataset.c){$('nDel').dataset.c=1;$('nDel').textContent='Na pewno?';return;}P.notes=NOTES().filter(q=>q.id!==n.id);save();closeDlg();renderNotes();};
+  $('ov').classList.add('on');
+}
+function bindNotes(){
+  const b=$('notesBody');
+  b.querySelectorAll('[data-kadd]').forEach(inp=>inp.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const v=inp.value.trim();if(!v)return;
+    KB().cards.push({id:uid(),col:inp.dataset.kadd,t:v,d:'',due:'',who:'',pr:'',ts:Date.now()});save();const c=inp.dataset.kadd;renderNotes();const n=$('notesBody').querySelector(`[data-kadd="${c}"]`);if(n)n.focus();}));
+  if($('shAdd')){
+    const add=()=>{const n=$('shN').value.trim();if(!n)return;SHOP().push({id:uid(),n,q:$('shQ').value.trim(),u:$('shU').value.trim(),grp:'Dopisane',done:false});save();renderNotes();$('shN').focus();};
+    $('shAdd').onclick=add;$('shN').addEventListener('keydown',e=>{if(e.key==='Enter')add();});
+    $('shGen').onclick=shopGen;
+    $('shShare').onclick=async()=>{const t=shopText();try{if(navigator.share){await navigator.share({title:'Lista zakupów',text:t});return;}}catch(e){if(e&&e.name==='AbortError')return;}
+      try{await navigator.clipboard.writeText(t);$('shMsg').textContent='Skopiowano listę – wklej w WhatsApp / SMS.';}catch(e){$('shMsg').textContent='Nie udało się skopiować.';}};
+    if($('shClr'))$('shClr').onclick=()=>{P.shop=SHOP().filter(x=>!x.done);save();renderNotes();};
+  }
+  if($('ntAdd'))$('ntAdd').onclick=()=>noteDlg(null);
+  vaultBind();
+}
+$('notesBody').addEventListener('click',e=>{
+  const mv=e.target.closest('[data-mv]');if(mv&&mv.classList.contains('kmv')){e.stopPropagation();const c=KB().cards.find(x=>x.id===mv.dataset.mv);const i=KB_COLS.findIndex(k=>k[0]===c.col)+(+mv.dataset.dir);if(KB_COLS[i]){c.col=KB_COLS[i][0];save();renderNotes();}return;}
+  const cd=e.target.closest('[data-card]');if(cd){cardDlg(KB().cards.find(x=>x.id===cd.dataset.card));return;}
+  const se=e.target.closest('[data-she]');if(se){e.preventDefault();shopEdit(SHOP().find(x=>x.id===se.dataset.she));return;}
+  const nt=e.target.closest('[data-note]');if(nt){noteDlg(NOTES().find(x=>x.id===nt.dataset.note));return;}
+});
+$('notesBody').addEventListener('change',e=>{const t=e.target;if(t.dataset.shd){const x=SHOP().find(q=>q.id===t.dataset.shd);x.done=t.checked;save();renderNotes();}});
+$('nsub').addEventListener('click',e=>{const b=e.target.closest('[data-ns]');if(!b)return;NS=b.dataset.ns;renderNotes();});
+
+// ---- sejf na hasła (AES-GCM, klucz z PIN-u)
+let VAULT=null,VTIMER=null;
+const b64=a=>btoa(String.fromCharCode(...new Uint8Array(a)));
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function vKey(pin,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
+async function vSave(){if(!VAULT)return;const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},VAULT.key,new TextEncoder().encode(JSON.stringify(VAULT.items)));
+  P.vault={salt:VAULT.salt,iv:b64(iv),ct:b64(ct)};save();}
+function vLock(){VAULT=null;if(VTIMER)clearTimeout(VTIMER);if(document.querySelector('#s-notes.on')&&NS==='vault')renderNotes();}
+function vTouch(){if(VTIMER)clearTimeout(VTIMER);VTIMER=setTimeout(vLock,5*60*1000);}
+function vaultHtml(){
+  if(!window.crypto||!crypto.subtle)return '<div class="card mut">Sejf działa tylko z bezpiecznego adresu (https), np. z GitHub Pages.</div>';
+  if(VAULT&&VAULT.pid!==P.id)VAULT=null;
+  if(!VAULT){
+    const has=!!P.vault;
+    return `<div class="card"><h3>🔒 Hasła i kody</h3>
+     <p class="mut">${has?'Wpisz PIN, żeby otworzyć sejf tego projektu.':'Ustaw PIN dla sejfu tego projektu (min. 4 cyfry). Hasła są zaszyfrowane i bez PIN-u nie da się ich odczytać – <b>zapomniany PIN = utracone hasła</b>.'}</p>
+     <div class="f"><input id="vPin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" style="font-size:22px;letter-spacing:6px;text-align:center"></div>
+     ${has?'':'<div class="f"><input id="vPin2" type="password" inputmode="numeric" autocomplete="off" placeholder="Powtórz PIN" style="font-size:22px;letter-spacing:6px;text-align:center"></div>'}
+     <button class="btn p" id="vOpen" style="width:100%">${has?'Otwórz':'Utwórz sejf'}</button><div id="vMsg" class="mut" style="margin-top:6px"></div></div>`;
+  }
+  return `<div class="bar" style="margin-top:0"><button class="btn p" id="vAdd">+ Wpis</button><button class="btn" id="vLockB">🔒 Zamknij</button></div>
+   ${VAULT.items.map(x=>`<div class="card vi"><div style="display:flex;gap:8px;align-items:center"><b style="flex:1">${esc(x.n)}</b><button class="btn sm" data-ve="${x.id}">✎</button></div>
+    ${x.l?`<div class="vr"><span class="mut">Login</span><code>${esc(x.l)}</code><button class="btn sm" data-vc="${x.id}" data-f="l">Kopiuj</button></div>`:''}
+    ${x.p?`<div class="vr"><span class="mut">Hasło</span><code data-vp="${x.id}">••••••</code><button class="btn sm" data-vs="${x.id}">👁</button><button class="btn sm" data-vc="${x.id}" data-f="p">Kopiuj</button></div>`:''}
+    ${x.x?`<div class="mut" style="white-space:pre-wrap">${esc(x.x)}</div>`:''}</div>`).join('')||'<div class="card mut">Pusto. Dodaj np. Wi-Fi klienta, kod serwisowy Satel, admin Ampio, NVR, router.</div>'}
+   <p class="mut">Sejf zamyka się sam po 5 minutach.</p>`;
+}
+function vaultBind(){
+  if($('vOpen'))$('vOpen').onclick=async()=>{
+    const pin=$('vPin').value.trim();if(pin.length<4){$('vMsg').textContent='PIN musi mieć co najmniej 4 znaki.';return;}
+    try{
+      if(!P.vault){if(pin!==$('vPin2').value.trim()){$('vMsg').textContent='PIN-y się różnią.';return;}
+        const salt=crypto.getRandomValues(new Uint8Array(16));VAULT={pid:P.id,salt:b64(salt),key:await vKey(pin,salt),items:[]};await vSave();}
+      else{const v=P.vault;const key=await vKey(pin,unb64(v.salt));
+        const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(v.iv)},key,unb64(v.ct));
+        VAULT={pid:P.id,salt:v.salt,key,items:JSON.parse(new TextDecoder().decode(pt))};}
+      vTouch();renderNotes();
+    }catch(e){$('vMsg').textContent='Zły PIN.';}
+  };
+  if($('vPin'))$('vPin').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('vPin2'))$('vOpen').click();});
+  if($('vLockB'))$('vLockB').onclick=vLock;
+  if($('vAdd'))$('vAdd').onclick=()=>vEdit(null);
+  $('notesBody').querySelectorAll('[data-ve]').forEach(b=>b.onclick=()=>vEdit(VAULT.items.find(x=>x.id===b.dataset.ve)));
+  $('notesBody').querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{vTouch();const c=$('notesBody').querySelector(`[data-vp="${b.dataset.vs}"]`);const x=VAULT.items.find(q=>q.id===b.dataset.vs);c.textContent=c.textContent==='••••••'?x.p:'••••••';});
+  $('notesBody').querySelectorAll('[data-vc]').forEach(b=>b.onclick=async()=>{vTouch();const x=VAULT.items.find(q=>q.id===b.dataset.vc);try{await navigator.clipboard.writeText(x[b.dataset.f]);b.textContent='✔';setTimeout(()=>b.textContent='Kopiuj',1200);}catch(e){}});
+}
+function vEdit(x){
+  const isNew=!x;x=x||{id:uid(),n:'',l:'',p:'',x:''};vTouch();
+  $('dlg').innerHTML=`<h3>${isNew?'Nowy wpis':'Wpis'}</h3>
+   <div class="f"><label>Nazwa</label><input id="veN" list="vsug" value="${esc(x.n)}"><datalist id="vsug"><option value="Wi-Fi klienta"><option value="Satel – kod serwisowy"><option value="Satel – kod użytkownika"><option value="Ampio – admin"><option value="Rejestrator NVR"><option value="Kamery"><option value="Router"><option value="Kontrola dostępu"><option value="Domofon"></datalist></div>
+   <div class="g2"><div class="f"><label>Login / użytkownik</label><input id="veL" value="${esc(x.l)}" autocomplete="off"></div>
+   <div class="f"><label>Hasło / kod</label><input id="veP" value="${esc(x.p)}" autocomplete="off"></div></div>
+   <div class="f"><label>Uwagi (IP, port, SSID…)</label><textarea id="veX" rows="3">${esc(x.x)}</textarea></div>
+   <div class="bar"><button class="btn p" id="veOk">Zapisz</button><button class="btn" id="veNo">Anuluj</button>${isNew?'':'<button class="btn d" id="veDel">Usuń</button>'}</div>`;
+  $('veNo').onclick=closeDlg;
+  $('veOk').onclick=async()=>{x.n=$('veN').value.trim()||'Wpis';x.l=$('veL').value;x.p=$('veP').value;x.x=$('veX').value;if(isNew)VAULT.items.push(x);await vSave();closeDlg();renderNotes();};
+  if($('veDel'))$('veDel').onclick=async()=>{VAULT.items=VAULT.items.filter(q=>q.id!==x.id);await vSave();closeDlg();renderNotes();};
+  $('ov').classList.add('on');
+}
 
 // ---------- BIBLIOTEKA SCHEMATÓW ----------
 let LIBTXT={},LIBTXT_OK=false,TAGF='',PINF=false,LV=null,LZ=1;
@@ -1933,7 +2367,7 @@ function libInfo(d){
 // ---------- start ----------
 load();render();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
-const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','lib','print','proj'].includes(h))tab(h);
+const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','notes','lib','print','proj'].includes(h))tab(h);
 </script>
 </body>
 </html>
