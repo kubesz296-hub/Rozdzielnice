@@ -152,6 +152,24 @@ table.tb th{background:#eee}
 .cdot{width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #9ca3af}
 .cdot.on{box-shadow:0 0 0 3px var(--acc)}
 .nopt{display:grid;gap:8px}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:6px}
+.cat{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 10px;font:inherit;font-size:14px;text-align:left}
+.cat span{font-size:22px}.cat b{margin-left:auto;color:var(--mut);font-size:13px}
+.crumb{color:var(--mut);align-self:center}
+.hit{display:block;width:100%;text-align:left;border:0;background:#fffbeb;color:#78350f;border-radius:6px;padding:4px 6px;margin-top:3px;font:inherit;font-size:12.5px}
+.hit.bm{display:inline-block;width:auto;background:#eef2ff;color:#3730a3;margin-right:4px}
+.pgw{position:static}.pgn{color:#d1d5db;font-size:11px;text-align:center;margin-top:6px}
+.lvpg{font-size:12px;color:#cbd5e1;white-space:nowrap}
+.boxs{background:#f0f9ff;border-radius:10px;padding:4px 10px;margin-bottom:10px}
+.bxr{display:grid;grid-template-columns:1fr 1.4fr auto;gap:4px;margin-bottom:4px}
+.bxr input{font:inherit;font-size:14px;padding:8px;border:1px solid var(--line);border-radius:8px;min-width:0}
+.phs{display:flex;gap:6px;flex-wrap:wrap}
+.ph{position:relative;width:76px;height:76px;border-radius:8px;overflow:hidden;background:#e5e7eb;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ph img{width:100%;height:100%;object-fit:cover}
+.ph.add{font-size:30px;color:var(--mut);border-style:dashed}
+.phx{position:absolute;top:2px;right:2px;border:0;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;line-height:22px;padding:0}
+.phv{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.phv.on{display:flex}.phv img{max-width:100%;max-height:85vh;object-fit:contain}
 /* ampio */
 
 .am{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.06);overflow:hidden}
@@ -317,6 +335,7 @@ table.tb th{background:#eee}
         <div id="plRtBar" class="bar" style="display:none;margin:0 0 8px">
           <span class="mut" style="align-self:center">Stukaj kolejne punkty trasy</span>
           <button class="btn sm" id="plRtUndo">↶ Cofnij</button>
+          <button class="btn sm" id="plCalB">📏 Skala</button>
           <button class="btn sm p" id="plRtEnd">✔ Zakończ</button>
         </div>
         <div id="plMsg" class="mut" style="min-height:18px;margin-bottom:4px"></div>
@@ -366,14 +385,14 @@ table.tb th{background:#eee}
   <!-- SCHEMATY -->
   <section class="sec" id="s-lib">
     <div class="bar" style="margin-top:0">
-      <input id="libQ" type="search" placeholder="Szukaj: Satel, zwora, MSERV, OUT2…" style="flex:1;min-width:150px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px">
+      <input id="libQ" type="search" placeholder="Szukaj: zwora, INTEGRA, OUT2, M-SERV…" style="flex:1;min-width:150px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px">
       <label class="btn p">+ Dodaj<input type="file" id="libFile" accept="application/pdf,image/*" multiple hidden></label>
     </div>
     <div class="chips" id="libTags" style="margin-bottom:8px"></div>
     <div id="libMsg" class="mut" style="margin-bottom:6px"></div>
     <div id="libList"></div>
     <p class="mut" id="libStore"></p>
-    <p class="mut">Biblioteka jest wspólna dla wszystkich projektów. Szuka w nazwach, tagach, notatkach i w treści PDF-ów (nie w skanach).</p>
+    <p class="mut">Biblioteka jest wspólna dla wszystkich projektów. Szuka w nazwach, producentach, tagach, notatkach, zakładkach i w treści PDF-ów (nie w skanach) – stuknij wynik „str. 12”, żeby otworzyć od razu tę stronę.</p>
   </section>
 
   <!-- WYDRUK -->
@@ -394,9 +413,10 @@ table.tb th{background:#eee}
   <!-- DANE PROJEKTU -->
   <section class="sec" id="s-proj">
     <div class="card">
-      <h3>Dane obiektu</h3>
+      <h3>Dane obiektu / klienta</h3>
       <div class="f"><label>Nazwa / klient</label><input id="dName"></div>
       <div class="f"><label>Adres</label><input id="dAddr"></div>
+      <div class="f"><label>Telefon klienta</label><input id="dPhone" type="tel" inputmode="tel"></div>
       <div class="g2">
         <div class="f"><label>Wykonał</label><input id="dAuthor"></div>
         <div class="f"><label>Data</label><input id="dDate" type="date"></div>
@@ -405,6 +425,7 @@ table.tb th{background:#eee}
         <div class="f"><label>Modułów w rzędzie</label><select id="dMpr"><option>12</option><option>14</option><option>18</option><option>24</option></select></div>
         <div class="f"><label>Liczba rzędów tablicy</label><select id="dRows"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
       </div>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px"><input type="checkbox" id="dComb" checked style="width:22px;height:22px;flex:none"><span>Szyna grzebieniowa 3F – fazy na zmianę wg pozycji (L1, L2, L3…)<br><small class="mut">Wyłącz, jeśli fazy łączysz przewodami i chcesz je ustawiać ręcznie.</small></span></label>
       <div class="g2">
         <div class="f"><label>Wsp. jednoczesności (dobór RCD)</label><select id="dKj"><option>0.4</option><option>0.5</option><option selected>0.6</option><option>0.7</option><option>0.8</option><option>1</option></select></div>
         <div class="f"><label>Max obwodów na jeden RCD</label><select id="dRcdMax"><option>3</option><option>4</option><option>5</option><option selected>6</option><option>8</option></select></div>
@@ -425,9 +446,10 @@ table.tb th{background:#eee}
 </main>
 
 <div class="lv" id="libView">
-  <div class="lvbar"><button class="btn sm" id="lvX">✕</button><b id="lvT"></b><button class="btn sm" id="lvM">−</button><button class="btn sm" id="lvP">+</button><button class="btn sm" id="lvI">ℹ Opis</button></div>
+  <div class="lvbar"><button class="btn sm" id="lvX">✕</button><b id="lvT"></b><span id="lvPg" class="lvpg"></span><button class="btn sm" id="lvM">−</button><button class="btn sm" id="lvP">+</button><button class="btn sm" id="lvToc">☰</button><button class="btn sm" id="lvBm">🔖</button><button class="btn sm" id="lvI">ℹ</button></div>
   <div id="lvBody"></div>
 </div>
+<div class="phv" id="phView"><img id="phImg" alt=""><button class="btn" id="phX">✕ Zamknij</button></div>
 <div class="ov" id="ov"><div class="dlg" id="dlg"></div></div>
 
 <script>
@@ -527,7 +549,43 @@ function weight(it){
   const I=parseFloat(it.In)||10;
   return (it.poles>=3?I*0.69:I*0.23)*0.4; // przybliżenie: 40% prądu znamionowego
 }
+const PHS=['L1','L2','L3'];
+const combOn=()=>curB().comb!==false;
+// fazy wg pozycji na szynie grzebieniowej 3F: L1,L2,L3,L1… (od pierwszego aparatu za RCD / rozłącznikiem, osobno w każdym rzędzie)
 function balance(){
+  if(!combOn())return balanceFree();
+  const ph={},L={L1:0,L2:0,L3:0};
+  P.layout.forEach(row=>{
+    let off=0,key=null;
+    row.forEach(id=>{
+      const it=byId(id);if(!it)return;
+      if(it.kind==='rcd'){if(it.poles>=3)ph[id]='3F';off=0;key=it.id;return;}
+      {const k=(it.kind==='mcb'&&it.rcd&&byId(it.rcd))?it.rcd:'-';if(k!==key){off=0;key=k;}}
+      if(['main','spd','lamp','ampio'].includes(it.kind)){if(it.kind!=='ampio')ph[id]=it.poles>=3?'3F':'';off=0;return;}
+      const r=it.kind==='mcb'&&it.rcd&&byId(it.rcd);
+      if(r&&r.poles<3&&it.poles<3)return; // pod RCD 2P – jedna faza całej grupy
+      if(it.kind==='other'&&!it.In){off+=it.mods;return;}
+      if(it.poles>=3){ph[id]='3F';const w=weight(it)/3;L.L1+=w;L.L2+=w;L.L3+=w;off+=3;return;}
+      const p=PHS[off%3];ph[id]=p;L[p]+=weight(it);off+=1;
+    });
+  });
+  const units=P.items.filter(i=>i.kind==='rcd'&&i.poles<3).map(r=>{const mem=P.items.filter(i=>i.kind==='mcb'&&i.rcd===r.id&&i.poles<3);return {r,mem,w:mem.reduce((a,m)=>a+weight(m),0)||1};});
+  units.filter(u=>u.r.phase!=='auto').forEach(u=>{const k=u.r.phase;L[k]+=u.w;[u.r,...u.mem].forEach(i=>ph[i.id]=k);});
+  units.filter(u=>u.r.phase==='auto').sort((a,b)=>b.w-a.w).forEach(u=>{const k=PHS.slice().sort((a,b)=>L[a]-L[b])[0];L[k]+=u.w;[u.r,...u.mem].forEach(i=>ph[i.id]=k);});
+  return {ph,L};
+}
+// kolejność obwodów tak, żeby przy fazach na zmianę obciążenie było równe
+function orderForComb(list,L){
+  const tri=list.filter(i=>i.poles>=3),one=list.filter(i=>i.poles<3).sort((a,b)=>weight(b)-weight(a));
+  tri.forEach(i=>{const w=weight(i)/3;PHS.forEach(k=>L[k]+=w);});
+  const q={L1:[],L2:[],L3:[]},loc={...L};
+  // ile pozycji przypada na każdą fazę przy cyklu L1,L2,L3
+  const slots={L1:0,L2:0,L3:0};one.forEach((_,i)=>slots[PHS[i%3]]++);
+  one.forEach(it=>{const k=PHS.filter(k=>q[k].length<slots[k]).sort((a,b)=>loc[a]-loc[b])[0];q[k].push(it);loc[k]+=weight(it);});
+  const out=[...tri];one.forEach((_,i)=>{const it=q[PHS[i%3]].shift();out.push(it);L[PHS[i%3]]+=weight(it);});
+  return out;
+}
+function balanceFree(){
   const ph={},L={L1:0,L2:0,L3:0};
   const units=[];
   P.items.forEach(it=>{
@@ -558,14 +616,16 @@ function balance(){
 function groups(){
   const top=P.items.filter(i=>['main','spd','lamp'].includes(i.kind));
   top.sort((a,b)=>['main','spd','lamp'].indexOf(a.kind)-['main','spd','lamp'].indexOf(b.kind));
-  const g=[];
+  const g=[];const comb=combOn();const L={L1:0,L2:0,L3:0};
   if(top.length)g.push(top.map(i=>i.id));
   P.items.filter(i=>i.kind==='rcd').forEach(r=>{
-    const mem=P.items.filter(i=>i.kind==='mcb'&&i.rcd===r.id);
-    mem.sort((a,b)=>(b.poles>=3)-(a.poles>=3));
+    let mem=P.items.filter(i=>i.kind==='mcb'&&i.rcd===r.id);
+    if(comb&&r.poles>=3)mem=orderForComb(mem,L);
+    else mem.sort((a,b)=>(b.poles>=3)-(a.poles>=3));
     g.push([r.id,...mem.map(m=>m.id)]);
   });
-  const rest=P.items.filter(i=>(i.kind==='mcb'&&!(i.rcd&&byId(i.rcd)))||i.kind==='rcbo'||i.kind==='other');
+  let rest=P.items.filter(i=>(i.kind==='mcb'&&!(i.rcd&&byId(i.rcd)))||i.kind==='rcbo'||i.kind==='other');
+  if(comb)rest=orderForComb(rest,L);
   rest.forEach(i=>g.push([i.id]));
   const amp=P.items.filter(i=>i.kind==='ampio');if(amp.length)g.push(amp.map(i=>i.id));
   return g;
@@ -872,7 +932,7 @@ function openEdit(it,isNew){
    <button class="btn" id="eCancel">Anuluj</button>
    ${!isNew?'<button class="btn d" id="eDel">Usuń</button>':''}
   </div>`;
-  const updPh=()=>{const p=+$('ePoles').value;const ok=F.phase.includes(k)&&((k==='rcd'||k==='rcbo')?p<=2:p<3);$('phWrap').style.display=ok?'':'none';};
+  const updPh=()=>{const p=+$('ePoles').value;const ok=F.phase.includes(k)&&((k==='rcd'||k==='rcbo')?p<=2:p<3)&&(!combOn()||(k==='rcd'&&p<=2));$('phWrap').style.display=ok?'':'none';};
   $('ePoles').onchange=()=>{$('eMods').value=defMods(k,+$('ePoles').value);updPh();};updPh();
   if(F.cable.includes(k)){
     const poles=()=>+$('ePoles').value||1;
@@ -1023,7 +1083,7 @@ $('bTpl').onclick=()=>{
   const r2=add('rcd',{poles:4,In:40,idn:30,rtype:'A'});
   add('mcb',{name:'Płyta indukcyjna',poles:3,In:20,cable:'4',rcd:r2.id,pkw:7});
   [['Gniazda kuchnia',16],['Piekarnik',16],['Zmywarka',16],['Pralka',16]].forEach(c=>add('mcb',{name:c[0],In:c[1],cable:'2.5',rcd:r2.id,pkw:c[0]==='Gniazda kuchnia'?'':2}));
-  add('mcb',{name:'Lodówka',In:16,cable:'2.5',noRcd:true});
+  add('rcbo',{name:'Lodówka',In:16,cable:'2.5',idn:30,rtype:'A'});
   render();tab('board');
 };
 
@@ -1032,39 +1092,105 @@ $('dKj').onchange=()=>{P.kj=+$('dKj').value;render();};
 $('dRcdMin').onchange=()=>{P.rcdMin=+$('dRcdMin').value;render();};
 $('dRcdMax').onchange=()=>{P.rcdMax=+$('dRcdMax').value;render();};
 function fillProj(){
-  $('dKj').value=String(P.kj||0.6);$('dRcdMax').value=String(P.rcdMax||6);$('dRcdMin').value=String(P.rcdMin||40);
+  $('dPhone').value=P.phone||'';
+  $('dKj').value=String(P.kj||0.6);$('dRcdMax').value=String(P.rcdMax||6);$('dRcdMin').value=String(P.rcdMin||40);$('dComb').checked=combOn();
   $('dName').value=P.name;$('dAddr').value=P.addr;$('dAuthor').value=P.author;$('dDate').value=P.date;
   $('dMpr').value=P.mpr;$('dRows').value=P.rows;$('dNote').value=P.note;
 }
-[['dName','name'],['dAddr','addr'],['dAuthor','author'],['dDate','date'],['dNote','note']].forEach(([i,k])=>$(i).addEventListener('input',()=>{P[k]=$(i).value;render();}));
+[['dName','name'],['dAddr','addr'],['dPhone','phone'],['dAuthor','author'],['dDate','date'],['dNote','note']].forEach(([i,k])=>$(i).addEventListener('input',()=>{P[k]=$(i).value;render();}));
 $('dMpr').onchange=()=>{P.mpr=+$('dMpr').value;if(!P.manual)autoLayout();render();};
+$('dComb').onchange=()=>{curB().comb=$('dComb').checked;if(!P.manual)autoLayout();render();};
 $('dRows').onchange=()=>{P.rows=+$('dRows').value;render();};
 $('pModW').onchange=()=>{P.modW=$('pModW').value;render();};
 $('pWhat').onchange=renderPrint;
 $('bPrint').onclick=()=>{try{window.print();}catch(e){}};
 
-function projDlg(){
-  $('dlg').innerHTML=`<h3>Projekty</h3>
-   ${DB.projects.map(p=>`<div class="proj ${p.id===P.id?'cur':''}"><div class="tx"><b>${esc(p.name)}</b><br><small class="mut">${esc(p.addr||'')} ${esc(p.date||'')} · ${p.boards.reduce((a,b)=>a+b.items.length,0)} ap.${(p.kb&&p.kb.cards.filter(c=>c.col!=='done').length)?` · 📋 ${p.kb.cards.filter(c=>c.col!=='done').length} zadań`:''}</small></div>
-     <button class="btn sm" data-po="${p.id}">Otwórz</button><button class="btn sm" data-pc="${p.id}">Kopiuj</button>${DB.projects.length>1?`<button class="btn sm d" data-pd="${p.id}">Usuń</button>`:''}</div>`).join('')}
-   <div class="bar"><button class="btn p" id="pNew">+ Nowy projekt</button><button class="btn" id="pClose">Zamknij</button></div>`;
-  $('pNew').onclick=()=>{const p=newProject();DB.projects.unshift(p);DB.current=p.id;P=p;SEL=null;closeDlg();render();tab('proj');};
-  $('pClose').onclick=closeDlg;
-  $('dlg').querySelectorAll('[data-po]').forEach(b=>b.onclick=()=>{DB.current=b.dataset.po;P=DB.projects.find(p=>p.id===DB.current);SEL=null;closeDlg();render();});
-  $('dlg').querySelectorAll('[data-pc]').forEach(b=>b.onclick=()=>{const s=DB.projects.find(p=>p.id===b.dataset.pc);const c=attachP(JSON.parse(JSON.stringify(s)));c.id=uid();c.name+=' (kopia)';(c.plans||[]).forEach(pl=>{const nid=uid();const old=pl.id;pl.id=nid;IDB.get(old).then(d=>{if(d){IMG[nid]=d;IDB.put(nid,d);}});});DB.projects.unshift(c);save();projDlg();});
-  $('dlg').querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{
-    if(!b.dataset.c){b.dataset.c=1;b.textContent='Na pewno?';return;}
-    DB.projects=DB.projects.filter(p=>p.id!==b.dataset.pd);
-    if(P.id===b.dataset.pd){P=DB.projects[0];DB.current=P.id;}
-    render();projDlg();
+let PQ='',PF='act',PS='used';
+function projHay(p){
+  const out=[];const add=(lab,t)=>{if(t)out.push([lab,String(t)]);};
+  add('Klient',p.name);add('Adres',p.addr);add('Telefon',p.phone);add('Wykonał',p.author);
+  if(p.meas){add('Zleceniodawca',p.meas.client);add('Protokół nr',p.meas.nr);}
+  const multi=p.boards.length>1;
+  p.boards.forEach(b=>{add('Rozdzielnica',b.name+(b.desc?' – '+b.desc:''));add('Zasilanie',b.note);
+    b.items.forEach(i=>{if(i.name)add('Obwód',(multi?b.name+': ':'')+i.name+(i.In?' '+(i.char||'')+i.In:''));if(i.note)add('Uwagi',i.note);});});
+  (p.notes||[]).forEach(n=>{add('Notatka',n.t);add('Notatka',n.x);});
+  (p.kb&&p.kb.cards||[]).forEach(c=>{add('Zadanie',c.t);add('Zadanie',c.d);});
+  (p.plans||[]).forEach(pl=>{add('Rzut',pl.name);(pl.marks||[]).forEach(m=>{if(m.con)add('Puszka '+(m.lab||''),m.con);(m.cab||[]).forEach(c=>add('Puszka '+(m.lab||''),c.t+' '+(c.d||'')));if(m.note)add('Rzut',m.note);});});
+  if(p.ampio)p.ampio.mods.forEach(m=>{add('Ampio',m.short+' '+m.type+' '+(m.name||''));});
+  return out;
+}
+function projRows(){
+  const q=PQ.trim().toLowerCase();const words=q.split(/\s+/).filter(Boolean);
+  let L=DB.projects.filter(p=>PF==='all'||(PF==='arch'?p.arch:!p.arch));
+  const res=[];
+  L.forEach(p=>{
+    let hit='';
+    if(words.length){
+      const hay=projHay(p);const all=hay.map(x=>x[1]).join(' ').toLowerCase();
+      if(!words.every(w=>all.includes(w)))return;
+      const f=hay.find(([l,t])=>words.some(w=>t.toLowerCase().includes(w))&&!['Klient'].includes(l))||hay.find(([l,t])=>words.some(w=>t.toLowerCase().includes(w)));
+      if(f&&f[0]!=='Klient'){const t=f[1];const w=words.find(w=>t.toLowerCase().includes(w));const k=t.toLowerCase().indexOf(w);hit=f[0]+': '+(k>40?'…':'')+t.slice(Math.max(0,k-40),k+60)+(t.length>k+60?'…':'');}
+    }
+    res.push({p,hit});
   });
+  res.sort((a,b)=>PS==='name'?(a.p.name||'').localeCompare(b.p.name||'','pl'):((b.p.used||0)-(a.p.used||0))||((b.p.date||'')>(a.p.date||'')?1:-1));
+  return res.map(({p,hit})=>{
+    const open=p.kb?p.kb.cards.filter(c=>c.col!=='done').length:0;
+    const nb=p.boards.length,na=p.boards.reduce((a,b)=>a+b.items.length,0);
+    return `<div class="proj ${p.id===P.id?'cur':''}" data-po="${p.id}" style="cursor:pointer"><div class="tx"><b>${p.arch?'🗄 ':''}${esc(p.name||'(bez nazwy)')}</b>
+      <small class="mut" style="display:block">${esc([p.addr,p.phone].filter(Boolean).join(' · '))}</small>
+      <small class="mut" style="display:block">${nb>1?nb+' rozdz. · ':''}${na} ap.${open?` · 📋 ${open}`:''}${p.used?' · otw. '+new Date(p.used).toLocaleDateString('pl-PL'):''}</small>
+      ${hit?`<small class="sn" style="display:block;color:#92400e;background:#fffbeb;border-radius:4px;padding:2px 4px;margin-top:2px">${esc(hit)}</small>`:''}</div>
+      <button class="btn sm" data-pm2="${p.id}">⋯</button></div>`;
+  }).join('')||'<p class="mut">Nic nie znaleziono.</p>';
+}
+function projDlg(){
+  const cnt=k=>DB.projects.filter(p=>k==='all'||(k==='arch'?p.arch:!p.arch)).length;
+  $('dlg').innerHTML=`<h3>Projekty / klienci</h3>
+   <div class="f"><input id="pQ" type="search" value="${esc(PQ)}" placeholder="Szukaj: nazwisko, adres, telefon, obwód, notatka…" style="font-size:17px"></div>
+   <div class="chips" style="margin-bottom:8px">
+    <button class="chip ${PF==='act'?'on':''}" data-pf="act">Aktywne (${cnt('act')})</button>
+    <button class="chip ${PF==='arch'?'on':''}" data-pf="arch">🗄 Archiwum (${cnt('arch')})</button>
+    <button class="chip ${PF==='all'?'on':''}" data-pf="all">Wszystkie</button>
+    <button class="chip" data-ps="1">${PS==='name'?'🔤 A–Z':'🕘 Ostatnie'}</button>
+   </div>
+   <div id="pList">${projRows()}</div>
+   <div class="bar"><button class="btn p" id="pNew">+ Nowy projekt</button><button class="btn" id="pClose">Zamknij</button></div>`;
+  $('pQ').oninput=()=>{PQ=$('pQ').value;$('pList').innerHTML=projRows();};
+  $('pNew').onclick=()=>{const p=newProject();p.used=Date.now();DB.projects.unshift(p);DB.current=p.id;P=p;SEL=null;PQ='';closeDlg();render();tab('proj');};
+  $('pClose').onclick=closeDlg;
+  $('dlg').querySelectorAll('[data-pf]').forEach(b=>b.onclick=()=>{PF=b.dataset.pf;projDlg();});
+  $('dlg').querySelector('[data-ps]').onclick=()=>{PS=PS==='name'?'used':'name';projDlg();};
+  $('pList').onclick=e=>{
+    const m=e.target.closest('[data-pm2]');if(m){e.stopPropagation();projMenu(DB.projects.find(p=>p.id===m.dataset.pm2));return;}
+    const o=e.target.closest('[data-po]');if(o){DB.current=o.dataset.po;P=DB.projects.find(p=>p.id===DB.current);P.used=Date.now();SEL=null;closeDlg();render();}
+  };
+  $('ov').classList.add('on');
+}
+function projMenu(p){
+  $('dlg').innerHTML=`<h3>${esc(p.name)}</h3><p class="mut">${esc([p.addr,p.phone].filter(Boolean).join(' · '))}</p>
+   <div class="nopt">
+    <button class="btn" id="pmO" style="text-align:left">📂 Otwórz</button>
+    <button class="btn" id="pmA" style="text-align:left">${p.arch?'↩ Przywróć z archiwum':'🗄 Do archiwum (zlecenie zakończone)'}</button>
+    <button class="btn" id="pmC" style="text-align:left">⧉ Kopiuj jako nowy projekt</button>
+    ${DB.projects.length>1?'<button class="btn d" id="pmD" style="text-align:left">🗑 Usuń</button>':''}
+   </div><div class="bar"><button class="btn" id="pmB">← Wróć</button></div>`;
+  $('pmB').onclick=projDlg;
+  $('pmO').onclick=()=>{DB.current=p.id;P=p;P.used=Date.now();SEL=null;closeDlg();render();};
+  $('pmA').onclick=()=>{p.arch=!p.arch;save();projDlg();};
+  $('pmC').onclick=()=>{const c=attachP(JSON.parse(JSON.stringify(p)));c.id=uid();c.name+=' (kopia)';c.arch=false;c.used=Date.now();(c.plans||[]).forEach(pl=>{const nid=uid();const old=pl.id;pl.id=nid;IDB.get(old).then(d=>{if(d){IMG[nid]=d;IDB.put(nid,d);}});});DB.projects.unshift(c);save();projDlg();};
+  if($('pmD'))$('pmD').onclick=()=>{
+    if(!$('pmD').dataset.c){$('pmD').dataset.c=1;$('pmD').textContent='🗑 Na pewno usunąć? (nie da się cofnąć)';return;}
+    DB.projects=DB.projects.filter(x=>x.id!==p.id);if(P.id===p.id){P=DB.projects[0];DB.current=P.id;}render();projDlg();
+  };
   $('ov').classList.add('on');
 }
 $('bProj').onclick=projDlg;
 
 $('bExp').onclick=async()=>{
   const o=JSON.parse(JSON.stringify(P));o._imgs={};
-  for(const pl of (P.plans||[])){const d=IMG[pl.id]||await IDB.get(pl.id);if(d)o._imgs[pl.id]=d;}
+  for(const pl of (P.plans||[])){const d=IMG[pl.id]||await IDB.get(pl.id);if(d)o._imgs[pl.id]=d;
+    for(const m of (pl.marks||[]))for(const id of (m.ph||[])){const q=await photoGet(id);if(q)o._imgs['ph_'+id]=q;}}
   const blob=new Blob([JSON.stringify(o)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=(P.name||'rozdzielnica').replace(/[^\w\-ąćęłńóśźżĄĆĘŁŃÓŚŹŻ ]+/g,'_')+'.json';
@@ -1082,7 +1208,8 @@ function importP(o){
   if(!o||(!Array.isArray(o.items)&&!Array.isArray(o.boards)))throw 0;
   attachP(o);
   const imgs=o._imgs||{};delete o._imgs;
-  (o.plans||[]).forEach(pl=>{const nid=uid();if(imgs[pl.id]){IMG[nid]=imgs[pl.id];IDB.put(nid,imgs[pl.id]);}pl.id=nid;});
+  (o.plans||[]).forEach(pl=>{const nid=uid();if(imgs[pl.id]){IMG[nid]=imgs[pl.id];IDB.put(nid,imgs[pl.id]);}pl.id=nid;
+    (pl.marks||[]).forEach(m=>(m.ph||[]).forEach(id=>{const q=imgs['ph_'+id];if(q){IMG['ph_'+id]=q;IDB.put('ph_'+id,q);}}));});
   o.id=uid();DB.projects.unshift(o);DB.current=o.id;P=o;SEL=null;render();tab('board');
 }
 $('fImp').onchange=e=>{
@@ -1593,31 +1720,33 @@ const IDB={db:null,
 const IMG={};
 const SYS={
   el:{n:'Elektryka',col:'#111'},al:{n:'Alarm',col:'#15803d'},pz:{n:'Ppoż.',col:'#dc2626'},
-  tv:{n:'CCTV / LAN',col:'#2563eb'},kd:{n:'Kontrola dostępu',col:'#7c3aed'},am:{n:'Ampio',col:'#0f766e'}
+  tv:{n:'CCTV / LAN',col:'#2563eb'},kd:{n:'Kontrola dostępu',col:'#7c3aed'},am:{n:'Ampio',col:'#0f766e'},
+  led:{n:'LED',col:'#ca8a04'}
 };
 // typ: [nazwa, system, kształt, tekst, prefiks numeracji]
 const SYM={
   gn:['Gniazdo','el','gn',''],gn2:['Gniazdo podwójne','el','gn','2'],gnh:['Gniazdo hermet. IP44','el','gn','H'],gn3:['Gniazdo siłowe 3F','el','gn','3F'],
-  pl:['Punkt świetlny','el','lt',''],kk:['Kinkiet','el','kk',''],led:['Taśma / linia LED','el','box','LED'],
+  pl:['Punkt świetlny','el','lt',''],kk:['Kinkiet','el','kk',''],
   la:['Łącznik','el','sw','1'],prz:['Przycisk / dzwonek','el','sw','P'],la2:['Łącznik podwójny','el','sw','2'],lsch:['Łącznik schodowy','el','sw','S'],
-  pu:['Puszka','el','dot',''],odb:['Odbiornik (płyta, piec…)','el','box','O'],rg:['Rozdzielnica','el','box','RG'],
+  pu:['Puszka podtynkowa','el','dot','','P'],pug:['Puszka głęboka / elektroniczna','el','dot','','P'],pun:['Puszka natynkowa / hermetyczna','el','dot','','P'],pur:['Puszka rozgałęźna','el','dot','','P'],odb:['Odbiornik (płyta, piec…)','el','box','O'],rg:['Rozdzielnica','el','box','RG'],
   pir:['Czujka ruchu PIR','al','tri','PIR','C'],kon:['Kontaktron','al','box','K','K'],man:['Manipulator','al','box','MAN','M'],syg:['Sygnalizator','al','box','SYG','S'],cen:['Centrala alarmowa','al','box','CA','CA'],
   dym:['Czujka dymu','pz','circ','D','D'],ciep:['Czujka ciepła','pz','circ','T','T'],rop:['ROP (przycisk)','pz','box','R','R'],sp:['Sygnalizator ppoż.','pz','box','SP','SP'],cpp:['Centrala ppoż.','pz','box','CSP','CSP'],
   cam:['Kamera','tv','tri','CAM','CAM'],nvr:['Rejestrator NVR','tv','box','NVR','N'],lan:['Gniazdo LAN','tv','box','RJ','L'],ap:['Access point','tv','circ','AP','AP'],
   czy:['Czytnik','kd','box','CZ','CZ'],zw:['Zwora / elektrozaczep','kd','box','ZW','ZW'],ppw:['Przycisk wyjścia','kd','box','PW','PW'],dom:['Domofon / wideo','kd','box','DOM','DOM'],
+  ocz:['Oczko / downlight','led','x',''],spot:['Spot / reflektor','led','x',''],led:['Oprawa liniowa LED','led','x',''],zasl:['Zasilacz LED','led','x','','ZL'],stl:['Sterownik / ściemniacz LED','led','x','','SL'],czl:['Czujnik ruchu (schody LED)','led','x','','CR'],
   dot:['Panel Ampio DOT','am','box','DOT','DOT'],amod:['Moduł Ampio (puszka)','am','box','A','A'],ts:['Czujnik temp.','am','circ','t°','TS']
 };
-const RT_SYS={el:'230 V',al:'Alarm',pz:'Ppoż.',tv:'LAN / CCTV',kd:'Kontrola dostępu',am:'Magistrala CAN'};
+const RT_SYS={led:'Taśma LED',el:'230 V',al:'Alarm',pz:'Ppoż.',tv:'LAN / CCTV',kd:'Kontrola dostępu',am:'Magistrala CAN'};
 const CIRC_COL=['#e11d48','#2563eb','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#65a30d','#ea580c','#4f46e5','#0d9488','#a16207','#9333ea','#dc2626','#0284c7','#15803d'];
-let INS_SYS='el',PL=null,PM='pan',V={s:1,tx:0,ty:0},RT=null,MOVE=null,LAY={el:1,al:1,pz:1,tv:1,kd:1,am:1};
+let INS_SYS='el',PL=null,PM='pan',V={s:1,tx:0,ty:0},RT=null,MOVE=null,LAY={el:1,al:1,pz:1,tv:1,kd:1,am:1,led:1};
 function plans(){if(!P.plans)P.plans=[];return P.plans;}
 function curPlan(){const ps=plans();if(!PL||!ps.find(p=>p.id===PL))PL=ps[0]?ps[0].id:null;return ps.find(p=>p.id===PL)||null;}
 function circList(){return allLayout().map(byIdAll).filter(i=>i&&['mcb','rcbo','other'].includes(i.kind));}
 function circCol(id){const l=circList();const i=l.findIndex(x=>x.id===id);return i<0?'#111':CIRC_COL[i%CIRC_COL.length];}
-function markCol(m){const sy=SYM[m.t];if(!sy)return '#111';return sy[1]==='el'?(m.obw?circCol(m.obw):'#111'):SYS[sy[1]].col;}
+function markCol(m){const sy=SYM[m.t];if(!sy)return '#111';if(sy[1]==='led')return SYS.led.col;return sy[1]==='el'?(m.obw?circCol(m.obw):'#111'):SYS[sy[1]].col;}
 function markLabel(m){
   const sy=SYM[m.t];if(!sy)return m.lab||'';
-  if(sy[1]==='el'){const it=m.obw&&byIdAll(m.obw);return (it?C.glab[it.id]:'')+(m.lab?' '+m.lab:'');}
+  if(sy[1]==='el'||sy[1]==='led'){const it=m.obw&&byIdAll(m.obw);return ((it?C.glab[it.id]:'')+(m.lab?' '+m.lab:'')).trim();}
   return m.lab||'';
 }
 function symDraw(t,c){ // rysunek w jednostkach (ok. -1..1), c = kolor
@@ -1646,8 +1775,16 @@ function symDraw(t,c){ // rysunek w jednostkach (ok. -1..1), c = kolor
     case 'la': return sw(1);
     case 'la2': return sw(2);
     case 'lsch': return sw(1,true);
+    case 'ocz': return `<circle r="0.75" ${W}/><circle r="0.32" ${F}/>`;
+    case 'spot': return `<circle r="0.55" ${W}/><circle r="0.2" ${F}/><path d="M0.4 -0.4 L1.05 -1.05 M0.55 0 H1.25 M0.4 0.4 L1.05 1.05" ${N}/>`;
+    case 'zasl': return box(2.1,1.3)+tx(-0.45,0,'~',0.8)+`<line x1="0" y1="-0.55" x2="0" y2="0.55" ${S}/>`+tx(0.5,0.02,'=',0.8);
+    case 'stl': return box(2.1,1.3)+`<path d="M-0.7 0.35 L-0.2 -0.35 L0.2 0.15 L0.7 -0.35" ${N}/>`;
+    case 'czl': return `<circle cy="0.45" r="0.42" ${W}/><path d="M-0.55 -0.15 A0.8 0.8 0 0 1 0.55 -0.15" ${N}/><path d="M-0.95 -0.55 A1.3 1.3 0 0 1 0.95 -0.55" ${N}/>`;
     case 'prz': return `<circle r="0.6" ${W}/><circle r="0.25" ${F}/>`;
-    case 'pu': return `<circle r="0.32" ${F}/>`;
+    case 'pu': return `<circle r="0.5" ${W}/><circle r="0.2" ${F}/>`;
+    case 'pug': return `<circle r="0.62" ${W}/><circle r="0.38" ${N} stroke-width="0.09"/><circle r="0.16" ${F}/>`;
+    case 'pun': return `<rect x="-0.55" y="-0.55" width="1.1" height="1.1" rx="0.1" ${W}/><circle r="0.2" ${F}/>`;
+    case 'pur': return `<circle r="0.42" ${F}/><line x1="-0.75" y1="0" x2="0.75" y2="0" ${S}/><line x1="0" y1="-0.75" x2="0" y2="0.75" ${S}/>`;
     case 'odb': return box(1.8,1.3)+tx(0,0,'M',0.8);
     case 'rg': return box(2.2,1.3)+`<path d="M-1.1 0.65 L1.1 -0.65 L1.1 0.65 Z" ${F}/>`;
     case 'pir': return `<circle cy="0.45" r="0.42" ${W}/><path d="M-0.55 -0.15 A0.8 0.8 0 0 1 0.55 -0.15" ${N}/><path d="M-0.95 -0.55 A1.3 1.3 0 0 1 0.95 -0.55" ${N}/>`;
@@ -1686,17 +1823,25 @@ function overlaySvg(pl,forPrint){
   if(WALL&&WALL.pts.length&&!forPrint&&PM==='draw'){h+=`<path d="${pathD(WALL.pts)}" fill="none" stroke="${DC}" stroke-width="${dWidth(pl,'wall')}" stroke-linecap="square" opacity="0.7"/>`+WALL.pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${s*0.18}" fill="#f59e0b"/>`).join('');}
   (pl.routes||[]).forEach(rt=>{
     if(!LAY[rt.sys]&&!forPrint)return;
-    const c=rt.sys==='el'&&rt.obw?circCol(rt.obw):SYS[rt.sys].col;
+    const c=rt.sys==='el'&&rt.obw?circCol(rt.obw):(SYS[rt.sys]||SYS.led).col;
     const pts=rt.pts.map(p=>p.join(',')).join(' ');
+    if(rt.sys==='led'){
+      h+=`<g data-rt="${rt.id}"><polyline points="${pts}" fill="none" stroke="transparent" stroke-width="${s*0.8}"/><polyline points="${pts}" fill="none" stroke="#fde047" stroke-width="${s*0.55}" stroke-linejoin="round" stroke-linecap="round" opacity="0.7"/><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="${s*0.16}" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const a=rt.pts[0],b=rt.pts[1];h+=`<text x="${(a[0]+b[0])/2}" y="${(a[1]+b[1])/2-s*0.45}" font-size="${s*0.42}" fill="#854d0e" text-anchor="middle" stroke="#fff" stroke-width="${s*0.1}" paint-order="stroke" font-weight="700">${esc(ledLabel(pl,rt))}</text></g>`;
+      return;
+    }
     h+=`<g data-rt="${rt.id}"><polyline points="${pts}" fill="none" stroke="transparent" stroke-width="${s*0.8}"/><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="${s*0.14}" stroke-dasharray="${rt.sys==='el'?'none':s*0.5+' '+s*0.25}" stroke-linejoin="round"/>`;
-    const lab=(rt.sys==='el'&&rt.obw&&byIdAll(rt.obw)?C.glab[rt.obw]+' ':'')+(rt.lab||'');
+    const tl=routeTotal(pl,rt);
+    const lab=(rt.sys==='el'&&rt.obw&&byIdAll(rt.obw)?C.glab[rt.obw]+' ':'')+(rt.lab||'')+(tl!=null?' · '+fm(tl)+' m':'');
     if(lab&&rt.pts.length>1){const a=rt.pts[0],b=rt.pts[1];h+=`<text x="${(a[0]+b[0])/2}" y="${(a[1]+b[1])/2-s*0.25}" font-size="${s*0.42}" fill="${c}" text-anchor="middle" stroke="#fff" stroke-width="${s*0.1}" paint-order="stroke" font-weight="700">${esc(lab)}</text>`;}
     h+='</g>';
   });
   (pl.marks||[]).forEach(m=>{
     const sy=SYM[m.t];if(!sy)return;if(!LAY[sy[1]]&&!forPrint)return;
-    h+=`<g data-mk="${m.id}" transform="translate(${m.x},${m.y})">${symSvg(m,s)}${!forPrint&&MOVE===m.id?`<circle r="${s}" fill="none" stroke="#f59e0b" stroke-width="${s*0.15}" stroke-dasharray="${s*0.3}"/>`:''}</g>`;
+    const info=!forPrint&&((m.ph||[]).length||m.con||(m.cab||[]).length)?`<text x="${-s*1.15}" y="${-s*0.55}" font-size="${s*0.55}">${(m.ph||[]).length?'📷':'📝'}</text>`:'';
+    h+=`<g data-mk="${m.id}" transform="translate(${m.x},${m.y})">${symSvg(m,s)}${info}${!forPrint&&MOVE===m.id?`<circle r="${s}" fill="none" stroke="#f59e0b" stroke-width="${s*0.15}" stroke-dasharray="${s*0.3}"/>`:''}</g>`;
   });
+  if(CAL&&!forPrint&&CAL.pts.length){h+=CAL.pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${s*0.3}" fill="none" stroke="#7c3aed" stroke-width="${s*0.12}"/>`).join('')+(CAL.pts.length>1?`<line x1="${CAL.pts[0][0]}" y1="${CAL.pts[0][1]}" x2="${CAL.pts[1][0]}" y2="${CAL.pts[1][1]}" stroke="#7c3aed" stroke-width="${s*0.12}" stroke-dasharray="${s*0.4}"/>`:'');}
   if(RT&&!forPrint&&RT.pts.length){
     const c=SYS[RT.sys]?SYS[RT.sys].col:'#f59e0b';
     h+=`<polyline points="${RT.pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#f59e0b" stroke-width="${s*0.18}"/>`+RT.pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${s*0.2}" fill="#f59e0b"/>`).join('');
@@ -1715,8 +1860,8 @@ async function renderPlan(keepView){
   if(!SYM[$('plSym').value]||SYM[$('plSym').value][1]!==INS_SYS)$('plSym').value=Object.keys(SYM).find(t=>SYM[t][1]===INS_SYS);
   const cur=$('plSym').value;
   $('plSysTabs').innerHTML=Object.keys(SYS).map(k=>`<button class="chip ${k===INS_SYS?'on':''}" data-isys="${k}"><span class="sw" style="background:${SYS[k].col}"></span>${SYS[k].n}</button>`).join('')+`<button class="chip" data-solo="1" title="Pokaż tylko tę instalację">👁 tylko ta</button>`;
-  $('plSymGrid').innerHTML=Object.keys(SYM).filter(t=>SYM[t][1]===INS_SYS).map(t=>`<button class="symb ${t===cur?'on':''}" data-isym="${t}">${symIcon(t,34)}<span>${esc(SYM[t][0])}</span></button>`).join('');
-  $('plObwW').style.display=INS_SYS==='el'?'':'none';
+  $('plSymGrid').innerHTML=(INS_SYS==='led'?`<button class="symb" data-ledstrip="1"><svg width="34" height="34" viewBox="0 0 34 34"><path d="M3 24 L14 12 L31 12" stroke="#fde047" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M3 24 L14 12 L31 12" stroke="#ca8a04" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg><span>Taśma LED – rysuj</span></button>`:'')+Object.keys(SYM).filter(t=>SYM[t][1]===INS_SYS).map(t=>`<button class="symb ${t===cur?'on':''}" data-isym="${t}">${symIcon(t,34)}<span>${esc(SYM[t][0])}</span></button>`).join('');
+  $('plObwW').style.display=INS_SYS==='el'||INS_SYS==='led'?'':'none';
   $('plLayers').style.display=PM==='ins'?'none':'';
   const ob=$('plObw').value;
   $('plObw').innerHTML='<option value="">— bez obwodu —</option>'+circList().map(i=>`<option value="${i.id}">${esc(C.glab[i.id]+' '+(i.name||'')+' '+rating(i))}</option>`).join('');
@@ -1732,9 +1877,115 @@ async function renderPlan(keepView){
   if(PM==='draw'){renderDrawBar();renderPlanSum();return;}
   if(!IMG[pl.id])$('plMsg').textContent='Brak obrazu rzutu w tym telefonie – wczytaj plik projektu z obrazami albo dodaj rzut ponownie.';
   else if(PM==='ins')$('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':'Stuknij na rzucie, żeby wstawić symbol. Stuknij symbol, żeby go edytować.';
-  else if(PM==='rt')$('plMsg').textContent='';
+  else if(PM==='rt')$('plMsg').textContent=pl.scale?'':'Ustaw 📏 Skalę, żeby długości kabli liczyły się same.';
+  else if(PM==='cal')$('plMsg').textContent=CAL&&CAL.pts.length?'📏 Teraz stuknij koniec odcinka.':'📏 Stuknij początek i koniec odcinka o znanej długości (np. ściana, drzwi 90 cm).';
   else $('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':'Przeciągaj, żeby przesuwać, dwoma palcami przybliżaj. Stuknij symbol, żeby edytować.';
   renderPlanSum();
+}
+// ---- puszki, zdjęcia, skala i długości kabli
+const BOX_T=['pu','pug','pun','pur'];
+let CAL=null;
+function routeLenPx(rt){let s=0;for(let i=1;i<rt.pts.length;i++)s+=Math.hypot(rt.pts[i][0]-rt.pts[i-1][0],rt.pts[i][1]-rt.pts[i-1][1]);return s;}
+function routeLen(pl,rt){if(!pl.scale)return null;return routeLenPx(rt)/pl.scale;}
+function routeTotal(pl,rt){const l=routeLen(pl,rt);if(l==null)return null;return l+(parseFloat(String(rt.extra||'').replace(',','.'))||0);}
+const fm=n=>(Math.round(n*10)/10).toString().replace('.',',');
+function cableStats(){
+  const per={};let noScale=0;
+  plans().forEach(pl=>(pl.routes||[]).forEach(rt=>{
+    if(rt.sys==='led')return;
+    const t=routeTotal(pl,rt);if(t==null){noScale++;return;}
+    const k=(rt.lab||'').trim()||('nieopisany ('+RT_SYS[rt.sys]+')');per[k]=per[k]||{m:0,n:0};per[k].m+=t;per[k].n++;
+  }));
+  return {per,noScale};
+}
+async function photoAdd(file){
+  const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(file);});
+  const im=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=url;});if(!im)return null;
+  const k=Math.min(1,1600/Math.max(im.width,im.height));const cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);
+  cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);const d=cv.toDataURL('image/jpeg',0.8);
+  const id=uid();await IDB.put('ph_'+id,d);IMG['ph_'+id]=d;return id;
+}
+async function photoGet(id){if(!IMG['ph_'+id])IMG['ph_'+id]=await IDB.get('ph_'+id);return IMG['ph_'+id];}
+function photoView(id){
+  photoGet(id).then(d=>{if(!d)return;$('phImg').src=d;$('phView').classList.add('on');});
+}
+function startCal(){CAL={pts:[]};PM='cal';MOVE=null;RT=null;renderPlan(true);$('plMsg').textContent='📏 Stuknij początek i koniec odcinka o znanej długości (np. ściana, drzwi 90 cm).';}
+function calTap(pl,x,y){
+  CAL.pts.push([Math.round(x),Math.round(y)]);
+  if(CAL.pts.length<2){renderPlan(true);$('plMsg').textContent='📏 Teraz stuknij koniec odcinka.';return;}
+  const px=Math.hypot(CAL.pts[1][0]-CAL.pts[0][0],CAL.pts[1][1]-CAL.pts[0][1]);
+  renderPlan(true);
+  $('dlg').innerHTML=`<h3>📏 Skala rzutu</h3><div class="f"><label>Ile metrów ma zaznaczony odcinek?</label><input id="calM" inputmode="decimal" placeholder="np. 4,5" style="font-size:20px"></div>
+   <div class="bar"><button class="btn p" id="calOk">Ustaw skalę</button><button class="btn" id="calNo">Anuluj</button></div>`;
+  $('calNo').onclick=()=>{CAL=null;PM='rt';RT={sys:'el',pts:[]};closeDlg();renderPlan(true);};
+  $('calOk').onclick=()=>{const m=parseFloat($('calM').value.replace(',','.'));if(!(m>0))return;pl.scale=px/m;CAL=null;PM='rt';RT={sys:'el',pts:[]};save();closeDlg();renderPlan(true);$('plMsg').textContent=`Skala ustawiona: 1 m = ${Math.round(pl.scale)} px. Długości tras liczą się same.`;};
+  $('ov').classList.add('on');setTimeout(()=>{const e=$('calM');if(e)e.focus();},50);
+}
+function boxSection(m){
+  const cab=m.cab||[];
+  return `<div class="boxs"><div class="shg" style="margin-top:4px">📦 Zawartość puszki</div>
+   <div class="g2"><div class="f"><label>Wysokość montażu [cm]</label><input id="bxH" inputmode="numeric" value="${esc(m.h||'')}" placeholder="np. 30 / 110 / pod sufitem"></div>
+   <div class="f"><label>Średnica / typ</label><input id="bxD" list="bxDs" value="${esc(m.bd||'')}" placeholder="np. Ø60 głęboka"><datalist id="bxDs"><option value="Ø60 płytka"><option value="Ø60 głęboka"><option value="Ø80"><option value="podwójna Ø60"><option value="natynkowa IP55"><option value="rozgałęźna 100x100"></datalist></div></div>
+   <div class="f"><label>Przewody w puszce</label><div id="bxCab">${cab.map((c,i)=>bxRow(c,i)).join('')}</div><button class="btn sm" type="button" id="bxAdd">+ przewód</button></div>
+   <div class="f"><label>Połączenia / co jest w środku</label><textarea id="bxCon" rows="4" placeholder="np. L z F5 → łącznik salon (czarny), powrót do lampy szary; N mostek Wago 5x; PE razem; zapas 15 cm">${esc(m.con||'')}</textarea></div></div>`;
+}
+function bxRow(c,i){return `<div class="bxr" data-bx="${i}"><input data-k="t" list="cabs2" value="${esc(c.t||'')}" placeholder="YDYp 3x1,5"><input data-k="d" value="${esc(c.d||'')}" placeholder="skąd / dokąd, np. z RG, do lampy"><button type="button" class="btn sm d" data-bxx="${i}">✕</button></div>`;}
+function photoSection(m){
+  return `<div class="f"><label>📷 Zdjęcia</label><div class="phs" id="mkPh">${(m.ph||[]).map(id=>`<div class="ph" data-ph="${id}"><img data-phid="${id}" alt=""><button type="button" class="phx" data-phx="${id}">✕</button></div>`).join('')}
+   <label class="ph add">＋<input type="file" id="mkPhIn" accept="image/*" capture="environment" hidden></label></div></div>`;
+}
+async function fillThumbs(root){for(const im of root.querySelectorAll('img[data-phid]')){const d=await photoGet(im.dataset.phid);if(d)im.src=d;}}
+// ---- LED: taśmy, zasilacze, obliczenia
+const LED_PSU=[30,36,60,75,100,120,150,185,200,240,320,480,600];
+const LED_RUN={5:2,12:5,24:10,48:20}; // orientacyjna max długość zasilania z jednej strony [m]
+function ledDef(rt){if(!rt.led)rt.led={u:24,wpm:'9.6',typ:'mono',k:'3000K',ip:'IP20',prof:'nawierzchniowy',zas:'',ctl:''};return rt.led;}
+function ledCalc(pl,rt){
+  const L=ledDef(rt);const len=routeLen(pl,rt);const wpm=parseFloat(String(L.wpm).replace(',','.'))||0;const u=+L.u||24;
+  if(len==null)return {len:null,u,wpm};
+  const P=wpm*len,I=P/u,run=LED_RUN[u]||10,feeds=Math.max(1,Math.ceil(len/run));
+  return {len,u,wpm,P,I,run,feeds};
+}
+const psuFor=P=>LED_PSU.find(x=>x>=P*1.2)||Math.ceil(P*1.2/100)*100;
+function ledStrips(){const r=[];plans().forEach(pl=>(pl.routes||[]).forEach(rt=>{if(rt.sys==='led')r.push({pl,rt,c:ledCalc(pl,rt)});}));return r;}
+function stripsOfPsu(id){return ledStrips().filter(x=>ledDef(x.rt).zas===id);}
+function ledLabel(pl,rt){const L=ledDef(rt),c=ledCalc(pl,rt);return `LED ${L.u}V ${String(L.wpm).replace('.',',')}W/m`+(c.len!=null?` · ${fm(c.len)} m · ${Math.round(c.P)} W`:'');}
+function ledSection(pl,rt){
+  const L=ledDef(rt);const psus=plans().flatMap(p=>(p.marks||[]).filter(m=>m.t==='zasl').map(m=>({m,p})));
+  const sel=(id,o,v)=>`<select id="${id}">${o.map(x=>`<option value="${esc(x[0])}" ${String(x[0])===String(v)?'selected':''}>${esc(x[1])}</option>`).join('')}</select>`;
+  return `<div class="boxs" id="ledSec"><div class="shg" style="margin-top:4px">💡 Taśma LED</div>
+   <div class="g3"><div class="f"><label>Napięcie</label>${sel('lU',[[5,'5 V'],[12,'12 V'],[24,'24 V'],[48,'48 V']],L.u)}</div>
+   <div class="f"><label>Moc [W/m]</label><input id="lW" list="wpms" inputmode="decimal" value="${esc(L.wpm)}"><datalist id="wpms"><option value="4.8"><option value="7.2"><option value="9.6"><option value="14.4"><option value="19.2"><option value="24"></datalist></div>
+   <div class="f"><label>Rodzaj</label>${sel('lT',[['mono','jednobarwna'],['cct','CCT (barwa reg.)'],['rgb','RGB'],['rgbw','RGBW'],['cob','COB']],L.typ)}</div></div>
+   <div class="g3"><div class="f"><label>Barwa</label><input id="lK" list="kel" value="${esc(L.k)}"><datalist id="kel"><option value="2700K"><option value="3000K"><option value="4000K"><option value="6000K"></datalist></div>
+   <div class="f"><label>Szczelność</label>${sel('lIP',[['IP20','IP20'],['IP44','IP44'],['IP65','IP65'],['IP67','IP67']],L.ip)}</div>
+   <div class="f"><label>Profil</label>${sel('lPr',[['brak','bez profilu'],['nawierzchniowy','nawierzchniowy'],['wpuszczany','wpuszczany'],['narożny','narożny'],['schodowy','schodowy']],L.prof)}</div></div>
+   <div class="f"><label>Zasilacz</label>${sel('lZ',[['','— nie wskazano —'],...psus.map(x=>[x.m.id,(x.m.lab||'ZL')+(x.p.id!==pl.id?' ('+x.p.name+')':'')+(x.m.pw?' '+x.m.pw+'W':'')])],L.zas)}</div>
+   ${P.ampio&&P.ampio.mods.length?`<div class="f"><label>Sterowanie Ampio (wyjście)</label><select id="lC">${refOptions(L.ctl||'',y=>y.t==='out')}</select></div>`:''}
+   <div id="lCalc" class="mut"></div></div>`;
+}
+function ledCalcHtml(pl,rt){
+  const c=ledCalc(pl,rt);
+  if(c.len==null)return 'Ustaw 📏 skalę rzutu, żeby policzyć długość, moc i zasilacz.';
+  let h=`Długość <b>${fm(c.len)} m</b> · moc <b>${Math.round(c.P)} W</b> · prąd <b>${fm(c.I)} A</b> przy ${c.u} V.<br>Zasilacz (z zapasem 20%): <b>min. ${psuFor(c.P)} W ${c.u} V</b>.`;
+  if(c.feeds>1)h+=`<br><span style="color:var(--warn)">⚠ ${fm(c.len)} m przy ${c.u} V – zasil taśmę w ${c.feeds} miejscach (co ok. ${c.run} m) albo z dwóch stron, inaczej koniec będzie ciemniejszy.</span>`;
+  if(c.I>6)h+=`<br><span style="color:var(--warn)">⚠ Duży prąd – zasilaj z kilku punktów i daj odpowiedni przekrój przewodu od zasilacza.</span>`;
+  return h;
+}
+function psuSection(m){
+  const st=stripsOfPsu(m.id);const P=st.reduce((a,x)=>a+(x.c.P||0),0);const us=[...new Set(st.map(x=>x.c.u))];
+  return `<div class="boxs"><div class="shg" style="margin-top:4px">🔌 Zasilacz LED</div>
+   <div class="g2"><div class="f"><label>Moc zasilacza [W]</label><input id="zW" inputmode="numeric" value="${esc(m.pw||'')}" placeholder="${P?psuFor(P):''}"></div>
+   <div class="f"><label>Napięcie wyjściowe</label><select id="zU">${[5,12,24,48].map(u=>`<option value="${u}" ${String(m.pu||us[0]||24)===String(u)?'selected':''}>${u} V</option>`).join('')}</select></div></div>
+   <div class="mut">${st.length?`Podłączone taśmy: ${st.map(x=>fm(x.c.len||0)+' m').join(' + ')} = <b>${Math.round(P)} W</b>. Zalecany zasilacz: <b>${psuFor(P)} W</b>.`:'Brak przypisanych taśm – wskaż ten zasilacz w ustawieniach taśmy.'}
+   ${us.length>1?'<br><span style="color:var(--bad)">⚠ Taśmy o różnych napięciach na jednym zasilaczu!</span>':''}
+   ${m.pw&&P&&+m.pw<P*1.1?`<br><span style="color:var(--bad)">⚠ Zasilacz ${m.pw} W może być za słaby (potrzeba ok. ${Math.round(P*1.2)} W z zapasem).</span>`:''}</div></div>`;
+}
+function ledSum(){
+  const st=ledStrips();if(!st.length)return '';
+  const per={};st.forEach(({rt,c})=>{const L=ledDef(rt);const k=`Taśma LED ${L.typ==='mono'?'':L.typ.toUpperCase()+' '}${L.u}V ${String(L.wpm).replace('.',',')}W/m ${L.typ==='mono'||L.typ==='cct'?L.k:''} ${L.ip}`.replace(/\s+/g,' ').trim();per[k]=per[k]||{m:0,P:0,n:0};per[k].m+=c.len||0;per[k].P+=c.P||0;per[k].n++;});
+  const prof={};st.forEach(({rt,c})=>{const L=ledDef(rt);if(L.prof&&L.prof!=='brak'){prof[L.prof]=(prof[L.prof]||0)+(c.len||0);}});
+  const noPsu=st.filter(x=>!ledDef(x.rt).zas).length;
+  return {per,prof,noPsu,total:st.reduce((a,x)=>a+(x.c.P||0),0)};
 }
 function planStats(){
   const per={},tot={};
@@ -1755,6 +2006,13 @@ function renderPlanSum(){
   h+='</table>';
   if(Object.keys(tot).length){h+='<h3 style="margin-top:12px">Ilości (do zamówienia)</h3><table class="sumt">'+Object.keys(SYM).filter(t=>tot[t]).map(t=>`<tr><td><span class="sw" style="background:${SYS[SYM[t][1]].col}"></span>${SYM[t][0]}</td><td><b>${tot[t]}</b> szt.</td></tr>`).join('')+'</table>';}
   else h='<p class="mut">Brak symboli.</p>';
+  const cs=cableStats();
+  if(Object.keys(cs.per).length||cs.noScale){h+='<h3 style="margin-top:12px">Kable (z tras, z zapasem)</h3><table class="sumt">'+Object.keys(cs.per).sort().map(k=>`<tr><td>${esc(k)}</td><td><b>${fm(cs.per[k].m)} m</b> <span class="mut">(${cs.per[k].n} tras)</span></td></tr>`).join('')+'</table>'+(cs.noScale?`<p class="mut">${cs.noScale} tras bez długości – ustaw 📏 skalę na rzucie.</p>`:'');}
+  const ls=ledSum();
+  if(ls){h+='<h3 style="margin-top:12px">💡 LED</h3><table class="sumt">'+Object.keys(ls.per).map(k=>`<tr><td>${esc(k)}</td><td><b>${fm(ls.per[k].m)} m</b> · ${Math.round(ls.per[k].P)} W</td></tr>`).join('')+Object.keys(ls.prof).map(k=>`<tr><td>Profil ${esc(k)}</td><td><b>${fm(ls.prof[k])} m</b></td></tr>`).join('')+`<tr><td>Razem moc taśm</td><td><b>${Math.round(ls.total)} W</b></td></tr></table>`+(ls.noPsu?`<p class="mut">${ls.noPsu} taśm bez wskazanego zasilacza.</p>`:'')
+    +plans().flatMap(pl=>(pl.marks||[]).filter(m=>m.t==='zasl')).map(m=>{const P=stripsOfPsu(m.id).reduce((a,x)=>a+(x.c.P||0),0);return m.pw&&P&&+m.pw<P*1.1?`<p style="color:var(--bad)">⚠ Zasilacz ${esc(m.lab||'')} ${m.pw} W – za słaby na ${Math.round(P)} W taśm (zalecany ${psuFor(P)} W).</p>`:'';}).join('');}
+  const boxes=plans().flatMap(pl=>(pl.marks||[]).filter(m=>BOX_T.includes(m.t)));
+  if(boxes.length)h+=`<p class="mut" style="margin-top:8px">📦 Puszek: ${boxes.length}, opisanych: ${boxes.filter(m=>m.con||(m.cab||[]).length).length}, ze zdjęciem: ${boxes.filter(m=>(m.ph||[]).length).length}</p>`;
   $('plSum').innerHTML=h;
 }
 // ---- dodawanie rzutu
@@ -1813,8 +2071,10 @@ $('plCfg').onclick=()=>{
   const pl=curPlan();if(!pl)return;
   $('dlg').innerHTML=`<h3>Rzut</h3><div class="f"><label>Nazwa</label><input id="pcN" value="${esc(pl.name)}"></div>
    <div class="f"><label>Wielkość symboli</label><input id="pcS" type="range" min="${Math.round(pl.w/300)}" max="${Math.round(pl.w/40)}" value="${pl.sz}"></div>
+   <div class="f"><label>Skala (do długości kabli)</label><div class="bar" style="margin:0;align-items:center"><span class="mut">${pl.scale?'1 m = '+Math.round(pl.scale)+' px':'nie ustawiona'}</span><button class="btn sm" type="button" id="pcCal">📏 Ustaw skalę</button></div></div>
    <div class="f"><label>Wyblaknięcie tła (żeby Twoje symbole były wyraźniejsze)</label><input id="pcB" type="range" min="15" max="100" value="${Math.round((pl.bg||1)*100)}"></div>
    <div class="bar"><button class="btn p" id="pcOk">Zapisz</button><button class="btn" id="pcNo">Anuluj</button><button class="btn d" id="pcDel">Usuń rzut</button></div>`;
+  $('pcCal').onclick=()=>{closeDlg();startCal();};
   $('pcS').oninput=()=>{pl.sz=+$('pcS').value;$('plSvg').innerHTML=overlaySvg(pl,false);};
   $('pcB').oninput=()=>{pl.bg=+$('pcB').value/100;$('plImg').style.opacity=pl.bg;};
   $('pcOk').onclick=()=>{pl.name=$('pcN').value.trim()||pl.name;save();closeDlg();renderPlan(true);};
@@ -1824,6 +2084,7 @@ $('plCfg').onclick=()=>{
   $('ov').classList.add('on');
 };
 document.addEventListener('click',e=>{
+  const ls=e.target.closest('[data-ledstrip]');if(ls){PM='rt';RT={sys:'led',pts:[]};LAY.led=1;renderPlan(true);$('plMsg').textContent='💡 Stukaj punkty wzdłuż taśmy LED, potem ✔ Zakończ.';return;}
   const is=e.target.closest('[data-isys]');if(is){INS_SYS=is.dataset.isys;LAY[INS_SYS]=1;renderPlan(true);return;}
   const ib=e.target.closest('[data-isym]');if(ib){$('plSym').value=ib.dataset.isym;renderPlan(true);return;}
   const so=e.target.closest('[data-solo]');if(so){Object.keys(LAY).forEach(k=>LAY[k]=k===INS_SYS?1:0);renderPlan(true);return;}
@@ -1831,11 +2092,13 @@ document.addEventListener('click',e=>{
   const m=e.target.closest('[data-pm]');if(m&&m.classList.contains('btn')&&m.closest('#plUI')){PM=m.dataset.pm;MOVE=null;if(PM==='draw'&&DT==='wall')WALL=WALL||{pts:[]};if(PM==='rt'){RT={sys:'el',pts:[]};}else RT=null;renderPlan(true);}
 });
 $('plFit').onclick=fitV;
+$('plCalB').onclick=startCal;
 $('plRtUndo').onclick=()=>{if(RT&&RT.pts.length){RT.pts.pop();renderPlan(true);}};
 $('plRtEnd').onclick=()=>{
   if(!RT||RT.pts.length<2){$('plMsg').textContent='Trasa musi mieć co najmniej 2 punkty.';return;}
-  const pl=curPlan();const rt={id:uid(),sys:'el',pts:RT.pts,obw:$('plObw').value||'',lab:'',note:''};
-  pl.routes=pl.routes||[];pl.routes.push(rt);RT={sys:'el',pts:[]};save();renderPlan(true);rtDlg(rt,true);
+  const pl=curPlan();const sy=RT.sys||'el';const rt={id:uid(),sys:sy,pts:RT.pts,obw:sy==='el'?($('plObw').value||''):'',lab:'',note:''};
+  if(sy==='led')ledDef(rt);
+  pl.routes=pl.routes||[];pl.routes.push(rt);RT={sys:sy,pts:[]};save();renderPlan(true);rtDlg(rt,true);
 };
 // ---- rysowanie: ołówek, ściany, tekst, korektor, gumka
 let DT='pen',DC='#111',DW='m',WALL=null,LIVE=null;
@@ -1916,7 +2179,7 @@ $('plNew').onclick=()=>{
   pass($('plFile2'));pass($('plCam'));
   $('plBlank').onclick=()=>{$('plBlankW').style.display='';};
   $('dlg').querySelectorAll('[data-bl]').forEach(b=>b.onclick=async()=>{const s=blankSheet(b.dataset.bl);const nm=$('plBN').value.trim()||'Szkic';closeDlg();
-    await addPlanImage(s.url,s.W,s.H,nm);const pl=curPlan();pl.grid=s.g;save();PM='draw';DT='wall';WALL={pts:[]};renderPlan();});
+    await addPlanImage(s.url,s.W,s.H,nm);const pl=curPlan();pl.grid=s.g;pl.scale=s.g*2;save();PM='draw';DT='wall';WALL={pts:[]};renderPlan();});
   $('ov').classList.add('on');
 };
 // ---- gesty
@@ -1965,6 +2228,7 @@ $('plNew').onclick=()=>{
   function tap(cx,cy){
     const pl=curPlan();if(!pl)return;
     const [x,y]=imgPt(cx,cy);
+    if(PM==='cal'&&CAL){calTap(pl,x,y);return;}
     if(PM==='rt'){RT.pts.push([Math.round(x),Math.round(y)]);renderPlan(true);return;}
     if(PM==='draw'){
       if(DT==='wall'){WALL=WALL||{pts:[]};WALL.pts.push(snapWall(pl,x,y));renderPlan(true);return;}
@@ -1982,7 +2246,7 @@ $('plNew').onclick=()=>{
     if(PM==='ins'){
       if(x<0||y<0||x>pl.w||y>pl.h)return;
       const t=$('plSym').value;const sy=SYM[t];
-      const m={id:uid(),t,x:Math.round(x),y:Math.round(y),obw:sy[1]==='el'?$('plObw').value:'',lab:'',note:'',amp:''};
+      const m={id:uid(),t,x:Math.round(x),y:Math.round(y),obw:(sy[1]==='el'||sy[1]==='led')?$('plObw').value:'',lab:'',note:'',amp:''};
       if(sy[4]){let n=0;plans().forEach(p=>(p.marks||[]).forEach(q=>{if(SYM[q.t]&&SYM[q.t][4]===sy[4])n++;}));m.lab=sy[4]+(n+1);}
       pl.marks=pl.marks||[];pl.marks.push(m);save();renderPlan(true);
     }
@@ -1991,30 +2255,65 @@ $('plNew').onclick=()=>{
 function mkDlg(m){
   if(!m)return;const pl=curPlan();const sy=SYM[m.t];
   const ampOpts=P.ampio?refOptions(m.amp||'',()=>true):'';
-  $('dlg').innerHTML=`<h3>${esc(sy[0])}</h3>
+  const E={cab:JSON.parse(JSON.stringify(m.cab||[])),ph:(m.ph||[]).slice()};
+  const isBox=()=>BOX_T.includes($('mkT').value);
+  $('dlg').innerHTML=`<h3>${esc(sy[0])}${m.lab?' '+esc(m.lab):''}</h3>
    <div class="f"><label>Symbol</label><select id="mkT">${[sy[1]].map(k=>`<optgroup label="${SYS[k].n}">${Object.keys(SYM).filter(t=>SYM[t][1]===k).map(t=>`<option value="${t}" ${t===m.t?'selected':''}>${SYM[t][0]}</option>`).join('')}</optgroup>`).join('')}</select></div>
    <div class="f" id="mkObwW"><label>Obwód</label><select id="mkO"><option value="">— bez obwodu —</option>${circList().map(i=>`<option value="${i.id}" ${i.id===m.obw?'selected':''}>${esc(C.glab[i.id]+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</select></div>
-   <div class="g2"><div class="f"><label>Etykieta</label><input id="mkL" value="${esc(m.lab)}" placeholder="np. adres pętli 1/12"></div>
+   <div class="g2"><div class="f"><label>Etykieta</label><input id="mkL" value="${esc(m.lab)}" placeholder="np. P3, adres pętli 1/12"></div>
    <div class="f"><label>Uwagi</label><input id="mkN" value="${esc(m.note)}" placeholder="np. h=110 cm"></div></div>
+   <div id="mkBox">${BOX_T.includes(m.t)?boxSection(m):''}</div>
+   ${m.t==='zasl'?psuSection(m):''}
+   <datalist id="cabs2"><option value="YDYp 3x1,5"><option value="YDYp 3x2,5"><option value="YDYp 4x1,5"><option value="YDY 5x2,5"><option value="YDY 5x4"><option value="YnTKSY 1x2x0,8"><option value="YTDY 6x0,5"><option value="UTP kat. 6"><option value="Ampio CAN"></datalist>
+   ${photoSection(E)}
    ${P.ampio&&P.ampio.mods.length?`<div class="f"><label>Kanał Ampio</label><select id="mkA">${ampOpts}</select></div>`:''}
    <div class="bar"><button class="btn p" id="mkOk">Zapisz</button><button class="btn" id="mkMv">Przesuń</button><button class="btn" id="mkCp">Kopiuj</button><button class="btn d" id="mkDel">Usuń</button></div>`;
-  const vis=()=>{$('mkObwW').style.display=SYM[$('mkT').value][1]==='el'?'':'none';};vis();$('mkT').onchange=vis;
-  $('mkOk').onclick=()=>{m.t=$('mkT').value;m.obw=SYM[m.t][1]==='el'?$('mkO').value:'';m.lab=$('mkL').value.trim();m.note=$('mkN').value.trim();if($('mkA'))m.amp=$('mkA').value;save();closeDlg();renderPlan(true);};
+  const vis=()=>{const k=SYM[$('mkT').value][1];$('mkObwW').style.display=k==='el'||k==='led'?'':'none';};vis();
+  const readCab=()=>{if(!$('bxCab'))return;$('bxCab').querySelectorAll('[data-bx]').forEach(r=>{const i=+r.dataset.bx;E.cab[i]={t:r.querySelector('[data-k=t]').value.trim(),d:r.querySelector('[data-k=d]').value.trim()};});};
+  const bindBox=()=>{
+    if(!$('bxAdd'))return;
+    $('bxAdd').onclick=()=>{readCab();E.cab.push({t:'',d:''});$('bxCab').innerHTML=E.cab.map((c,i)=>bxRow(c,i)).join('');bindX();const r=$('bxCab').lastElementChild;if(r)r.querySelector('input').focus();};
+    const bindX=()=>$('bxCab').querySelectorAll('[data-bxx]').forEach(b=>b.onclick=()=>{readCab();E.cab.splice(+b.dataset.bxx,1);$('bxCab').innerHTML=E.cab.map((c,i)=>bxRow(c,i)).join('');bindX();});
+    bindX();
+  };
+  bindBox();
+  $('mkT').onchange=()=>{vis();if(isBox()&&!$('bxAdd')){$('mkBox').innerHTML=boxSection(Object.assign({},m,{cab:E.cab}));bindBox();}if(!isBox())$('mkBox').innerHTML='';};
+  const bindPh=()=>{
+    fillThumbs($('mkPh'));
+    $('mkPh').querySelectorAll('[data-ph]').forEach(d=>d.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(d.dataset.ph);});
+    $('mkPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(x=>x!==b.dataset.phx);IDB.del('ph_'+b.dataset.phx);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();});
+    $('mkPhIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const id=await photoAdd(f);if(!id)return;E.ph.push(id);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();};
+  };
+  bindPh();
+  $('mkOk').onclick=()=>{m.t=$('mkT').value;m.obw=['el','led'].includes(SYM[m.t][1])?$('mkO').value:'';m.lab=$('mkL').value.trim();m.note=$('mkN').value.trim();if($('mkA'))m.amp=$('mkA').value;
+    if(BOX_T.includes(m.t)&&$('bxH')){readCab();m.cab=E.cab.filter(c=>c.t||c.d);m.h=$('bxH').value.trim();m.bd=$('bxD').value.trim();m.con=$('bxCon').value.trim();}
+    if(m.t==='zasl'&&$('zW')){m.pw=$('zW').value.trim();m.pu=$('zU').value;}
+    m.ph=E.ph.slice();save();closeDlg();renderPlan(true);};
   $('mkMv').onclick=()=>{MOVE=m.id;closeDlg();renderPlan(true);};
   $('mkCp').onclick=()=>{INS_SYS=SYM[m.t][1];$('plSym').value=m.t;if(m.obw)$('plObw').value=m.obw;PM='ins';closeDlg();renderPlan(true);};
-  $('mkDel').onclick=()=>{pl.marks=pl.marks.filter(q=>q.id!==m.id);save();closeDlg();renderPlan(true);};
+  $('mkDel').onclick=()=>{if(!$('mkDel').dataset.c&&((m.ph||[]).length||m.con)){$('mkDel').dataset.c=1;$('mkDel').textContent='Usunąć z opisem i zdjęciami?';return;}(m.ph||[]).forEach(id=>IDB.del('ph_'+id));pl.marks=pl.marks.filter(q=>q.id!==m.id);save();closeDlg();renderPlan(true);};
   $('ov').classList.add('on');
 }
+$('phX').onclick=()=>$('phView').classList.remove('on');
+$('phView').onclick=e=>{if(e.target.id==='phView')$('phView').classList.remove('on');};
 function rtDlg(rt,isNew){
   if(!rt)return;const pl=curPlan();
   $('dlg').innerHTML=`<h3>${isNew?'Nowa trasa':'Trasa'}</h3>
    <div class="f"><label>Instalacja</label><select id="rS">${Object.keys(RT_SYS).map(k=>`<option value="${k}" ${k===rt.sys?'selected':''}>${RT_SYS[k]}</option>`).join('')}</select></div>
    <div class="f" id="rOW"><label>Obwód</label><select id="rO"><option value="">—</option>${circList().map(i=>`<option value="${i.id}" ${i.id===rt.obw?'selected':''}>${esc(C.glab[i.id]+' '+(i.name||''))}</option>`).join('')}</select></div>
-   <div class="g2"><div class="f"><label>Przewód / opis</label><input id="rL" list="cabs" value="${esc(rt.lab)}" placeholder="np. YnTKSY 1x2x0,8"><datalist id="cabs"><option value="YDYp 3x1,5"><option value="YDYp 3x2,5"><option value="YDY 5x2,5"><option value="YnTKSY 1x2x0,8"><option value="HTKSHekw PH90 1x2x0,8"><option value="YTDY 6x0,5"><option value="UTP kat. 6"><option value="Ampio CAN"></datalist></div>
+   <div id="rLed">${rt.sys==='led'?ledSection(pl,rt):''}</div>
+   <div class="g2"><div class="f"><label id="rLL">${rt.sys==='led'?'Opis / producent taśmy':'Przewód / opis'}</label><input id="rL" list="cabs" value="${esc(rt.lab)}" placeholder="np. YnTKSY 1x2x0,8"><datalist id="cabs"><option value="YDYp 3x1,5"><option value="YDYp 3x2,5"><option value="YDY 5x2,5"><option value="YnTKSY 1x2x0,8"><option value="HTKSHekw PH90 1x2x0,8"><option value="YTDY 6x0,5"><option value="UTP kat. 6"><option value="Ampio CAN"></datalist></div>
    <div class="f"><label>Uwagi</label><input id="rN" value="${esc(rt.note)}" placeholder="np. pętla 1, w rurce RL 18"></div></div>
+   <div class="g2"><div class="f"><label>Długość z rzutu</label><div style="padding:10px 0;font-weight:700">${pl.scale?fm(routeLen(pl,rt))+' m':'<span class="mut">ustaw 📏 skalę</span>'}</div></div>
+   <div class="f"><label>Zapas / podejścia [m]</label><input id="rX" inputmode="decimal" value="${esc(rt.extra||'')}" placeholder="np. 2"></div></div>
    <div class="bar"><button class="btn p" id="rOk">Zapisz</button><button class="btn d" id="rDel">Usuń trasę</button></div>`;
-  const vis=()=>{$('rOW').style.display=$('rS').value==='el'?'':'none';};vis();$('rS').onchange=vis;
-  $('rOk').onclick=()=>{rt.sys=$('rS').value;rt.obw=rt.sys==='el'?$('rO').value:'';rt.lab=$('rL').value.trim();rt.note=$('rN').value.trim();save();closeDlg();renderPlan(true);};
+  const vis=()=>{$('rOW').style.display=$('rS').value==='el'?'':'none';
+    if($('rS').value==='led'&&!$('ledSec')){ledDef(rt);$('rLed').innerHTML=ledSection(pl,rt);bindLed();}
+    if($('rS').value!=='led')$('rLed').innerHTML='';};
+  const readLed=()=>{if(!$('ledSec'))return;const L=ledDef(rt);L.u=+$('lU').value;L.wpm=$('lW').value.trim();L.typ=$('lT').value;L.k=$('lK').value.trim();L.ip=$('lIP').value;L.prof=$('lPr').value;L.zas=$('lZ').value;if($('lC'))L.ctl=$('lC').value;};
+  const bindLed=()=>{if(!$('ledSec'))return;const upd=()=>{const bak=JSON.stringify(rt.led);readLed();$('lCalc').innerHTML=ledCalcHtml(pl,rt);};$('ledSec').addEventListener('input',upd);$('ledSec').addEventListener('change',upd);upd();};
+  bindLed();vis();$('rS').onchange=vis;
+  $('rOk').onclick=()=>{rt.sys=$('rS').value;if(rt.sys==='led')readLed();rt.obw=rt.sys==='el'?$('rO').value:'';rt.lab=$('rL').value.trim();rt.note=$('rN').value.trim();rt.extra=$('rX').value.trim();save();closeDlg();renderPlan(true);};
   $('rDel').onclick=()=>{pl.routes=pl.routes.filter(q=>q.id!==rt.id);save();closeDlg();renderPlan(true);};
   $('ov').classList.add('on');
 }
@@ -2027,7 +2326,17 @@ function planPrintHtml(){
    <div style="margin-top:2mm;font-size:8pt;page-break-inside:avoid;display:grid;gap:1mm">
     <div><b>Legenda</b><br>${[...used].map(t=>`<span style="white-space:nowrap">${symIcon(t,18).replace('<svg','<svg style="vertical-align:middle"')} ${esc(SYM[t][0])}</span>`).join(' &nbsp; ')}</div>
     <div><b>Obwody</b><br>${circ.map(i=>`<span class="sw" style="background:${circCol(i.id)}"></span>${esc(C.glab[i.id]+' '+(i.name||'')+' '+rating(i))}`).join(' &nbsp; ')||'—'}</div>
-   </div>`;
+   </div>${planBoxTable(pl)}`;
+}
+function planBoxTable(pl){
+  const bx=(pl.marks||[]).filter(m=>BOX_T.includes(m.t)&&(m.con||(m.cab||[]).length||m.h||m.bd));
+  const rts=(pl.routes||[]).filter(r=>r.sys!=='led'&&(r.lab||routeTotal(pl,r)!=null));
+  let h='';
+  if(bx.length)h+=`<div style="page-break-before:always"></div><b style="font-size:10pt">Opis puszek – ${esc(pl.name)}</b><table><tr><th>Puszka</th><th>Typ / wys.</th><th>Przewody</th><th>Połączenia</th></tr>${bx.map(m=>`<tr><td><b>${esc(m.lab||'')}</b> ${esc(markLabel(m).replace(m.lab||'',''))}</td><td>${esc([m.bd,m.h?'h='+m.h+' cm':''].filter(Boolean).join(', '))}</td><td>${(m.cab||[]).map(c=>esc(c.t+(c.d?' – '+c.d:''))).join('<br>')}</td><td style="white-space:pre-wrap">${esc(m.con||'')}</td></tr>`).join('')}</table>`;
+  const leds=(pl.routes||[]).filter(r=>r.sys==='led');
+  if(leds.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Taśmy LED</b><table><tr><th>Taśma</th><th>Długość</th><th>Moc</th><th>Zasilacz</th><th>Profil</th><th>Uwagi</th></tr>${leds.map(r=>{const L=ledDef(r),c=ledCalc(pl,r);const z=L.zas&&plans().flatMap(p=>p.marks||[]).find(m=>m.id===L.zas);return `<tr><td>${esc(L.u+'V '+L.wpm+'W/m '+L.typ+' '+(L.k||'')+' '+L.ip)}</td><td>${c.len!=null?fm(c.len)+' m':''}</td><td>${c.P!=null?Math.round(c.P)+' W':''}</td><td>${z?esc((z.lab||'ZL')+(z.pw?' '+z.pw+' W':'')):'–'}</td><td>${esc(L.prof||'')}</td><td>${esc(r.lab||'')} ${esc(r.note||'')}</td></tr>`;}).join('')}</table>`;
+  if(rts.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Trasy kabli</b><table><tr><th>Instalacja</th><th>Przewód</th><th>Obwód</th><th>Długość</th><th>Uwagi</th></tr>${rts.map(r=>{const t=routeTotal(pl,r);return `<tr><td>${RT_SYS[r.sys]}</td><td>${esc(r.lab||'')}</td><td>${r.obw&&C.glab[r.obw]?esc(C.glab[r.obw]):''}</td><td>${t!=null?fm(t)+' m':''}</td><td>${esc(r.note||'')}</td></tr>`;}).join('')}</table>`;
+  return h;
 }
 $('plPrint').onclick=()=>{$('planPrint').innerHTML=planPrintHtml();try{window.print();}catch(e){}};
 window.addEventListener('beforeprint',()=>{if(document.querySelector('#s-plan.on'))$('planPrint').innerHTML=planPrintHtml();});
@@ -2114,7 +2423,11 @@ function shopGen(){
     b.items.forEach(it=>{const [g,n]=key(it);add(g,n,1,'szt.');});
   });
   if(P.ampio)P.ampio.mods.filter(m=>!(+m.din>0)).forEach(m=>add('Ampio',m.type,1,'szt.'));
-  (P.plans||[]).forEach(pl=>(pl.marks||[]).forEach(m=>{const sy=SYM[m.t];if(sy)add('Osprzęt – '+SYS[sy[1]].n,sy[0],1,'szt.');}));
+  (P.plans||[]).forEach(pl=>(pl.marks||[]).forEach(m=>{const sy=SYM[m.t];if(sy&&m.t!=='zasl')add('Osprzęt – '+SYS[sy[1]].n,sy[0],1,'szt.');}));
+  {const ls=ledSum();if(ls){Object.keys(ls.per).forEach(k=>add('LED',k,Math.ceil(ls.per[k].m*1.05),'m'));Object.keys(ls.prof).forEach(k=>add('LED','Profil aluminiowy '+k+' z kloszem',Math.ceil(ls.prof[k]),'m'));
+    plans().forEach(pl=>(pl.marks||[]).filter(m=>m.t==='zasl').forEach(m=>{const st=stripsOfPsu(m.id);const P=st.reduce((a,x)=>a+(x.c.P||0),0);const u=m.pu||(st[0]&&st[0].c.u)||24;add('LED',`Zasilacz LED ${u}V ${m.pw||psuFor(P)}W`,1,'szt.');}));
+    ledStrips().filter(x=>!ledDef(x.rt).zas&&x.c.P).forEach(x=>add('LED',`Zasilacz LED ${x.c.u}V ${psuFor(x.c.P)}W (do dobrania)`,1,'szt.'));}}
+  {const cs=cableStats();Object.keys(cs.per).forEach(k=>{if(!k.startsWith('nieopisany'))add('Kable',k,Math.ceil(cs.per[k].m*1.1),'m');});}
   const L=SHOP();let nNew=0,nUpd=0;
   Object.values(cnt).forEach(c=>{
     const ak=c.g+'|'+c.n;const ex=L.find(x=>x.auto===ak);
@@ -2232,49 +2545,110 @@ function vEdit(x){
 }
 
 // ---------- BIBLIOTEKA SCHEMATÓW ----------
-let LIBTXT={},LIBTXT_OK=false,TAGF='',PINF=false,LV=null,LZ=1;
+let LIBTXT={},LIBTXT_OK=false,TAGF='',PINF=false,CATF='',MFRF='',LV=null,LZ=1;
+const LCAT=[['el','Elektryka','⚡'],['al','Alarm','🚨'],['pz','Ppoż.','🔥'],['tv','CCTV / sieć','📹'],['kd','Kontrola dostępu / domofony','🔑'],['am','Ampio / smart home','🏠'],['zs','Zasilacze / UPS','🔋'],['in','Inne','📁']];
+const MFR_RX=[[/satel|integra|versa|perfecta/,'Satel','al'],[/ropam/,'Ropam','al'],[/pulsar/,'Pulsar','zs'],[/hikvision|hik-connect|ds-2cd|ds-7/,'Hikvision','tv'],[/dahua/,'Dahua','tv'],[/\bbcs\b/,'BCS','tv'],[/ubiquiti|unifi/,'Ubiquiti','tv'],[/mikrotik/,'MikroTik','tv'],[/tp-?link/,'TP-Link','tv'],
+  [/ampio|m-serv|mserv|m-dot|m-rel/,'Ampio','am'],[/fibaro/,'Fibaro','am'],[/roger|prt\d|mc16/,'Roger','kd'],[/genway/,'Genway','kd'],[/commax/,'Commax','kd'],[/vidos/,'Vidos','kd'],[/polon/,'Polon-Alfa','pz'],[/schrack/,'Schrack','pz'],
+  [/hager/,'Hager','el'],[/schneider/,'Schneider','el'],[/eaton/,'Eaton','el'],[/legrand/,'Legrand','el'],[/\babb\b/,'ABB','el'],[/f&f|f&amp;f|\bfif\b/,'F&F','el'],[/noark/,'Noark','el'],[/siemens/,'Siemens','el'],[/orno/,'Orno','el'],[/sonel/,'Sonel','el']];
 function LIB(){if(!DB.lib)DB.lib=[];return DB.lib;}
 function pins(){if(!P.libPins)P.libPins=[];return P.libPins;}
-async function loadLibTxt(){if(LIBTXT_OK)return;for(const d of LIB()){if(LIBTXT[d.id]==null)LIBTXT[d.id]=(await IDB.get('libtxt_'+d.id))||'';}LIBTXT_OK=true;}
-function allTags(){const m={};LIB().forEach(d=>(d.tags||[]).forEach(t=>m[t]=(m[t]||0)+1));return Object.keys(m).sort((a,b)=>m[b]-m[a]||a.localeCompare(b));}
+const pagesOf=id=>{const t=LIBTXT[id];return Array.isArray(t)?t:(t?[t]:[]);};
+const hasPages=id=>Array.isArray(LIBTXT[id]);
+function detectMfr(d,text){
+  if(d.mfr&&d.cat)return;
+  const h=(d.fname+' '+d.name+' '+(text||'').slice(0,6000)).toLowerCase();
+  for(const [rx,m,c] of MFR_RX)if(rx.test(h)){if(!d.mfr)d.mfr=m;if(!d.cat)d.cat=c;return;}
+}
+async function loadLibTxt(){
+  if(LIBTXT_OK)return;let ch=false;
+  for(const d of LIB()){if(LIBTXT[d.id]==null){let t=await IDB.get('libtxt_'+d.id);if(typeof t==='string'&&t.startsWith('["')){try{t=JSON.parse(t);}catch(e){}}LIBTXT[d.id]=t||'';}
+    if(!d.cat&&!d.det){d.det=1;detectMfr(d,pagesOf(d.id).join(' '));ch=true;}}
+  LIBTXT_OK=true;if(ch)save();
+}
+function allTags(list){const m={};(list||LIB()).forEach(d=>(d.tags||[]).forEach(t=>m[t]=(m[t]||0)+1));return Object.keys(m).sort((a,b)=>m[b]-m[a]||a.localeCompare(b));}
+function allMfrs(){return [...new Set(LIB().map(d=>d.mfr).filter(Boolean))].sort();}
 const fmtMB=b=>b>1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' kB';
+const catOf=c=>LCAT.find(x=>x[0]===c)||LCAT[LCAT.length-1];
+function searchDoc(d,words){
+  const meta=[d.name,d.mfr,d.model,catOf(d.cat)[1],(d.tags||[]).join(' '),d.note,(d.bm||[]).map(b=>b.n).join(' ')].join(' ').toLowerCase();
+  const pg=pagesOf(d.id);const rest=words.filter(w=>!meta.includes(w));
+  for(const w of rest)if(!pg.some(t=>t.includes(w)))return null;
+  let score=0;words.forEach(w=>{if((d.name||'').toLowerCase().includes(w))score+=30;else if(meta.includes(w))score+=12;});
+  const hits=[];
+  (d.bm||[]).forEach(b=>{if(words.some(w=>b.n.toLowerCase().includes(w)))hits.push({p:b.p,s:'🔖 '+b.n});});
+  if(rest.length||words.length){
+    const need=rest.length?rest:words;
+    let idx=[];pg.forEach((t,i)=>{if(need.every(w=>t.includes(w)))idx.push(i);});
+    if(!idx.length)pg.forEach((t,i)=>{if(t.includes(need[0]))idx.push(i);});
+    score+=Math.min(idx.length,10);
+    idx.slice(0,3).forEach(i=>{const t=pg[i];const k=t.indexOf(need[0]);if(k<0)return;hits.push({p:hasPages(d.id)?i+1:0,s:'…'+t.slice(Math.max(0,k-45),k+need[0].length+60)+'…'});});
+  }
+  if(d.fav)score+=3;
+  return {d,score,hits};
+}
+function docCard(d,hits){
+  const c=catOf(d.cat);
+  return `<div class="lc" data-lib="${d.id}">
+    <div class="th">${d.thumb?`<img src="${d.thumb}" alt="">`:`<span>${d.type==='pdf'?'PDF':'IMG'}</span>`}</div>
+    <div class="tx"><b>${d.fav?'⭐ ':''}${pins().includes(d.id)?'📌 ':''}${esc(d.name)}</b>
+     <small>${c[2]} ${esc(c[1])}${d.mfr?' · <b>'+esc(d.mfr)+'</b>':''}${d.model?' · '+esc(d.model):''}</small>
+     ${(d.tags||[]).length?`<div>${d.tags.map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div>`:''}
+     ${d.note&&!hits?`<small>${esc(d.note.slice(0,90))}${d.note.length>90?'…':''}</small>`:''}
+     ${hits?hits.map(h=>`<button class="hit" data-hit="${d.id}" data-p="${h.p}">${h.p?`<b>str. ${h.p}</b> `:''}${esc(h.s)}</button>`).join(''):''}
+     ${!hits&&(d.bm||[]).length?`<div>${d.bm.slice(0,4).map(b=>`<button class="hit bm" data-hit="${d.id}" data-p="${b.p}">🔖 ${esc(b.n)} <b>s.${b.p}</b></button>`).join('')}</div>`:''}
+     <small>${d.type==='pdf'?(d.pages||'?')+' str. · ':''}${fmtMB(d.size||0)}</small></div></div>`;
+}
 async function renderLib(){
   await loadLibTxt();
-  const tags=allTags();
-  $('libTags').innerHTML=(pins().length?`<button class="chip ${PINF?'on':''}" data-pinf="1">📌 Ten projekt (${pins().length})</button>`:'')+tags.map(t=>`<button class="chip ${t===TAGF?'on':''}" data-tagf="${esc(t)}">${esc(t)}</button>`).join('');
   const q=$('libQ').value.trim().toLowerCase();const words=q.split(/\s+/).filter(Boolean);
   let list=LIB().slice();
+  if(CATF)list=list.filter(d=>(d.cat||'in')===CATF);
+  if(MFRF)list=list.filter(d=>d.mfr===MFRF);
   if(TAGF)list=list.filter(d=>(d.tags||[]).includes(TAGF));
   if(PINF)list=list.filter(d=>pins().includes(d.id));
-  const res=[];
-  list.forEach(d=>{
-    const meta=[d.name,(d.tags||[]).join(' '),d.note].join(' ').toLowerCase();const txt=(LIBTXT[d.id]||'');
-    let snip='';
-    if(words.length){
-      let ok=true;for(const w of words){if(meta.includes(w))continue;const i=txt.indexOf(w);if(i<0){ok=false;break;}if(!snip)snip='…'+txt.slice(Math.max(0,i-40),i+w.length+50).replace(/\s+/g,' ')+'…';}
-      if(!ok)return;
+  // nawigacja
+  let nav=`<button class="chip ${!CATF&&!MFRF&&!TAGF&&!PINF?'on':''}" data-home="1">📚 Wszystko (${LIB().length})</button>`;
+  if(pins().length)nav+=`<button class="chip ${PINF?'on':''}" data-pinf="1">📌 Ten projekt (${pins().length})</button>`;
+  if(CATF){const c=catOf(CATF);nav+=`<span class="crumb">›</span><button class="chip on" data-catf="${CATF}">${c[2]} ${esc(c[1])} ✕</button>`;}
+  if(MFRF)nav+=`<span class="crumb">›</span><button class="chip on" data-mfrf="${esc(MFRF)}">${esc(MFRF)} ✕</button>`;
+  if(TAGF)nav+=`<span class="crumb">›</span><button class="chip on" data-tagf="${esc(TAGF)}"># ${esc(TAGF)} ✕</button>`;
+  $('libTags').innerHTML=nav;
+  let h='';
+  if(words.length){
+    const res=list.map(d=>searchDoc(d,words)).filter(Boolean).sort((a,b)=>b.score-a.score||((b.d.used||b.d.added)-(a.d.used||a.d.added)));
+    h=`<div class="mut" style="margin-bottom:6px">Znaleziono: ${res.length}${CATF||MFRF||TAGF||PINF?' (w wybranym filtrze)':''}</div>`+res.map(r=>docCard(r.d,r.hits)).join('')||'<p class="mut">Nic nie znaleziono.</p>';
+  }else if(!CATF&&!MFRF&&!TAGF&&!PINF){
+    if(!LIB().length)h='<div class="card mut">Biblioteka jest pusta. Dodaj PDF-y instrukcji i schematów albo zdjęcia (np. schemat z pokrywy centrali). Producent i kategoria rozpoznają się same po nazwie i treści.</div>';
+    else{
+      const fav=LIB().filter(d=>d.fav);const rec=LIB().filter(d=>d.used).sort((a,b)=>b.used-a.used).slice(0,4);
+      h+=`<div class="cats">${LCAT.map(c=>{const n=LIB().filter(d=>(d.cat||'in')===c[0]).length;return n?`<button class="cat" data-catf="${c[0]}"><span>${c[2]}</span>${esc(c[1])}<b>${n}</b></button>`:'';}).join('')}</div>`;
+      if(fav.length)h+=`<div class="shg">⭐ Ulubione</div>`+fav.map(d=>docCard(d)).join('');
+      if(rec.length)h+=`<div class="shg">🕘 Ostatnio otwierane</div>`+rec.map(d=>docCard(d)).join('');
+      const tg=allTags();if(tg.length)h+=`<div class="shg">Tagi</div><div class="chips">${tg.slice(0,30).map(t=>`<button class="chip" data-tagf="${esc(t)}"># ${esc(t)}</button>`).join('')}</div>`;
     }
-    res.push({d,snip});
-  });
-  res.sort((a,b)=>(pins().includes(b.d.id)-pins().includes(a.d.id))||((b.d.used||b.d.added)-(a.d.used||a.d.added)));
-  $('libList').innerHTML=res.map(({d,snip})=>`<div class="lc" data-lib="${d.id}">
-    <div class="th">${d.thumb?`<img src="${d.thumb}" alt="">`:`<span>${d.type==='pdf'?'PDF':'IMG'}</span>`}</div>
-    <div class="tx"><b>${pins().includes(d.id)?'📌 ':''}${esc(d.name)}</b>
-     <div>${(d.tags||[]).map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div>
-     ${d.note?`<small>${esc(d.note.slice(0,90))}${d.note.length>90?'…':''}</small>`:''}
-     ${snip?`<small class="sn">${esc(snip)}</small>`:''}
-     <small>${d.type==='pdf'?(d.pages||'?')+' str. · ':''}${fmtMB(d.size||0)}</small></div></div>`).join('')
-    ||(LIB().length?'<p class="mut">Nic nie znaleziono.</p>':'<div class="card mut">Biblioteka jest pusta. Dodaj PDF-y instrukcji i schematów albo zdjęcia (np. schemat z pokrywy centrali). Potem nadaj im tagi, np. „Satel”, „zwora”, „Ampio”.</div>');
+  }else{
+    if(CATF&&!MFRF){const ms=[...new Set(list.map(d=>d.mfr).filter(Boolean))].sort();if(ms.length>1)h+=`<div class="chips" style="margin-bottom:8px">${ms.map(m=>`<button class="chip" data-mfrf="${esc(m)}">${esc(m)} (${list.filter(d=>d.mfr===m).length})</button>`).join('')}</div>`;}
+    const tg=allTags(list).filter(t=>t!==TAGF);if(tg.length&&!TAGF)h+=`<div class="chips" style="margin-bottom:8px">${tg.slice(0,15).map(t=>`<button class="chip" data-tagf="${esc(t)}"># ${esc(t)}</button>`).join('')}</div>`;
+    list.sort((a,b)=>(b.fav?1:0)-(a.fav?1:0)||(a.mfr||'~').localeCompare(b.mfr||'~')||(a.name||'').localeCompare(b.name||''));
+    let last=null;
+    list.forEach(d=>{if(!MFRF&&(d.mfr||'')!==last){last=d.mfr||'';h+=`<div class="shg">${esc(last||'Inni / bez producenta')}</div>`;}h+=docCard(d);});
+    if(!list.length)h+='<p class="mut">Pusto.</p>';
+  }
+  $('libList').innerHTML=h;
   try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();$('libStore').textContent=`Zajęte miejsce: ${fmtMB(e.usage||0)}${e.quota?' z '+fmtMB(e.quota):''}. Pliki są tylko w tym telefonie.`;}}catch(e){}
+}
+async function pdfPagesText(doc,max){
+  const out=[];let tot=0;
+  for(let i=1;i<=Math.min(doc.numPages,max||400);i++){let t='';try{const p=await doc.getPage(i);const tc=await p.getTextContent();t=tc.items.map(x=>x.str).join(' ').toLowerCase().replace(/\s+/g,' ');}catch(e){}
+    if(tot>600000)t='';tot+=t.length;out.push(t);}
+  return out;
 }
 async function pdfThumbAndText(buf){
   const lib=await pdfLib();const doc=await lib.getDocument({data:buf}).promise;
   const pg=await doc.getPage(1);const v=pg.getViewport({scale:1});const sc=200/v.width;const vp=pg.getViewport({scale:sc});
   const cv=document.createElement('canvas');cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
   const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);await pg.render({canvasContext:cx,viewport:vp}).promise;
-  let txt='';
-  for(let i=1;i<=Math.min(doc.numPages,300)&&txt.length<300000;i++){try{const p=await doc.getPage(i);const tc=await p.getTextContent();txt+=' '+tc.items.map(x=>x.str).join(' ');}catch(e){}}
-  return {thumb:cv.toDataURL('image/jpeg',0.7),text:txt.toLowerCase().replace(/\s+/g,' '),pages:doc.numPages};
+  return {thumb:cv.toDataURL('image/jpeg',0.7),pages:await pdfPagesText(doc),n:doc.numPages};
 }
 function imgThumb(blob){return new Promise(res=>{const u=URL.createObjectURL(blob);const im=new Image();im.onload=()=>{const k=200/im.width;const cv=document.createElement('canvas');cv.width=200;cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv.toDataURL('image/jpeg',0.7));};im.onerror=()=>res('');im.src=u;});}
 $('libFile').onchange=async e=>{
@@ -2284,42 +2658,50 @@ $('libFile').onchange=async e=>{
   for(const [k,f] of files.entries()){
     $('libMsg').textContent=`Dodaję ${k+1}/${files.length}: ${f.name}…`;
     const id=uid();const isPdf=/pdf/i.test(f.type)||/\.pdf$/i.test(f.name);
-    const d={id,name:f.name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' '),type:isPdf?'pdf':'img',mime:f.type||(isPdf?'application/pdf':'image/jpeg'),fname:f.name,tags:TAGF?[TAGF]:[],note:'',added:Date.now(),size:f.size,pages:isPdf?0:1,thumb:''};
+    const d={id,name:f.name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' '),type:isPdf?'pdf':'img',mime:f.type||(isPdf?'application/pdf':'image/jpeg'),fname:f.name,tags:TAGF?[TAGF]:[],note:'',added:Date.now(),size:f.size,pages:isPdf?0:1,thumb:'',cat:CATF||'',mfr:MFRF||'',model:'',bm:[],det:1};
     const okSave=await IDB.put('lib_'+id,f);
     if(!okSave){$('libMsg').textContent='Nie udało się zapisać pliku (brak miejsca?).';continue;}
     try{
-      if(isPdf){const r=await pdfThumbAndText(await f.arrayBuffer());d.thumb=r.thumb;d.pages=r.pages;LIBTXT[id]=r.text;await IDB.put('libtxt_'+id,r.text);}
-      else d.thumb=await imgThumb(f);
-    }catch(err){LIBTXT[id]='';}
+      if(isPdf){const r=await pdfThumbAndText(await f.arrayBuffer());d.thumb=r.thumb;d.pages=r.n;LIBTXT[id]=r.pages;await IDB.put('libtxt_'+id,r.pages);}
+      else{d.thumb=await imgThumb(f);LIBTXT[id]=[];}
+    }catch(err){LIBTXT[id]=[];}
+    detectMfr(d,pagesOf(id).slice(0,3).join(' '));
     LIB().push(d);added.push(d);save();
   }
-  $('libMsg').textContent=added.length?`Dodano ${added.length} plik(ów).`:'';
+  $('libMsg').textContent=added.length?`Dodano ${added.length} plik(ów).${added.length>1?' Kategorie i producenci rozpoznani automatycznie – popraw w ℹ Opis, jeśli trzeba.':''}`:'';
   await renderLib();
   if(added.length===1)libInfo(added[0]);
 };
 $('libQ').addEventListener('input',()=>renderLib());
 $('s-lib').addEventListener('click',e=>{
+  const hm=e.target.closest('[data-home]');if(hm){CATF=MFRF=TAGF='';PINF=false;renderLib();return;}
+  const ct=e.target.closest('[data-catf]');if(ct){CATF=CATF===ct.dataset.catf?'':ct.dataset.catf;MFRF='';TAGF='';renderLib();return;}
+  const mf=e.target.closest('[data-mfrf]');if(mf){MFRF=MFRF===mf.dataset.mfrf?'':mf.dataset.mfrf;renderLib();return;}
   const t=e.target.closest('[data-tagf]');if(t){TAGF=TAGF===t.dataset.tagf?'':t.dataset.tagf;renderLib();return;}
   const pf=e.target.closest('[data-pinf]');if(pf){PINF=!PINF;renderLib();return;}
+  const hi=e.target.closest('[data-hit]');if(hi){e.stopPropagation();libOpen(LIB().find(d=>d.id===hi.dataset.hit),+hi.dataset.p||0);return;}
   const c=e.target.closest('[data-lib]');if(c){libOpen(LIB().find(d=>d.id===c.dataset.lib));}
 });
-async function libOpen(d){
+async function libOpen(d,page){
   if(!d)return;const blob=await IDB.get('lib_'+d.id);
   if(!blob){$('libMsg').textContent='Brak pliku w pamięci telefonu.';return;}
   d.used=Date.now();save();
-  LV={d,blob,doc:null,url:null};LZ=1;
-  $('lvT').textContent=d.name;$('libView').classList.add('on');$('lvBody').innerHTML='<p style="color:#fff;padding:12px">Wczytuję…</p>';
+  LV={d,blob,doc:null,url:null,page:1};LZ=1;
+  $('lvT').textContent=d.name;$('lvPg').textContent='';$('libView').classList.add('on');$('lvBody').innerHTML='<p style="color:#fff;padding:12px">Wczytuję…</p>';
+  $('lvBm').style.display=$('lvToc').style.display=d.type==='pdf'?'':'none';
   try{history.pushState({lv:1},'');}catch(e){}
   if(d.type==='pdf'){try{const lib=await pdfLib();LV.doc=await lib.getDocument({data:await blob.arrayBuffer()}).promise;}catch(e){$('lvBody').innerHTML='<p style="color:#fff;padding:12px">Nie udało się otworzyć PDF-a.</p>';return;}}
   else LV.url=URL.createObjectURL(blob);
-  lvRender();
+  await lvRender();
+  if(page>1)lvGo(page);
+  if(LV&&LV.doc&&!hasPages(d.id)){const doc=LV.doc;pdfPagesText(doc).then(pg=>{LIBTXT[d.id]=pg;IDB.put('libtxt_'+d.id,pg);});}
 }
 let LVIO=null;
 async function lvRender(){
   if(!LV)return;const body=$('lvBody');const W=Math.round((body.clientWidth-16)*LZ);
   if(LV.url){body.innerHTML=`<img src="${LV.url}" style="width:${W}px">`;return;}
   const doc=LV.doc;const p1=await doc.getPage(1);const v1=p1.getViewport({scale:1});
-  body.innerHTML=Array.from({length:doc.numPages},(_,i)=>`<canvas data-pg="${i+1}" style="width:${W}px;height:${Math.round(W*v1.height/v1.width)}px"></canvas>`).join('')+`<div style="color:#d1d5db;text-align:center;padding:8px 0 24px;font-size:13px">${doc.numPages} str.</div>`;
+  body.innerHTML=Array.from({length:doc.numPages},(_,i)=>`<div class="pgw"><div class="pgn">${i+1}</div><canvas data-pg="${i+1}" style="width:${W}px;height:${Math.round(W*v1.height/v1.width)}px"></canvas></div>`).join('')+`<div style="color:#d1d5db;text-align:center;padding:8px 0 24px;font-size:13px">${doc.numPages} str.</div>`;
   if(LVIO)LVIO.disconnect();
   LVIO=new IntersectionObserver(ents=>ents.forEach(async en=>{
     if(!en.isIntersecting)return;const cv=en.target;if(cv.dataset.done)return;cv.dataset.done=1;
@@ -2329,7 +2711,12 @@ async function lvRender(){
       const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);await pg.render({canvasContext:cx,viewport:vp}).promise;}catch(e){}
   }),{root:body,rootMargin:'600px'});
   body.querySelectorAll('canvas').forEach(c=>LVIO.observe(c));
+  lvPgUpd();
 }
+function lvCurPage(){const b=$('lvBody');let p=1;b.querySelectorAll('canvas[data-pg]').forEach(c=>{if(c.offsetTop-b.offsetTop<=b.scrollTop+b.clientHeight*0.35)p=+c.dataset.pg;});return p;}
+function lvPgUpd(){if(!LV||!LV.doc)return;LV.page=lvCurPage();$('lvPg').textContent=`${LV.page}/${LV.doc.numPages}`;}
+let lvRaf=0;$('lvBody').addEventListener('scroll',()=>{if(lvRaf)return;lvRaf=requestAnimationFrame(()=>{lvRaf=0;lvPgUpd();});});
+function lvGo(p){const c=$('lvBody').querySelector(`canvas[data-pg="${p}"]`);if(!c)return;const b=$('lvBody');b.scrollTop=c.parentNode.offsetTop-b.offsetTop-4;lvPgUpd();}
 function lvClose(){if(!LV)return;if(LV.url)URL.revokeObjectURL(LV.url);if(LV.doc)try{LV.doc.destroy();}catch(e){}LV=null;if(LVIO)LVIO.disconnect();$('libView').classList.remove('on');$('lvBody').innerHTML='';renderLib();}
 $('lvX').onclick=()=>{try{if(history.state&&history.state.lv){history.back();return;}}catch(e){}lvClose();};
 window.addEventListener('popstate',()=>{if(LV)lvClose();});
@@ -2337,18 +2724,43 @@ const lvZoom=f=>{const b=$('lvBody');const rx=(b.scrollLeft+b.clientWidth/2)/b.s
   LZ=Math.max(0.5,Math.min(5,LZ*f));lvRender().then(()=>{b.scrollLeft=rx*b.scrollWidth-b.clientWidth/2;b.scrollTop=ry*b.scrollHeight-b.clientHeight/2;});};
 $('lvP').onclick=()=>lvZoom(1.4);$('lvM').onclick=()=>lvZoom(1/1.4);
 $('lvI').onclick=()=>{if(LV)libInfo(LV.d);};
+$('lvBm').onclick=()=>{
+  if(!LV||!LV.doc)return;const p=lvCurPage();const d=LV.d;
+  $('dlg').innerHTML=`<h3>🔖 Zakładka – strona ${p}</h3><div class="f"><label>Nazwa</label><input id="bmN" placeholder="np. Schemat podłączenia zwory, Tabela wyjść"></div>
+   <div class="bar"><button class="btn p" id="bmOk">Dodaj</button><button class="btn" id="bmNo">Anuluj</button></div>`;
+  $('bmNo').onclick=closeDlg;
+  $('bmOk').onclick=()=>{const n=$('bmN').value.trim()||('Strona '+p);d.bm=d.bm||[];d.bm.push({p,n});d.bm.sort((a,b)=>a.p-b.p);save();closeDlg();};
+  $('ov').classList.add('on');setTimeout(()=>{const e=$('bmN');if(e)e.focus();},50);
+};
+$('lvToc').onclick=()=>{
+  if(!LV||!LV.doc)return;const d=LV.d;
+  $('dlg').innerHTML=`<h3>Przejdź do…</h3>
+   <div class="bar" style="margin-top:0"><input id="goP" type="number" min="1" max="${LV.doc.numPages}" placeholder="nr strony" style="flex:1;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px"><button class="btn p" id="goOk">Idź</button></div>
+   ${(d.bm||[]).length?`<div class="shg">🔖 Zakładki</div>`+d.bm.map((b,i)=>`<div class="it" style="cursor:pointer"><span class="lb">s.${b.p}</span><div class="tx" data-gob="${b.p}">${esc(b.n)}</div><button class="btn sm d" data-bmx="${i}">✕</button></div>`).join(''):'<p class="mut">Brak zakładek. Dodasz je przyciskiem 🔖 na stronie, którą chcesz zapamiętać.</p>'}
+   <div class="bar"><button class="btn" id="goNo">Zamknij</button></div>`;
+  $('goNo').onclick=closeDlg;
+  $('goOk').onclick=()=>{const p=Math.max(1,Math.min(LV.doc.numPages,+$('goP').value||1));closeDlg();lvGo(p);};
+  $('dlg').querySelectorAll('[data-gob]').forEach(x=>x.onclick=()=>{closeDlg();lvGo(+x.dataset.gob);});
+  $('dlg').querySelectorAll('[data-bmx]').forEach(x=>x.onclick=()=>{d.bm.splice(+x.dataset.bmx,1);save();closeDlg();$('lvToc').click();});
+  $('ov').classList.add('on');
+};
 function libInfo(d){
-  const tags=d.tags.slice();
+  const tags=(d.tags||[]).slice();
   $('dlg').innerHTML=`<h3>Opis schematu</h3>
    <div class="f"><label>Nazwa</label><input id="liN" value="${esc(d.name)}"></div>
-   <div class="f"><label>Tagi (oddziel przecinkami)</label><input id="liT" value="${esc(tags.join(', '))}" placeholder="np. Satel, centrala, alarm"></div>
+   <div class="g2"><div class="f"><label>Kategoria</label><select id="liC">${LCAT.map(c=>`<option value="${c[0]}" ${c[0]===(d.cat||'in')?'selected':''}>${c[2]} ${c[1]}</option>`).join('')}</select></div>
+   <div class="f"><label>Producent</label><input id="liM" list="mfrs" value="${esc(d.mfr||'')}"><datalist id="mfrs">${[...new Set([...allMfrs(),...MFR_RX.map(x=>x[1])])].map(m=>`<option value="${esc(m)}">`).join('')}</datalist></div></div>
+   <div class="f"><label>Model / urządzenie</label><input id="liMo" value="${esc(d.model||'')}" placeholder="np. INTEGRA 64 Plus, M-SERV-s, PRT12EM"></div>
+   <div class="f"><label>Tagi (oddziel przecinkami)</label><input id="liT" value="${esc(tags.join(', '))}" placeholder="np. zwora, centrala, instrukcja instalatora"></div>
    <div class="chips" id="liSug" style="margin:-4px 0 10px">${allTags().filter(t=>!tags.includes(t)).slice(0,20).map(t=>`<button class="chip" type="button" data-addtag="${esc(t)}">+ ${esc(t)}</button>`).join('')}</div>
-   <div class="f"><label>Moje notatki</label><textarea id="liNo" rows="4" placeholder="np. przy tym modelu zworka J3 na 12 V, wyjście OUT2 = zwora">${esc(d.note)}</textarea></div>
+   <div class="f"><label>Moje notatki</label><textarea id="liNo" rows="3" placeholder="np. przy tym modelu zworka J3 na 12 V, wyjście OUT2 = zwora">${esc(d.note)}</textarea></div>
+   <label style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input type="checkbox" id="liFav" ${d.fav?'checked':''} style="width:22px;height:22px"> ⭐ Ulubione (zawsze na górze)</label>
    <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="liPin" ${pins().includes(d.id)?'checked':''} style="width:22px;height:22px"> 📌 Przypnij do projektu „${esc(P.name)}”</label>
-   <p class="mut">${esc(d.fname||'')} · ${fmtMB(d.size||0)} · dodano ${new Date(d.added).toLocaleDateString('pl-PL')}</p>
+   <p class="mut">${esc(d.fname||'')} · ${fmtMB(d.size||0)} · dodano ${new Date(d.added).toLocaleDateString('pl-PL')}${(d.bm||[]).length?' · 🔖 '+d.bm.length:''}</p>
    <div class="bar"><button class="btn p" id="liOk">Zapisz</button>${LV?'':'<button class="btn" id="liOpen">Otwórz</button>'}<button class="btn" id="liSh">Udostępnij</button><button class="btn d" id="liDel">Usuń</button></div><div id="liMsg" class="mut"></div>`;
   $('liSug').onclick=e=>{const b=e.target.closest('[data-addtag]');if(!b)return;const cur=$('liT').value.split(',').map(x=>x.trim()).filter(Boolean);if(!cur.includes(b.dataset.addtag))cur.push(b.dataset.addtag);$('liT').value=cur.join(', ');b.remove();};
-  $('liOk').onclick=()=>{d.name=$('liN').value.trim()||d.name;d.tags=[...new Set($('liT').value.split(',').map(x=>x.trim()).filter(Boolean))];d.note=$('liNo').value.trim();
+  $('liOk').onclick=()=>{d.name=$('liN').value.trim()||d.name;d.cat=$('liC').value;d.mfr=$('liM').value.trim();d.model=$('liMo').value.trim();
+    d.tags=[...new Set($('liT').value.split(',').map(x=>x.trim()).filter(Boolean))];d.note=$('liNo').value.trim();d.fav=$('liFav').checked;
     const pp=pins();const i=pp.indexOf(d.id);if($('liPin').checked&&i<0)pp.push(d.id);if(!$('liPin').checked&&i>=0)pp.splice(i,1);
     save();closeDlg();if(LV)$('lvT').textContent=d.name;renderLib();};
   if($('liOpen'))$('liOpen').onclick=()=>{closeDlg();libOpen(d);};
