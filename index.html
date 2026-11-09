@@ -2498,8 +2498,18 @@ async function vKey(pin,salt){const k=await crypto.subtle.importKey('raw',new Te
 async function vSave(){if(!VAULT)return;const iv=crypto.getRandomValues(new Uint8Array(12));
   const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},VAULT.key,new TextEncoder().encode(JSON.stringify(VAULT.items)));
   const v={salt:VAULT.salt,iv:b64(iv),ct:b64(ct)};if(VAULT.pid==='__GLOBAL__')DB.gvault=v;else{const pr=DB.projects.find(q=>q.id===VAULT.pid);if(pr)pr.vault=v;}save();}
-function vLock(){VAULT=null;if(VTIMER)clearTimeout(VTIMER);if(document.querySelector('#s-notes.on')&&NS==='vault')renderNotes();}
+function vLock(){VAULT=null;VQ='';if(VTIMER)clearTimeout(VTIMER);if(document.querySelector('#s-notes.on')&&NS==='vault')renderNotes();}
 function vTouch(){if(VTIMER)clearTimeout(VTIMER);VTIMER=setTimeout(vLock,5*60*1000);}
+let VQ='';
+function vListHtml(){
+  const q=VQ.trim().toLowerCase(),w=q.split(/\s+/).filter(Boolean);
+  const L=VAULT.items.filter(x=>{const h=[x.n,x.l,x.x].join(' ').toLowerCase();return w.every(t=>h.includes(t));}).sort((a,b)=>(a.n||'').localeCompare(b.n||'','pl'));
+  if(!VAULT.items.length)return '<div class="card mut">Pusto. Dodaj np. Wi-Fi klienta, kod serwisowy Satel, admin Ampio, NVR, router.</div>';
+  return L.map(x=>`<div class="card vi"><div style="display:flex;gap:8px;align-items:center"><b style="flex:1">${esc(x.n)}</b><button class="btn sm" data-ve="${x.id}">✎</button></div>
+    ${x.l?`<div class="vr"><span class="mut">Login</span><code>${esc(x.l)}</code><button class="btn sm" data-vc="${x.id}" data-f="l">Kopiuj</button></div>`:''}
+    ${x.p?`<div class="vr"><span class="mut">Hasło</span><code data-vp="${x.id}">••••••</code><button class="btn sm" data-vs="${x.id}">👁</button><button class="btn sm" data-vc="${x.id}" data-f="p">Kopiuj</button></div>`:''}
+    ${x.x?`<div class="mut" style="white-space:pre-wrap">${esc(x.x)}</div>`:''}</div>`).join('')||'<p class="mut">Nic nie znaleziono.</p>';
+}
 function vaultHtml(){
   if(!window.crypto||!crypto.subtle)return '<div class="card mut">Sejf działa tylko z bezpiecznego adresu (https), np. z GitHub Pages.</div>';
   if(VAULT&&VAULT.pid!==vPid())VAULT=null;
@@ -2514,11 +2524,15 @@ function vaultHtml(){
      <button class="btn p" id="vOpen" style="width:100%">${has?'Otwórz':'Utwórz sejf'}</button><div id="vMsg" class="mut" style="margin-top:6px"></div></div>`;
   }
   return tabs+`<div class="bar" style="margin-top:0"><button class="btn p" id="vAdd">+ Wpis</button><button class="btn" id="vLockB">🔒 Zamknij</button></div>
-   ${VAULT.items.map(x=>`<div class="card vi"><div style="display:flex;gap:8px;align-items:center"><b style="flex:1">${esc(x.n)}</b><button class="btn sm" data-ve="${x.id}">✎</button></div>
-    ${x.l?`<div class="vr"><span class="mut">Login</span><code>${esc(x.l)}</code><button class="btn sm" data-vc="${x.id}" data-f="l">Kopiuj</button></div>`:''}
-    ${x.p?`<div class="vr"><span class="mut">Hasło</span><code data-vp="${x.id}">••••••</code><button class="btn sm" data-vs="${x.id}">👁</button><button class="btn sm" data-vc="${x.id}" data-f="p">Kopiuj</button></div>`:''}
-    ${x.x?`<div class="mut" style="white-space:pre-wrap">${esc(x.x)}</div>`:''}</div>`).join('')||'<div class="card mut">Pusto. Dodaj np. Wi-Fi klienta, kod serwisowy Satel, admin Ampio, NVR, router.</div>'}
+   ${VAULT.items.length>3?`<div class="f"><input id="vQ" type="search" value="${esc(VQ)}" placeholder="🔍 Szukaj: Wi-Fi, Satel, router, IP…" autocomplete="off" style="font-size:17px"></div>`:''}
+   <div id="vList">${vListHtml()}</div>
    <p class="mut">Sejf zamyka się sam po 5 minutach.</p>`;
+}
+function bindVList(){
+  if(!$('vList'))return;
+  $('vList').querySelectorAll('[data-ve]').forEach(b=>b.onclick=()=>vEdit(VAULT.items.find(x=>x.id===b.dataset.ve)));
+  $('vList').querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{vTouch();const c=$('vList').querySelector(`[data-vp="${b.dataset.vs}"]`);const x=VAULT.items.find(q=>q.id===b.dataset.vs);c.textContent=c.textContent==='••••••'?x.p:'••••••';});
+  $('vList').querySelectorAll('[data-vc]').forEach(b=>b.onclick=async()=>{vTouch();const x=VAULT.items.find(q=>q.id===b.dataset.vc);try{await navigator.clipboard.writeText(x[b.dataset.f]);b.textContent='✔';setTimeout(()=>b.textContent='Kopiuj',1200);}catch(e){}});
 }
 function vaultBind(){
   if($('vOpen'))$('vOpen').onclick=async()=>{
@@ -2534,11 +2548,10 @@ function vaultBind(){
   };
   if($('vPin'))$('vPin').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('vPin2'))$('vOpen').click();});
   if($('vLockB'))$('vLockB').onclick=vLock;
-  $('notesBody').querySelectorAll('[data-vsc]').forEach(b=>b.onclick=()=>{VS=b.dataset.vsc;VAULT=null;renderNotes();});
+  $('notesBody').querySelectorAll('[data-vsc]').forEach(b=>b.onclick=()=>{VS=b.dataset.vsc;VAULT=null;VQ='';renderNotes();});
   if($('vAdd'))$('vAdd').onclick=()=>vEdit(null);
-  $('notesBody').querySelectorAll('[data-ve]').forEach(b=>b.onclick=()=>vEdit(VAULT.items.find(x=>x.id===b.dataset.ve)));
-  $('notesBody').querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{vTouch();const c=$('notesBody').querySelector(`[data-vp="${b.dataset.vs}"]`);const x=VAULT.items.find(q=>q.id===b.dataset.vs);c.textContent=c.textContent==='••••••'?x.p:'••••••';});
-  $('notesBody').querySelectorAll('[data-vc]').forEach(b=>b.onclick=async()=>{vTouch();const x=VAULT.items.find(q=>q.id===b.dataset.vc);try{await navigator.clipboard.writeText(x[b.dataset.f]);b.textContent='✔';setTimeout(()=>b.textContent='Kopiuj',1200);}catch(e){}});
+  bindVList();
+  if($('vQ'))$('vQ').oninput=()=>{VQ=$('vQ').value;vTouch();$('vList').innerHTML=vListHtml();bindVList();};
 }
 function vEdit(x){
   const isNew=!x;x=x||{id:uid(),n:'',l:'',p:'',x:''};vTouch();
