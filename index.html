@@ -170,6 +170,9 @@ table.tb th{background:#eee}
 .phx{position:absolute;top:2px;right:2px;border:0;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;line-height:22px;padding:0}
 .phv{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 .phv.on{display:flex}.phv img{max-width:100%;max-height:85vh;object-fit:contain}
+.lvnote{background:#fff;max-width:760px;margin:10px auto;border-radius:10px;padding:16px;line-height:1.5}
+.lvnote h2{margin:0 0 4px;font-size:1.25em}.lvtx{white-space:pre-wrap;margin:10px 0}
+.lvnote img{display:block;width:100%;border-radius:8px;margin-top:10px;cursor:pointer}
 /* ampio */
 
 .am{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.06);overflow:hidden}
@@ -386,7 +389,8 @@ table.tb th{background:#eee}
   <section class="sec" id="s-lib">
     <div class="bar" style="margin-top:0">
       <input id="libQ" type="search" placeholder="Szukaj: zwora, INTEGRA, OUT2, M-SERV…" style="flex:1;min-width:150px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px">
-      <label class="btn p">+ Dodaj<input type="file" id="libFile" accept="application/pdf,image/*" multiple hidden></label>
+      <label class="btn p">+ Plik<input type="file" id="libFile" accept="application/pdf,image/*" multiple hidden></label>
+      <button class="btn p" id="libNoteB">📝 Notatka</button>
     </div>
     <div class="chips" id="libTags" style="margin-bottom:8px"></div>
     <div id="libMsg" class="mut" style="margin-bottom:6px"></div>
@@ -2483,28 +2487,33 @@ $('notesBody').addEventListener('change',e=>{const t=e.target;if(t.dataset.shd){
 $('nsub').addEventListener('click',e=>{const b=e.target.closest('[data-ns]');if(!b)return;NS=b.dataset.ns;renderNotes();});
 
 // ---- sejf na hasła (AES-GCM, klucz z PIN-u)
-let VAULT=null,VTIMER=null;
+let VAULT=null,VTIMER=null,VS='proj';
+const vPid=()=>VS==='glob'?'__GLOBAL__':P.id;
+const vGet=()=>VS==='glob'?DB.gvault:P.vault;
+function vSet(v){if(VS==='glob')DB.gvault=v;else P.vault=v;}
 const b64=a=>btoa(String.fromCharCode(...new Uint8Array(a)));
 const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 async function vKey(pin,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveKey']);
   return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
 async function vSave(){if(!VAULT)return;const iv=crypto.getRandomValues(new Uint8Array(12));
   const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},VAULT.key,new TextEncoder().encode(JSON.stringify(VAULT.items)));
-  P.vault={salt:VAULT.salt,iv:b64(iv),ct:b64(ct)};save();}
+  const v={salt:VAULT.salt,iv:b64(iv),ct:b64(ct)};if(VAULT.pid==='__GLOBAL__')DB.gvault=v;else{const pr=DB.projects.find(q=>q.id===VAULT.pid);if(pr)pr.vault=v;}save();}
 function vLock(){VAULT=null;if(VTIMER)clearTimeout(VTIMER);if(document.querySelector('#s-notes.on')&&NS==='vault')renderNotes();}
 function vTouch(){if(VTIMER)clearTimeout(VTIMER);VTIMER=setTimeout(vLock,5*60*1000);}
 function vaultHtml(){
   if(!window.crypto||!crypto.subtle)return '<div class="card mut">Sejf działa tylko z bezpiecznego adresu (https), np. z GitHub Pages.</div>';
-  if(VAULT&&VAULT.pid!==P.id)VAULT=null;
+  if(VAULT&&VAULT.pid!==vPid())VAULT=null;
+  const tabs=`<div class="chips" style="margin-bottom:8px"><button class="chip ${VS==='proj'?'on':''}" data-vsc="proj">📁 Ten projekt</button><button class="chip ${VS==='glob'?'on':''}" data-vsc="glob">🌐 Ogólne (wszystkie projekty)</button></div>`;
   if(!VAULT){
-    const has=!!P.vault;
-    return `<div class="card"><h3>🔒 Hasła i kody</h3>
-     <p class="mut">${has?'Wpisz PIN, żeby otworzyć sejf tego projektu.':'Ustaw PIN dla sejfu tego projektu (min. 4 cyfry). Hasła są zaszyfrowane i bez PIN-u nie da się ich odczytać – <b>zapomniany PIN = utracone hasła</b>.'}</p>
+    const has=!!vGet();const what=VS==='glob'?'ogólnego sejfu (wspólnego dla wszystkich projektów)':'sejfu tego projektu';
+    return tabs+`<div class="card"><h3>🔒 ${VS==='glob'?'Hasła ogólne':'Hasła i kody projektu'}</h3>
+     ${VS==='glob'?'<p class="mut">Tu trzymaj to, co przydaje się wszędzie: kody serwisowe, konta producentów (Ampio, Satel, Hikvision), hasła do programów, firmowe Wi-Fi.</p>':''}
+     <p class="mut">${has?'Wpisz PIN '+what+'.':'Ustaw PIN '+what+' (min. 4 cyfry). Hasła są zaszyfrowane i bez PIN-u nie da się ich odczytać – <b>zapomniany PIN = utracone hasła</b>.'}</p>
      <div class="f"><input id="vPin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" style="font-size:22px;letter-spacing:6px;text-align:center"></div>
      ${has?'':'<div class="f"><input id="vPin2" type="password" inputmode="numeric" autocomplete="off" placeholder="Powtórz PIN" style="font-size:22px;letter-spacing:6px;text-align:center"></div>'}
      <button class="btn p" id="vOpen" style="width:100%">${has?'Otwórz':'Utwórz sejf'}</button><div id="vMsg" class="mut" style="margin-top:6px"></div></div>`;
   }
-  return `<div class="bar" style="margin-top:0"><button class="btn p" id="vAdd">+ Wpis</button><button class="btn" id="vLockB">🔒 Zamknij</button></div>
+  return tabs+`<div class="bar" style="margin-top:0"><button class="btn p" id="vAdd">+ Wpis</button><button class="btn" id="vLockB">🔒 Zamknij</button></div>
    ${VAULT.items.map(x=>`<div class="card vi"><div style="display:flex;gap:8px;align-items:center"><b style="flex:1">${esc(x.n)}</b><button class="btn sm" data-ve="${x.id}">✎</button></div>
     ${x.l?`<div class="vr"><span class="mut">Login</span><code>${esc(x.l)}</code><button class="btn sm" data-vc="${x.id}" data-f="l">Kopiuj</button></div>`:''}
     ${x.p?`<div class="vr"><span class="mut">Hasło</span><code data-vp="${x.id}">••••••</code><button class="btn sm" data-vs="${x.id}">👁</button><button class="btn sm" data-vc="${x.id}" data-f="p">Kopiuj</button></div>`:''}
@@ -2515,16 +2524,17 @@ function vaultBind(){
   if($('vOpen'))$('vOpen').onclick=async()=>{
     const pin=$('vPin').value.trim();if(pin.length<4){$('vMsg').textContent='PIN musi mieć co najmniej 4 znaki.';return;}
     try{
-      if(!P.vault){if(pin!==$('vPin2').value.trim()){$('vMsg').textContent='PIN-y się różnią.';return;}
-        const salt=crypto.getRandomValues(new Uint8Array(16));VAULT={pid:P.id,salt:b64(salt),key:await vKey(pin,salt),items:[]};await vSave();}
-      else{const v=P.vault;const key=await vKey(pin,unb64(v.salt));
+      if(!vGet()){if(pin!==$('vPin2').value.trim()){$('vMsg').textContent='PIN-y się różnią.';return;}
+        const salt=crypto.getRandomValues(new Uint8Array(16));VAULT={pid:vPid(),salt:b64(salt),key:await vKey(pin,salt),items:[]};await vSave();}
+      else{const v=vGet();const key=await vKey(pin,unb64(v.salt));
         const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(v.iv)},key,unb64(v.ct));
-        VAULT={pid:P.id,salt:v.salt,key,items:JSON.parse(new TextDecoder().decode(pt))};}
+        VAULT={pid:vPid(),salt:v.salt,key,items:JSON.parse(new TextDecoder().decode(pt))};}
       vTouch();renderNotes();
     }catch(e){$('vMsg').textContent='Zły PIN.';}
   };
   if($('vPin'))$('vPin').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('vPin2'))$('vOpen').click();});
   if($('vLockB'))$('vLockB').onclick=vLock;
+  $('notesBody').querySelectorAll('[data-vsc]').forEach(b=>b.onclick=()=>{VS=b.dataset.vsc;VAULT=null;renderNotes();});
   if($('vAdd'))$('vAdd').onclick=()=>vEdit(null);
   $('notesBody').querySelectorAll('[data-ve]').forEach(b=>b.onclick=()=>vEdit(VAULT.items.find(x=>x.id===b.dataset.ve)));
   $('notesBody').querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{vTouch();const c=$('notesBody').querySelector(`[data-vp="${b.dataset.vs}"]`);const x=VAULT.items.find(q=>q.id===b.dataset.vs);c.textContent=c.textContent==='••••••'?x.p:'••••••';});
@@ -2589,14 +2599,15 @@ function searchDoc(d,words){
 function docCard(d,hits){
   const c=catOf(d.cat);
   return `<div class="lc" data-lib="${d.id}">
-    <div class="th">${d.thumb?`<img src="${d.thumb}" alt="">`:`<span>${d.type==='pdf'?'PDF':'IMG'}</span>`}</div>
+    <div class="th">${d.thumb?`<img src="${d.thumb}" alt="">`:`<span style="${d.type==='note'?'font-size:28px':''}">${d.type==='pdf'?'PDF':d.type==='note'?'📝':'IMG'}</span>`}</div>
     <div class="tx"><b>${d.fav?'⭐ ':''}${pins().includes(d.id)?'📌 ':''}${esc(d.name)}</b>
      <small>${c[2]} ${esc(c[1])}${d.mfr?' · <b>'+esc(d.mfr)+'</b>':''}${d.model?' · '+esc(d.model):''}</small>
      ${(d.tags||[]).length?`<div>${d.tags.map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div>`:''}
+     ${d.type==='note'&&!hits&&d.text?`<small>${esc(d.text.replace(/\s+/g,' ').slice(0,110))}${d.text.length>110?'…':''}</small>`:''}
      ${d.note&&!hits?`<small>${esc(d.note.slice(0,90))}${d.note.length>90?'…':''}</small>`:''}
      ${hits?hits.map(h=>`<button class="hit" data-hit="${d.id}" data-p="${h.p}">${h.p?`<b>str. ${h.p}</b> `:''}${esc(h.s)}</button>`).join(''):''}
      ${!hits&&(d.bm||[]).length?`<div>${d.bm.slice(0,4).map(b=>`<button class="hit bm" data-hit="${d.id}" data-p="${b.p}">🔖 ${esc(b.n)} <b>s.${b.p}</b></button>`).join('')}</div>`:''}
-     <small>${d.type==='pdf'?(d.pages||'?')+' str. · ':''}${fmtMB(d.size||0)}</small></div></div>`;
+     <small>${d.type==='note'?'📝 notatka'+((d.ph||[]).length?' · 📷 '+d.ph.length:''):(d.type==='pdf'?(d.pages||'?')+' str. · ':'')+fmtMB(d.size||0)}</small></div></div>`;
 }
 async function renderLib(){
   await loadLibTxt();
@@ -2618,7 +2629,7 @@ async function renderLib(){
     const res=list.map(d=>searchDoc(d,words)).filter(Boolean).sort((a,b)=>b.score-a.score||((b.d.used||b.d.added)-(a.d.used||a.d.added)));
     h=`<div class="mut" style="margin-bottom:6px">Znaleziono: ${res.length}${CATF||MFRF||TAGF||PINF?' (w wybranym filtrze)':''}</div>`+res.map(r=>docCard(r.d,r.hits)).join('')||'<p class="mut">Nic nie znaleziono.</p>';
   }else if(!CATF&&!MFRF&&!TAGF&&!PINF){
-    if(!LIB().length)h='<div class="card mut">Biblioteka jest pusta. Dodaj PDF-y instrukcji i schematów albo zdjęcia (np. schemat z pokrywy centrali). Producent i kategoria rozpoznają się same po nazwie i treści.</div>';
+    if(!LIB().length)h='<div class="card mut">Biblioteka jest pusta. Dodaj własne notatki (📝) albo PDF-y instrukcji, schematy i zdjęcia (np. schemat z pokrywy centrali). Producent i kategoria rozpoznają się same po nazwie i treści.</div>';
     else{
       const fav=LIB().filter(d=>d.fav);const rec=LIB().filter(d=>d.used).sort((a,b)=>b.used-a.used).slice(0,4);
       h+=`<div class="cats">${LCAT.map(c=>{const n=LIB().filter(d=>(d.cat||'in')===c[0]).length;return n?`<button class="cat" data-catf="${c[0]}"><span>${c[2]}</span>${esc(c[1])}<b>${n}</b></button>`:'';}).join('')}</div>`;
@@ -2683,7 +2694,8 @@ $('s-lib').addEventListener('click',e=>{
   const c=e.target.closest('[data-lib]');if(c){libOpen(LIB().find(d=>d.id===c.dataset.lib));}
 });
 async function libOpen(d,page){
-  if(!d)return;const blob=await IDB.get('lib_'+d.id);
+  if(!d)return;
+  if(d.type==='note'){d.used=Date.now();save();LV={d,note:1,page:1};LZ=1;$('libView').classList.add('on');$('lvBm').style.display=$('lvToc').style.display='none';try{history.pushState({lv:1},'');}catch(e){}lvNote(d);return;}const blob=await IDB.get('lib_'+d.id);
   if(!blob){$('libMsg').textContent='Brak pliku w pamięci telefonu.';return;}
   d.used=Date.now();save();
   LV={d,blob,doc:null,url:null,page:1};LZ=1;
@@ -2698,7 +2710,7 @@ async function libOpen(d,page){
 }
 let LVIO=null;
 async function lvRender(){
-  if(!LV)return;const body=$('lvBody');const W=Math.round((body.clientWidth-16)*LZ);
+  if(!LV)return;if(LV.note){lvNote(LV.d);return;}const body=$('lvBody');const W=Math.round((body.clientWidth-16)*LZ);
   if(LV.url){body.innerHTML=`<img src="${LV.url}" style="width:${W}px">`;return;}
   const doc=LV.doc;const p1=await doc.getPage(1);const v1=p1.getViewport({scale:1});
   body.innerHTML=Array.from({length:doc.numPages},(_,i)=>`<div class="pgw"><div class="pgn">${i+1}</div><canvas data-pg="${i+1}" style="width:${W}px;height:${Math.round(W*v1.height/v1.width)}px"></canvas></div>`).join('')+`<div style="color:#d1d5db;text-align:center;padding:8px 0 24px;font-size:13px">${doc.numPages} str.</div>`;
@@ -2724,6 +2736,7 @@ const lvZoom=f=>{const b=$('lvBody');const rx=(b.scrollLeft+b.clientWidth/2)/b.s
   LZ=Math.max(0.5,Math.min(5,LZ*f));lvRender().then(()=>{b.scrollLeft=rx*b.scrollWidth-b.clientWidth/2;b.scrollTop=ry*b.scrollHeight-b.clientHeight/2;});};
 $('lvP').onclick=()=>lvZoom(1.4);$('lvM').onclick=()=>lvZoom(1/1.4);
 $('lvI').onclick=()=>{if(LV)libInfo(LV.d);};
+$('libNoteB').onclick=()=>libNoteDlg(null);
 $('lvBm').onclick=()=>{
   if(!LV||!LV.doc)return;const p=lvCurPage();const d=LV.d;
   $('dlg').innerHTML=`<h3>🔖 Zakładka – strona ${p}</h3><div class="f"><label>Nazwa</label><input id="bmN" placeholder="np. Schemat podłączenia zwory, Tabela wyjść"></div>
@@ -2745,6 +2758,7 @@ $('lvToc').onclick=()=>{
   $('ov').classList.add('on');
 };
 function libInfo(d){
+  if(d.type==='note'){libNoteDlg(d);return;}
   const tags=(d.tags||[]).slice();
   $('dlg').innerHTML=`<h3>Opis schematu</h3>
    <div class="f"><label>Nazwa</label><input id="liN" value="${esc(d.name)}"></div>
@@ -2776,6 +2790,59 @@ function libInfo(d){
   $('ov').classList.add('on');
 }
 
+// ---- własne notatki w bibliotece (tekst + zdjęcia)
+function libNoteDlg(d){
+  const isNew=!d;
+  d=d||{id:uid(),type:'note',name:'',text:'',cat:CATF||'',mfr:MFRF||'',model:'',tags:TAGF?[TAGF]:[],note:'',added:Date.now(),size:0,pages:0,thumb:'',ph:[],bm:[],det:1};
+  const E={ph:(d.ph||[]).slice()};
+  $('dlg').innerHTML=`<h3>${isNew?'📝 Nowa notatka':'📝 Notatka'}</h3>
+   <div class="f"><label>Tytuł</label><input id="lnN" value="${esc(d.name)}" placeholder="np. Podłączenie zwory do Roger PRT12"></div>
+   <div class="g2"><div class="f"><label>Kategoria</label><select id="lnC">${LCAT.map(c=>`<option value="${c[0]}" ${c[0]===(d.cat||'in')?'selected':''}>${c[2]} ${c[1]}</option>`).join('')}</select></div>
+   <div class="f"><label>Producent</label><input id="lnM" list="mfrs2" value="${esc(d.mfr||'')}"><datalist id="mfrs2">${[...new Set([...allMfrs(),...MFR_RX.map(x=>x[1])])].map(m=>`<option value="${esc(m)}">`).join('')}</datalist></div></div>
+   <div class="f"><label>Model / urządzenie</label><input id="lnMo" value="${esc(d.model||'')}"></div>
+   <div class="f"><label>Treść</label><textarea id="lnT" rows="10" placeholder="np.&#10;Zwora 12 V: + z zasilacza na COM przekaźnika REL1, NC → zwora&#10;Czytnik: zielony = D0, biały = D1&#10;Zworka J3 na 12 V">${esc(d.text||'')}</textarea></div>
+   <div class="f"><label>Tagi (oddziel przecinkami)</label><input id="lnTg" value="${esc((d.tags||[]).join(', '))}" placeholder="np. zwora, podłączenie"></div>
+   ${photoSection(E).replace('id="mkPh"','id="lnPh"').replace('id="mkPhIn"','id="lnPhIn"')}
+   <label style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input type="checkbox" id="lnFav" ${d.fav?'checked':''} style="width:22px;height:22px"> ⭐ Ulubione</label>
+   <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="lnPin" ${pins().includes(d.id)?'checked':''} style="width:22px;height:22px"> 📌 Przypnij do projektu „${esc(P.name)}”</label>
+   <div class="bar"><button class="btn p" id="lnOk">Zapisz</button><button class="btn" id="lnNo">Anuluj</button>${isNew?'':'<button class="btn" id="lnSh">Udostępnij</button><button class="btn d" id="lnDel">Usuń</button>'}</div><div id="lnMsg" class="mut"></div>`;
+  const drawPh=()=>{
+    const html=photoSection(E).replace('id="mkPh"','id="lnPh"').replace('id="mkPhIn"','id="lnPhIn"');
+    $('lnPh').outerHTML=html.replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();
+  };
+  const bindPh=()=>{
+    fillThumbs($('lnPh'));
+    $('lnPh').querySelectorAll('[data-ph]').forEach(x=>x.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(x.dataset.ph);});
+    $('lnPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(q=>q!==b.dataset.phx);IDB.del('ph_'+b.dataset.phx);drawPh();});
+    $('lnPhIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const id=await photoAdd(f);if(id){E.ph.push(id);drawPh();}};
+  };
+  bindPh();
+  $('lnNo').onclick=closeDlg;
+  $('lnOk').onclick=async()=>{
+    d.name=$('lnN').value.trim()||'Notatka';d.cat=$('lnC').value;d.mfr=$('lnM').value.trim();d.model=$('lnMo').value.trim();d.text=$('lnT').value;
+    d.tags=[...new Set($('lnTg').value.split(',').map(x=>x.trim()).filter(Boolean))];d.fav=$('lnFav').checked;d.ph=E.ph.slice();d.size=d.text.length;
+    if(E.ph[0]){const t=await photoGet(E.ph[0]);if(t){d.thumb=await new Promise(r=>{const im=new Image();im.onload=()=>{const k=200/im.width;const cv=document.createElement('canvas');cv.width=200;cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);r(cv.toDataURL('image/jpeg',0.7));};im.onerror=()=>r('');im.src=t;});}}else d.thumb='';
+    const pp=pins();const i=pp.indexOf(d.id);if($('lnPin').checked&&i<0)pp.push(d.id);if(!$('lnPin').checked&&i>=0)pp.splice(i,1);
+    const txt=(d.text||'').toLowerCase().replace(/\s+/g,' ');LIBTXT[d.id]=txt;IDB.put('libtxt_'+d.id,txt);
+    if(isNew)LIB().push(d);d.used=Date.now();save();closeDlg();
+    if(LV&&LV.d.id===d.id)lvNote(d);else renderLib();
+  };
+  if($('lnSh'))$('lnSh').onclick=async()=>{const t=d.name+'\n\n'+(d.text||'');try{if(navigator.share){await navigator.share({title:d.name,text:t});return;}}catch(e){if(e&&e.name==='AbortError')return;}try{await navigator.clipboard.writeText(t);$('lnMsg').textContent='Skopiowano treść.';}catch(e){}};
+  if($('lnDel'))$('lnDel').onclick=()=>{if(!$('lnDel').dataset.c){$('lnDel').dataset.c=1;$('lnDel').textContent='Na pewno usunąć?';return;}
+    (d.ph||[]).forEach(id=>IDB.del('ph_'+id));DB.lib=LIB().filter(x=>x.id!==d.id);DB.projects.forEach(p=>{if(p.libPins)p.libPins=p.libPins.filter(x=>x!==d.id);});
+    IDB.del('libtxt_'+d.id);delete LIBTXT[d.id];save();closeDlg();if(LV)lvClose();else renderLib();};
+  $('ov').classList.add('on');
+}
+function lvNote(d){
+  const c=catOf(d.cat);
+  $('lvT').textContent=d.name;$('lvPg').textContent='';
+  $('lvBody').innerHTML=`<div class="lvnote" style="font-size:${Math.round(16*LZ)}px"><h2>${esc(d.name)}</h2><div class="mut">${c[2]} ${esc(c[1])}${d.mfr?' · '+esc(d.mfr):''}${d.model?' · '+esc(d.model):''}</div>
+    ${(d.tags||[]).length?`<div style="margin:6px 0">${d.tags.map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div>`:''}
+    <div class="lvtx">${esc(d.text||'')}</div>
+    ${(d.ph||[]).map(id=>`<img data-phid="${id}" data-ph="${id}" alt="">`).join('')}</div>`;
+  fillThumbs($('lvBody'));
+  $('lvBody').querySelectorAll('img[data-ph]').forEach(im=>im.onclick=()=>photoView(im.dataset.ph));
+}
 // ---------- start ----------
 load();render();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
