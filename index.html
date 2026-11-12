@@ -174,6 +174,8 @@ table.tb th{background:#eee}
 .lvnote h2{margin:0 0 4px;font-size:1.25em}.lvtx{white-space:pre-wrap;margin:10px 0}
 .lvnote img{display:block;width:100%;border-radius:8px;margin-top:10px;cursor:pointer}
 /* ampio */
+.cheat h3{margin-top:0}.ct{width:100%;border-collapse:collapse;font-size:15px}.ct td{padding:6px 4px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.cl{margin:8px 0 0;padding-left:18px;font-size:14px}.cl li{margin-bottom:4px}
 .k.tmp{background:#fee2e2;color:#991b1b}
 .wd{display:inline-block;width:13px;height:13px;border-radius:50%;border:1px solid #6b7280;vertical-align:middle;margin-right:2px}
 .wp{display:flex;flex-wrap:wrap;gap:5px}
@@ -376,6 +378,7 @@ table.tb th{background:#eee}
       <button data-as="scn">Sceny</button>
       <button data-as="todo">Zadania</button>
       <button data-as="doc">Dokumentacja</button>
+      <button data-as="cheat">📖 Ściągawka</button>
     </div>
     <div id="ampBody"></div>
   </section>
@@ -1606,11 +1609,36 @@ function renderAmp(){
     A.todo.forEach(t=>{h+=`<label class="todo ${t.done?'dn':''}"><input type="checkbox" data-td="${t.id}" ${t.done?'checked':''}><span>${esc(t.t)}</span><button class="btn sm" data-tdx="${t.id}" type="button">✕</button></label>`;});
     h+=`<div class="bar"><input id="aTodo" placeholder="Nowe zadanie, np. klient chce scenę Kino" style="flex:1;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px"><button class="btn p" id="aTodoAdd">Dodaj</button></div>`;
   }
+  if(AS==='cheat'){
+    const dot=k=>wDots([k]);
+    h=`<div class="card cheat"><h3>🌡 Czujnik DS18B20 → moduł Ampio (1-Wire)</h3>
+      <table class="ct"><tr><td>${dot('zo')} <b>żółty</b> <span class="mut">(czasem biały)</span></td><td>→ <b>W</b> (1-Wire, dane DQ)</td></tr>
+      <tr><td>${dot('cz')} <b>czarny</b></td><td>→ <b>−</b> (GND)</td></tr>
+      <tr><td>${dot('cr')} <b>czerwony</b></td><td>→ <b>−</b> (GND) – razem z czarnym</td></tr></table>
+      <p class="mut">Złącze 1-Wire w module (np. M-IN-2p) ma tylko <b>W</b> i <b>−</b>, dlatego czerwony (VDD) łączysz z masą – czujnik pracuje wtedy w trybie zasilania pasożytniczego.</p>
+      <ul class="cl"><li>Do jednego modułu: <b>maks. 6 czujników</b>.</li><li>Łączna długość przewodu 1-Wire: <b>maks. 15 m</b>.</li>
+      <li>Kolory zależą od producenta czujnika – jeśli są inne niż powyżej, sprawdź opis na opakowaniu lub przewodzie.</li>
+      <li>Odczyt <b>85 °C</b> albo <b>−127 °C</b> zwykle oznacza złe połączenie lub zbyt długą magistralę.</li></ul></div>
+     <div class="card cheat"><h3>🔌 Magistrala CAN Ampio</h3>
+      <table class="ct"><tr><td><b>H</b></td><td>CAN High</td></tr><tr><td><b>L</b></td><td>CAN Low – H i L prowadź jedną skręconą parą</td></tr>
+      <tr><td><b>+</b></td><td>+12 V (moduły: 11–16 V DC)</td></tr><tr><td><b>−</b></td><td>GND</td></tr></table>
+      <ul class="cl"><li>Magistrala liniowo od modułu do modułu, bez gwiazdy.</li><li>Terminatory na obu końcach magistrali.</li>
+      <li>Trzymaj się jednego układu kolorów w całej instalacji – zapisz go niżej w „Moim standardzie”.</li></ul></div>
+     <div class="card cheat"><h3>🔘 Wejścia Ampio (np. M-IN-2p)</h3>
+      <p>Wejścia są <b>zwierane do masy</b>: łącznik między wejściem (<b>1</b> / <b>2</b>) a <b>−</b>. Nie podawaj na nie 230 V – do tego są moduły M-IN-AC.</p></div>
+     <div class="card cheat"><h3>⚡ Kolory w instalacji 230/400 V</h3>
+      <table class="ct"><tr><td>${dot('br')} brązowy, ${dot('cz')} czarny, ${dot('sz')} szary</td><td>fazy L1 / L2 / L3</td></tr>
+      <tr><td>${dot('nb')} niebieski</td><td>N</td></tr><tr><td>${dot('zz')} żółto-zielony</td><td>PE – tylko ochronny</td></tr></table></div>
+     <div class="card cheat"><h3>✍️ Mój standard / moje notatki</h3>
+      <textarea id="chMy" rows="7" style="width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px" placeholder="np. CAN po skrętce UTP:&#10;H = biało-pomarańczowy, L = pomarańczowy&#10;+12 V = biało-niebieski + niebieski&#10;GND = biało-brązowy + brązowy">${esc(DB.cheat||'')}</textarea>
+      <p class="mut">Wspólne dla wszystkich projektów.</p></div>`;
+  }
   if(AS==='doc'){
     h=`<div class="card noprint"><button class="btn p" id="aPrint">🖨 Drukuj / PDF dokumentacji</button></div><div class="card"><div id="ampDoc">${ampDoc()}</div></div>`;
   }
   $('ampBody').innerHTML=h;
   if($('aAdd'))$('aAdd').onclick=()=>modDlg(null);
+  if($('chMy'))$('chMy').oninput=()=>{DB.cheat=$('chMy').value;save();};
   if($('aScn'))$('aScn').onclick=()=>scnDlg(null);
   if($('aPrint'))$('aPrint').onclick=()=>{try{window.print();}catch(e){}};
   if($('aQ')){const q=$('aQ');q.oninput=()=>{AQ=q.value;findRes();};findRes();}
@@ -1650,13 +1678,14 @@ function modDlg(m){
    <div class="boxs"><div class="shg" style="margin-top:4px">🎨 Kolory przewodów magistrali</div>
     <div class="g2"><div class="f"><label>CAN H</label>${wireSelect('bH',E.bus.h)}</div><div class="f"><label>CAN L</label>${wireSelect('bL',E.bus.l)}</div>
     <div class="f"><label>+12 V</label>${wireSelect('bP',E.bus.p)}</div><div class="f"><label>GND (−)</label>${wireSelect('bG',E.bus.g)}</div></div>
-    <div id="owW" style="display:${E.ch.tmp.length?'':'none'}"><div class="mut">1-Wire (czujniki temp.)</div><div class="g3"><div class="f"><label>GND</label>${wireSelect('oG',E.ow.g)}</div><div class="f"><label>DQ (dane)</label>${wireSelect('oD',E.ow.d)}</div><div class="f"><label>VDD</label>${wireSelect('oV',E.ow.v)}</div></div></div>
+    <div id="owW" style="display:${E.ch.tmp.length?'':'none'}"><div class="mut" style="display:flex;justify-content:space-between;align-items:center">1-Wire (czujniki temp.)<button type="button" class="btn sm" id="owStd">Standard DS18B20</button></div><div class="g3"><div class="f"><label>GND</label>${wireSelect('oG',E.ow.g)}</div><div class="f"><label>DQ (dane)</label>${wireSelect('oD',E.ow.d)}</div><div class="f"><label>VDD</label>${wireSelect('oV',E.ow.v)}</div></div></div>
     ${prevBus?`<button type="button" class="btn sm" id="busCopy">Jak w ${esc(prevBus.short)}</button>`:''}</div>
    <p class="mut" style="margin-top:-4px">Sprawdź liczby kanałów z kartą katalogową swojego modułu.</p>
    <div class="f"><label>Uwagi</label><input id="mNote" value="${esc(E.note)}"></div>
    <div class="bar"><button class="btn p" id="mSave">Zapisz</button><button class="btn" id="mCan">Anuluj</button>${isNew?'':'<button class="btn d" id="mDel">Usuń moduł</button>'}</div>`;
   const desc=()=>{const t=AMP_TYPES.find(x=>x[0]===$('mType').value);$('mTypeD').textContent=t?t[4]:'';};desc();
   $('mType').onchange=()=>{const t=AMP_TYPES.find(x=>x[0]===$('mType').value);if(t&&t[0]!=='Inny'){$('mO').value=t[1];$('mI').value=t[2];$('mB').value=t[3];$('mT').value=t[5]||0;if(t[6]&&!$('mDin').value)$('mDin').value=t[6];}desc();$('owW').style.display=+$('mT').value?'':'none';};
+  $('owStd').onclick=()=>{$('oG').value='cz';$('oD').value='zo';$('oV').value='cr';};
   $('mT').oninput=()=>{$('owW').style.display=+$('mT').value?'':'none';};
   if($('busCopy'))$('busCopy').onclick=()=>{$('bH').value=prevBus.bus.h||'';$('bL').value=prevBus.bus.l||'';$('bP').value=prevBus.bus.p||'';$('bG').value=prevBus.bus.g||'';if(prevBus.ow){$('oG').value=prevBus.ow.g||'';$('oD').value=prevBus.ow.d||'';$('oV').value=prevBus.ow.v||'';}};
   $('mCan').onclick=closeDlg;
@@ -1746,7 +1775,7 @@ function ampDoc(){
   if(ins.length){h+=`<h2>Wejścia i przyciski</h2><table><tr><th>Kanał</th><th>Opis</th><th>Pomieszczenie</th><th>Akcja</th><th>Steruje</th><th>Przewody</th><th>Uwagi</th></tr>`;
     ins.forEach(x=>{h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${esc(x.c.act)}</td><td>${esc((x.c.tg||[]).map(r=>chText(chByRef(r))).join('; '))}</td><td>${wcol(x.c)}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
   if(tmps.length){h+=`<h2>Czujniki temperatury</h2><table><tr><th>Kanał</th><th>Opis</th><th>Pomieszczenie</th><th>ID czujnika</th><th>Do czego</th><th>Przewody</th><th>Uwagi</th></tr>`;
-    tmps.forEach(x=>{const ow=x.m.ow||{};const o=[ow.g&&'GND '+wc(ow.g)[1],ow.d&&'DQ '+wc(ow.d)[1],ow.v&&'VDD '+wc(ow.v)[1]].filter(Boolean).join(', ');h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${esc(x.c.addr||'')}</td><td>${esc(x.c.act)}</td><td>${wcol(x.c)||esc(o)}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
+    tmps.forEach(x=>{const ow=x.m.ow||{};const o=[ow.g&&'GND '+wc(ow.g)[1],ow.d&&'DQ (W) '+wc(ow.d)[1],ow.v&&'VDD '+wc(ow.v)[1]+' → GND'].filter(Boolean).join(', ');h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${esc(x.c.addr||'')}</td><td>${esc(x.c.act)}</td><td>${wcol(x.c)||esc(o)}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
   if(A.scenes.length){h+=`<h2>Sceny i automatyka</h2>`;A.scenes.forEach(s=>{h+=`<h3>${esc(s.name)} <small>(${ST[s.st||0]})</small></h3><div>${s.trig?'<b>Wyzwalacz:</b> '+esc(s.trig)+'<br>':''}${esc(s.desc)}${(s.tg||[]).length?'<br><b>Kanały:</b> '+esc(s.tg.map(r=>chText(chByRef(r))).join('; ')):''}${s.integ?'<br><b>Integracje:</b> '+esc(s.integ):''}</div>`;});}
   const open=A.todo.filter(t=>!t.done);
   if(open.length)h+=`<h2>Do zrobienia</h2><ul>${open.map(t=>`<li>${esc(t.t)}</li>`).join('')}</ul>`;
