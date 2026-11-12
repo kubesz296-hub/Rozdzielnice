@@ -174,6 +174,12 @@ table.tb th{background:#eee}
 .lvnote h2{margin:0 0 4px;font-size:1.25em}.lvtx{white-space:pre-wrap;margin:10px 0}
 .lvnote img{display:block;width:100%;border-radius:8px;margin-top:10px;cursor:pointer}
 /* ampio */
+.k.tmp{background:#fee2e2;color:#991b1b}
+.wd{display:inline-block;width:13px;height:13px;border-radius:50%;border:1px solid #6b7280;vertical-align:middle;margin-right:2px}
+.wp{display:flex;flex-wrap:wrap;gap:5px}
+.wb{border:1px solid var(--line);background:#fff;border-radius:14px;padding:4px 8px;font-size:12.5px;display:flex;align-items:center;gap:4px}
+.wb.on{border:2px solid var(--acc);background:#eff6ff}
+.wsel{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px}
 
 .am{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.06);overflow:hidden}
 .am .ah{display:flex;gap:8px;align-items:center;padding:10px;background:#f0fdfa;border-bottom:1px solid #ccfbf1}
@@ -1481,24 +1487,46 @@ window.addEventListener('beforeprint',()=>{if(document.querySelector('#s-meas.on
 
 // ---------- AMPIO ----------
 const AMP_TYPES=[
- // typ, wyjścia, wejścia, pola dotykowe, opis
- ['M-SERV-s',0,0,0,'Serwer / bramka aplikacji, integracje IP'],
- ['M-REL-2s',2,0,0,'2 wyjścia przekaźnikowe (DIN)'],
- ['M-REL-2p',2,0,0,'2 wyjścia przekaźnikowe (puszkowy)'],
- ['M-REL-8s',8,0,0,'8 wyjść przekaźnikowych (DIN)'],
- ['M-OC-4s',4,0,0,'Sterownik LED RGBW, 4 wyjścia OC'],
- ['M-OC-C8s',8,4,0,'Sterownik LED, 8 wyjść OC + 4 wejścia'],
- ['M-LED-s',1,0,0,'Sterownik magistrali oświetleniowej'],
- ['M-IN-AC4s',0,4,0,'4 wejścia 230 V AC'],
- ['M-DOT-9',0,0,9,'Panel dotykowy, 9 pól'],
- ['M-DOT-M6',0,0,6,'Panel z wyświetlaczem, 6 pól'],
- ['M-DOT-R14',0,0,14,'Panel z RFID, 14 pól'],
- ['M-DIM',1,0,0,'Ściemniacz'],
- ['M-CON',0,0,0,'Integracja (Satel / RS-485 / Z-Wave…)'],
- ['M-RDN-5s',0,0,0,'Zasilanie redundantne CAN'],
- ['Inny',0,0,0,'Dowolny moduł – ustaw liczby kanałów']
+ // typ, wyjścia, wejścia, pola dotykowe, opis, czujniki temp. (1-Wire), szerokość DIN
+ ['M-SERV-s',0,0,0,'Serwer (MSERV-4s) – bramka aplikacji, integracje IP, 1-Wire',0,''],
+ ['M-SERV-3s',0,0,0,'Serwer (wycofany) – integracje IP, stacja Ampio LoRa, 1-Wire, DIN 8 mod.',0,8],
+ ['M-SERV-MINI-s',4,2,0,'Mini serwer – 2 wejścia, 4 wyjścia OC, do 6 czujników temp. 1-Wire',0,''],
+ ['M-SERV (inny)',0,0,0,'Inna wersja serwera – ustaw kanały wg karty katalogowej',0,''],
+ ['M-REL-2s',2,0,0,'2 wyjścia przekaźnikowe (DIN)',0,''],
+ ['M-REL-2p',2,0,0,'2 wyjścia przekaźnikowe (puszkowy)',0,''],
+ ['M-REL-8s',8,0,0,'8 wyjść przekaźnikowych (DIN)',0,''],
+ ['M-OC-4s',4,0,0,'Sterownik LED RGBW, 4 wyjścia OC',0,''],
+ ['M-OC-C8s',8,4,0,'Sterownik LED, 8 wyjść OC + 4 wejścia',0,''],
+ ['M-LED-s',1,0,0,'Sterownik magistrali oświetleniowej',0,''],
+ ['M-IN-2p',0,2,0,'Puszkowy: 2 wejścia + 1-Wire (do 6 czujników DS18B20) + czujnik jasności',1,''],
+ ['M-IN-AC4s',0,4,0,'4 wejścia 230 V AC',0,''],
+ ['M-SENS-LITE',0,0,0,'Czujnik warunków otoczenia (temperatura) – na puszkę',1,''],
+ ['WZ-SENS-TMP-p',0,0,0,'Bezprzewodowy czujnik temperatury (bateria CR2032, przez stację bazową)',1,''],
+ ['Czujnik DS18B20',0,0,0,'Pojedynczy czujnik temp. 1-Wire (wpisz, do którego modułu podłączony)',1,''],
+ ['M-DOT-9',0,0,9,'Panel dotykowy, 9 pól',0,''],
+ ['M-DOT-M6',0,0,6,'Panel z wyświetlaczem, 6 pól',0,''],
+ ['M-DOT-R14',0,0,14,'Panel z RFID, 14 pól',0,''],
+ ['M-DIM',1,0,0,'Ściemniacz',0,''],
+ ['M-CON',0,0,0,'Integracja (Satel / RS-485 / Z-Wave…)',0,''],
+ ['M-RDN-5s',0,0,0,'Zasilanie redundantne CAN',0,''],
+ ['Inny',0,0,0,'Dowolny moduł – ustaw liczby kanałów',0,'']
 ];
-const CH_T={out:{s:'W',n:'Wyjście'},in:{s:'WE',n:'Wejście'},btn:{s:'P',n:'Pole'}};
+const WIRES=[['br','brązowy','#8b5a2b'],['cz','czarny','#111'],['sz','szary','#9ca3af'],['nb','niebieski','#2563eb'],['zz','żółto-zielony','linear-gradient(90deg,#16a34a 50%,#facc15 50%)'],
+ ['cr','czerwony','#dc2626'],['bi','biały','#fff'],['zi','zielony','#16a34a'],['zo','żółty','#facc15'],['po','pomarańczowy','#f97316'],['fi','fioletowy','#7c3aed'],['ro','różowy','#ec4899'],
+ ['bz','biało-zielony','linear-gradient(90deg,#fff 50%,#16a34a 50%)'],['bp','biało-pomarańczowy','linear-gradient(90deg,#fff 50%,#f97316 50%)'],['bn','biało-niebieski','linear-gradient(90deg,#fff 50%,#2563eb 50%)'],['bb','biało-brązowy','linear-gradient(90deg,#fff 50%,#8b5a2b 50%)']];
+const wc=k=>WIRES.find(w=>w[0]===k);
+const wDots=a=>(a||[]).map(k=>{const w=wc(k);return w?`<span class="wd" title="${w[1]}" style="background:${w[2]}"></span>`:'';}).join('');
+const wNames=a=>(a||[]).map(k=>{const w=wc(k);return w?w[1]:'';}).filter(Boolean).join(' / ');
+function wirePicker(id,sel){
+  return `<div class="wp" id="${id}">${WIRES.map(w=>{const i=(sel||[]).indexOf(w[0]);return `<button type="button" class="wb ${i>=0?'on':''}" data-w="${w[0]}"><span class="wd" style="background:${w[2]}"></span>${w[1]}${i>=0?` <b>${i+1}</b>`:''}</button>`;}).join('')}</div>`;
+}
+function bindWirePicker(id,arr){
+  const el=$(id);if(!el)return;
+  el.onclick=e=>{const b=e.target.closest('[data-w]');if(!b)return;const k=b.dataset.w;const i=arr.indexOf(k);if(i>=0)arr.splice(i,1);else arr.push(k);el.outerHTML=wirePicker(id,arr);bindWirePicker(id,arr);};
+}
+function wireSelect(id,v){return `<select id="${id}" class="wsel"><option value="">—</option>${WIRES.map(w=>`<option value="${w[0]}" ${w[0]===v?'selected':''}>${w[1]}</option>`).join('')}</select>`;}
+
+const CH_T={out:{s:'W',n:'Wyjście'},in:{s:'WE',n:'Wejście'},btn:{s:'P',n:'Pole'},tmp:{s:'T',n:'Czujnik temperatury'}};
 const ACTIONS=['przełącz','włącz','wyłącz','ściemniaj','roleta góra/dół','scena','włącz na czas','inne'];
 const ST=['do zrobienia','zaprogramowane','przetestowane'];
 const TODO_DEF=['Ułożenie magistrali CAN (kolejność modułów, bez gwiazd)','Terminatory na końcach magistrali','Zasilacze 12 V – podłączone i sprawdzone','Moduły widoczne w Designerze, nadane nazwy','Test wszystkich wejść i przycisków','Test wszystkich wyjść','Logika i sceny zaprogramowane','Aplikacja dla klienta (widoki, pomieszczenia)','Integracje (alarm, kamery, ogrzewanie…)','Kopia projektu z Designera zapisana','Szkolenie klienta i przekazanie'];
@@ -1508,13 +1536,13 @@ function AP(){
   return P.ampio;
 }
 const ampMod=id=>(P.ampio&&P.ampio.mods.find(m=>m.id===id))||null;
-function chList(m){const r=[];['out','in','btn'].forEach(t=>m.ch[t].forEach((c,i)=>r.push({t,i,c,ref:m.id+':'+t+':'+i})));return r;}
+function chList(m){const r=[];['out','in','btn','tmp'].forEach(t=>(m.ch[t]||[]).forEach((c,i)=>r.push({t,i,c,ref:m.id+':'+t+':'+i})));return r;}
 function chByRef(ref){const [mid,t,i]=ref.split(':');const m=ampMod(mid);if(!m||!m.ch[t]||!m.ch[t][+i])return null;return {m,t,i:+i,c:m.ch[t][+i],ref};}
 function chLabel(x){if(!x)return '?';return `${x.m.short} ${CH_T[x.t].s}${x.i+1}`;}
 function chText(x){if(!x)return '(usunięty kanał)';return chLabel(x)+(x.c.n?' – '+x.c.n:'')+(x.c.room?' ['+x.c.room+']':'');}
-function resizeCh(m,o,i,b){
+function resizeCh(m,o,i,b,t){
   const rs=(arr,n)=>{while(arr.length<n)arr.push({n:'',room:'',note:'',obw:'',act:'',tg:[]});arr.length=n;};
-  m.ch=m.ch||{out:[],in:[],btn:[]};rs(m.ch.out,o);rs(m.ch.in,i);rs(m.ch.btn,b);
+  m.ch=m.ch||{out:[],in:[],btn:[]};if(!m.ch.tmp)m.ch.tmp=[];rs(m.ch.out,o);rs(m.ch.in,i);rs(m.ch.btn,b);rs(m.ch.tmp,t||0);
 }
 function syncAmpBoard(){
   const bs=P.boards,mods=P.ampio?P.ampio.mods:[];
@@ -1534,7 +1562,8 @@ function usedBy(ref){ // kto steruje tym wyjściem
 function scenesWith(ref){return AP().scenes.filter(s=>(s.tg||[]).includes(ref));}
 function chRow(m,x){
   const c=x.c;let sub=[];
-  if(x.t==='out'){
+  if(x.t==='tmp'){if(c.addr)sub.push('ID '+c.addr);if(c.act)sub.push(c.act);}
+  else if(x.t==='out'){
     if(c.obw){const it=byIdAll(c.obw);if(it)sub.push('zasila '+(C.glab[it.id]||'')+' '+(it.name||''));}
     const u=usedBy(x.ref);if(u.length)sub.push('← '+u.map(chLabel).join(', '));
   }else{
@@ -1543,7 +1572,7 @@ function chRow(m,x){
   }
   const sc=scenesWith(x.ref);if(sc.length)sub.push('sceny: '+sc.map(s=>s.name).join(', '));
   if(c.note)sub.push(c.note);
-  return `<div class="ch ${c.n?'':'empty'}" data-ch="${x.ref}"><span class="k ${x.t}">${CH_T[x.t].s}${x.i+1}</span><div class="tx">${esc(c.n||'nieopisany')}${c.room?' <span class="mut">['+esc(c.room)+']</span>':''}${sub.length?'<small>'+esc(sub.join(' · '))+'</small>':''}</div><span class="mut">›</span></div>`;
+  return `<div class="ch ${c.n?'':'empty'}" data-ch="${x.ref}"><span class="k ${x.t}">${CH_T[x.t].s}${x.i+1}</span><div class="tx">${esc(c.n||'nieopisany')}${c.room?' <span class="mut">['+esc(c.room)+']</span>':''}${(c.w||[]).length?' '+wDots(c.w):''}${sub.length?'<small>'+esc(sub.join(' · '))+'</small>':''}</div><span class="mut">›</span></div>`;
 }
 function renderAmp(){
   document.querySelectorAll('#asub button').forEach(b=>b.classList.toggle('on',b.dataset.as===AS));
@@ -1553,7 +1582,7 @@ function renderAmp(){
     if(!A.mods.length)h+='<div class="card mut">Brak modułów. Dodaj serwer, przekaźniki, panele DOT, sterowniki LED… Moduły z wpisaną szerokością DIN pojawią się na tablicy.</div>';
     A.mods.forEach(m=>{
       const all=chList(m),done=all.filter(x=>x.c.n).length;
-      h+=`<div class="am"><div class="ah" data-mod="${m.id}"><div class="tx"><b>${esc(m.short)}</b> · ${esc(m.type)}${m.name?' – '+esc(m.name):''}<small>${esc([m.loc,m.addr?'ID '+m.addr:'',m.ver?'v'+m.ver:'',+m.din?m.din+' mod. DIN':''].filter(Boolean).join(' · '))}${all.length?` · opisane ${done}/${all.length}`:''}</small></div><span class="btn sm">Edytuj</span></div>
+      h+=`<div class="am"><div class="ah" data-mod="${m.id}"><div class="tx"><b>${esc(m.short)}</b> · ${esc(m.type)}${m.name?' – '+esc(m.name):''}<small>${esc([m.loc,m.addr?'ID '+m.addr:'',m.ver?'v'+m.ver:'',+m.din?m.din+' mod. DIN':''].filter(Boolean).join(' · '))}${all.length?` · opisane ${done}/${all.length}`:''}${m.bus&&Object.values(m.bus).some(Boolean)?' · CAN '+wDots([m.bus.h,m.bus.l,m.bus.p,m.bus.g].filter(Boolean)):''}</small></div><span class="btn sm">Edytuj</span></div>
       ${all.map(x=>chRow(m,x)).join('')}</div>`;
     });
   }
@@ -1594,7 +1623,7 @@ function findRes(){
   A.mods.forEach(m=>chList(m).forEach(x=>{
     const c=x.c,obw=c.obw&&byIdAll(c.obw);
     const desc=c.n||c.room||c.note||c.act||c.obw||(c.tg||[]).length;
-    const hay=(desc?[m.short,m.type,m.name,m.loc,c.n,c.room,c.note,c.act,obw?(C.glab[obw.id]+' '+obw.name):'',chLabel({m,...x}),(c.tg||[]).map(r=>chText(chByRef(r))).join(' ')]:[chLabel({m,...x})]).join(' ').toLowerCase();
+    const hay=(desc?[m.short,m.type,m.name,m.loc,c.n,c.room,c.note,c.act,c.addr,c.wn,wNames(c.w),obw?(C.glab[obw.id]+' '+obw.name):'',chLabel({m,...x}),(c.tg||[]).map(r=>chText(chByRef(r))).join(' ')]:[chLabel({m,...x})]).join(' ').toLowerCase();
     if(hay.includes(q))h+=`<div class="am">${chRow(m,x)}</div>`;
   }));
   A.scenes.forEach(s=>{if([s.name,s.desc,s.trig,s.integ].join(' ').toLowerCase().includes(q))h+=`<div class="card" data-scn="${s.id}"><b>Scena: ${esc(s.name)}</b> <span class="st s${s.st||0}">${ST[s.st||0]}</span><div class="mut">${esc(s.desc||'')}</div></div>`;});
@@ -1602,8 +1631,9 @@ function findRes(){
 }
 function modDlg(m){
   const A=AP(),isNew=!m;
-  if(isNew){const t=AMP_TYPES[1];m={id:uid(),type:t[0],short:'',name:'',loc:'',addr:'',ver:'',din:'',note:'',ch:{out:[],in:[],btn:[]}};resizeCh(m,t[1],t[2],t[3]);}
-  const E=JSON.parse(JSON.stringify(m));
+  if(isNew){const t=AMP_TYPES.find(x=>x[0]==='M-REL-2s');m={id:uid(),type:t[0],short:'',name:'',loc:'',addr:'',ver:'',din:'',note:'',ch:{out:[],in:[],btn:[],tmp:[]}};resizeCh(m,t[1],t[2],t[3],t[5]);}
+  const E=JSON.parse(JSON.stringify(m));E.ch.tmp=E.ch.tmp||[];E.bus=E.bus||{};E.ow=E.ow||{};
+  const prevBus=AP().mods.filter(x=>x.id!==m.id&&x.bus&&Object.values(x.bus).some(Boolean)).slice(-1)[0];
   $('dlg').innerHTML=`<h3>${isNew?'Nowy moduł':'Moduł '+esc(m.short)}</h3>
    <div class="f"><label>Typ</label><select id="mType">${AMP_TYPES.map(t=>`<option ${t[0]===E.type?'selected':''}>${t[0]}</option>`).join('')}</select><div class="mut" id="mTypeD"></div></div>
    <div class="g2"><div class="f"><label>Krótka nazwa</label><input id="mShort" value="${esc(E.short)}" placeholder="auto, np. REL1"></div>
@@ -1613,14 +1643,22 @@ function modDlg(m){
    <div class="g2"><div class="f"><label>Wersja oprogr.</label><input id="mVer" value="${esc(E.ver)}"></div>
    <div class="f"><label>Szerokość DIN (mod.)</label><input id="mDin" type="number" min="0" inputmode="numeric" value="${esc(E.din)}" placeholder="0 = nie na tablicy"></div></div>
    ${P.boards.length>1?`<div class="f"><label>W rozdzielnicy</label><select id="mBoard">${P.boards.map(b=>`<option value="${b.id}" ${b.id===(E.board||P.boards[0].id)?'selected':''}>${esc(b.name+(b.desc?' – '+b.desc:''))}</option>`).join('')}</select></div>`:''}
-   <div class="g3"><div class="f"><label>Wyjścia</label><input id="mO" type="number" min="0" value="${E.ch.out.length}"></div>
+   <div class="g2"><div class="f"><label>Wyjścia</label><input id="mO" type="number" min="0" value="${E.ch.out.length}"></div>
    <div class="f"><label>Wejścia</label><input id="mI" type="number" min="0" value="${E.ch.in.length}"></div>
-   <div class="f"><label>Pola dotykowe</label><input id="mB" type="number" min="0" value="${E.ch.btn.length}"></div></div>
+   <div class="f"><label>Pola dotykowe</label><input id="mB" type="number" min="0" value="${E.ch.btn.length}"></div>
+   <div class="f"><label>Czujniki temp. (1-Wire)</label><input id="mT" type="number" min="0" max="20" value="${E.ch.tmp.length}"></div></div>
+   <div class="boxs"><div class="shg" style="margin-top:4px">🎨 Kolory przewodów magistrali</div>
+    <div class="g2"><div class="f"><label>CAN H</label>${wireSelect('bH',E.bus.h)}</div><div class="f"><label>CAN L</label>${wireSelect('bL',E.bus.l)}</div>
+    <div class="f"><label>+12 V</label>${wireSelect('bP',E.bus.p)}</div><div class="f"><label>GND (−)</label>${wireSelect('bG',E.bus.g)}</div></div>
+    <div id="owW" style="display:${E.ch.tmp.length?'':'none'}"><div class="mut">1-Wire (czujniki temp.)</div><div class="g3"><div class="f"><label>GND</label>${wireSelect('oG',E.ow.g)}</div><div class="f"><label>DQ (dane)</label>${wireSelect('oD',E.ow.d)}</div><div class="f"><label>VDD</label>${wireSelect('oV',E.ow.v)}</div></div></div>
+    ${prevBus?`<button type="button" class="btn sm" id="busCopy">Jak w ${esc(prevBus.short)}</button>`:''}</div>
    <p class="mut" style="margin-top:-4px">Sprawdź liczby kanałów z kartą katalogową swojego modułu.</p>
    <div class="f"><label>Uwagi</label><input id="mNote" value="${esc(E.note)}"></div>
    <div class="bar"><button class="btn p" id="mSave">Zapisz</button><button class="btn" id="mCan">Anuluj</button>${isNew?'':'<button class="btn d" id="mDel">Usuń moduł</button>'}</div>`;
   const desc=()=>{const t=AMP_TYPES.find(x=>x[0]===$('mType').value);$('mTypeD').textContent=t?t[4]:'';};desc();
-  $('mType').onchange=()=>{const t=AMP_TYPES.find(x=>x[0]===$('mType').value);if(t&&t[0]!=='Inny'){$('mO').value=t[1];$('mI').value=t[2];$('mB').value=t[3];}desc();};
+  $('mType').onchange=()=>{const t=AMP_TYPES.find(x=>x[0]===$('mType').value);if(t&&t[0]!=='Inny'){$('mO').value=t[1];$('mI').value=t[2];$('mB').value=t[3];$('mT').value=t[5]||0;if(t[6]&&!$('mDin').value)$('mDin').value=t[6];}desc();$('owW').style.display=+$('mT').value?'':'none';};
+  $('mT').oninput=()=>{$('owW').style.display=+$('mT').value?'':'none';};
+  if($('busCopy'))$('busCopy').onclick=()=>{$('bH').value=prevBus.bus.h||'';$('bL').value=prevBus.bus.l||'';$('bP').value=prevBus.bus.p||'';$('bG').value=prevBus.bus.g||'';if(prevBus.ow){$('oG').value=prevBus.ow.g||'';$('oD').value=prevBus.ow.d||'';$('oV').value=prevBus.ow.v||'';}};
   $('mCan').onclick=closeDlg;
   if($('mDel'))$('mDel').onclick=()=>{
     if(!$('mDel').dataset.c){$('mDel').dataset.c=1;$('mDel').textContent='Na pewno?';return;}
@@ -1629,9 +1667,10 @@ function modDlg(m){
   $('mSave').onclick=()=>{
     E.type=$('mType').value;E.name=$('mName').value.trim();E.loc=$('mLoc').value.trim();E.addr=$('mAddr').value.trim();E.ver=$('mVer').value.trim();
     E.din=$('mDin').value;E.note=$('mNote').value.trim();if($('mBoard'))E.board=$('mBoard').value;
-    resizeCh(E,Math.max(0,+$('mO').value||0),Math.max(0,+$('mI').value||0),Math.max(0,+$('mB').value||0));
+    resizeCh(E,Math.max(0,+$('mO').value||0),Math.max(0,+$('mI').value||0),Math.max(0,+$('mB').value||0),Math.max(0,+$('mT').value||0));
+    E.bus={h:$('bH').value,l:$('bL').value,p:$('bP').value,g:$('bG').value};E.ow={g:$('oG').value,d:$('oD').value,v:$('oV').value};
     let sh=$('mShort').value.trim();
-    if(!sh){const base=E.type.replace(/^M-/,'').replace(/-.*$/,'');let n=1;while(A.mods.some(x=>x.id!==E.id&&x.short===base+n))n++;sh=base+n;}
+    if(!sh){const base=E.type.startsWith('Czujnik')?'TMP':E.type.replace(/^(M|WZ)-/,'').replace(/-.*$/,'').replace(/\s.*$/,'');let n=1;while(A.mods.some(x=>x.id!==E.id&&x.short===base+n))n++;sh=base+n;}
     E.short=sh;
     if(isNew)A.mods.push(E);else A.mods[A.mods.findIndex(x=>x.id===E.id)]=E;
     closeDlg();render();renderAmp();
@@ -1652,20 +1691,25 @@ function tagEditor(id,list){
 }
 function rooms(){const s=new Set();AP().mods.forEach(m=>chList(m).forEach(x=>{if(x.c.room)s.add(x.c.room);}));['Salon','Kuchnia','Łazienka','Sypialnia','Korytarz','Garaż','Wiatrołap','Pokój','Ogród'].forEach(r=>s.add(r));return [...s];}
 function chDlg(ref){
-  const x=chByRef(ref);if(!x)return;const c=JSON.parse(JSON.stringify(x.c));c.tg=c.tg||[];
+  const x=chByRef(ref);if(!x)return;const c=JSON.parse(JSON.stringify(x.c));c.tg=c.tg||[];c.w=c.w||[];
   const circ=allLayout().map(byIdAll).filter(i=>['mcb','rcbo','other'].includes(i.kind));
   $('dlg').innerHTML=`<h3>${esc(x.m.short)} · ${CH_T[x.t].n} ${x.i+1}</h3>
    <div class="g2"><div class="f"><label>Opis</label><input id="cN" value="${esc(c.n)}" placeholder="${x.t==='out'?'np. Światło sufit':'np. Klawisz lewy przy drzwiach'}"></div>
    <div class="f"><label>Pomieszczenie</label><input id="cR" list="rooms" value="${esc(c.room)}"><datalist id="rooms">${rooms().map(r=>`<option value="${esc(r)}">`).join('')}</datalist></div></div>
-   ${x.t==='out'?`<div class="f"><label>Zasilane z obwodu (rozdzielnica)</label><select id="cO"><option value="">—</option>${circ.map(i=>`<option value="${i.id}" ${i.id===c.obw?'selected':''}>${esc((C.glab[i.id]||'')+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</select></div>
+   ${x.t==='tmp'?`<div class="g2"><div class="f"><label>ID / adres czujnika</label><input id="cAd" value="${esc(c.addr||'')}" placeholder="np. 28-0316a2…"></div>
+     <div class="f"><label>Do czego</label><input id="cA" list="tuse" value="${esc(c.act)}" placeholder="np. regulacja strefy"><datalist id="tuse"><option value="regulacja ogrzewania strefy"><option value="podłogówka – temp. podłogi"><option value="temperatura zewnętrzna"><option value="kocioł / CWU"><option value="tylko odczyt w aplikacji"></datalist></div></div>`
+   :x.t==='out'?`<div class="f"><label>Zasilane z obwodu (rozdzielnica)</label><select id="cO"><option value="">—</option>${circ.map(i=>`<option value="${i.id}" ${i.id===c.obw?'selected':''}>${esc((C.glab[i.id]||'')+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</select></div>
      <div class="mut" style="margin-bottom:8px">Sterowane przez: ${esc(usedBy(ref).map(chText).join(', ')||'nic (jeszcze)')}</div>`
    :`<div class="f"><label>Akcja</label><input id="cA" list="acts" value="${esc(c.act)}"><datalist id="acts">${ACTIONS.map(a=>`<option value="${a}">`).join('')}</datalist></div>
      <div class="f"><label>Steruje wyjściami</label><div id="cTL" style="margin-bottom:6px"></div><select id="cTS">${refOptions('',y=>y.t==='out')}</select></div>`}
+   <div class="f"><label>🎨 Kolory przewodów (stuknij w kolejności podłączenia)</label>${wirePicker('cW',c.w)}
+    <input id="cWn" value="${esc(c.wn||'')}" placeholder="opis żył, np. brązowy = L, niebieski = N, szary = powrót" style="margin-top:6px;width:100%;font:inherit;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
    <div class="f"><label>Uwagi</label><input id="cNote" value="${esc(c.note)}"></div>
    <div class="bar"><button class="btn p" id="cSave">Zapisz</button>${x.t!=='out'||true?'<button class="btn" id="cNext">Zapisz i następny</button>':''}<button class="btn" id="cCan">Anuluj</button></div>`;
-  if(x.t!=='out')tagEditor('cT',c.tg);
-  const commit=()=>{c.n=$('cN').value.trim();c.room=$('cR').value.trim();c.note=$('cNote').value.trim();
-    if(x.t==='out')c.obw=$('cO').value;else c.act=$('cA').value.trim();
+  if(x.t==='in'||x.t==='btn')tagEditor('cT',c.tg);
+  bindWirePicker('cW',c.w);
+  const commit=()=>{c.n=$('cN').value.trim();c.room=$('cR').value.trim();c.note=$('cNote').value.trim();c.wn=$('cWn').value.trim();
+    if(x.t==='out')c.obw=$('cO').value;else c.act=$('cA').value.trim();if(x.t==='tmp')c.addr=$('cAd').value.trim();
     x.m.ch[x.t][x.i]=c;save();};
   $('cSave').onclick=()=>{commit();closeDlg();renderAmp();};
   $('cNext').onclick=()=>{commit();const all=chList(x.m);const k=all.findIndex(y=>y.ref===ref);closeDlg();renderAmp();if(all[k+1])chDlg(all[k+1].ref);};
@@ -1692,13 +1736,17 @@ function scnDlg(s){
 function ampDoc(){
   const A=AP();
   let h=`<h1>Dokumentacja systemu Ampio – ${esc(P.name)}</h1><div>${esc(P.addr)} · ${esc(today())}</div>`;
-  h+=`<h2>Moduły</h2><table><tr><th>Nazwa</th><th>Typ</th><th>Opis</th><th>Miejsce</th><th>ID / MAC</th><th>Wersja</th></tr>${A.mods.map(m=>`<tr><td><b>${esc(m.short)}</b></td><td>${esc(m.type)}</td><td>${esc(m.name)}</td><td>${esc(m.loc)}</td><td>${esc(m.addr)}</td><td>${esc(m.ver)}</td></tr>`).join('')}</table>`;
-  const outs=[],ins=[];
-  A.mods.forEach(m=>chList(m).forEach(x=>{(x.t==='out'?outs:ins).push({m,...x});}));
-  if(outs.length){h+=`<h2>Wyjścia</h2><table><tr><th>Kanał</th><th>Opis</th><th>Pomieszczenie</th><th>Obwód</th><th>Sterowane przez</th><th>Uwagi</th></tr>`;
-    outs.forEach(x=>{const o=x.c.obw&&byIdAll(x.c.obw);h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${o?esc(C.glab[o.id]+' '+(o.name||'')):''}</td><td>${esc(usedBy(x.ref).map(chLabel).join(', '))}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
-  if(ins.length){h+=`<h2>Wejścia i przyciski</h2><table><tr><th>Kanał</th><th>Opis</th><th>Pomieszczenie</th><th>Akcja</th><th>Steruje</th><th>Uwagi</th></tr>`;
-    ins.forEach(x=>{h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${esc(x.c.act)}</td><td>${esc((x.c.tg||[]).map(r=>chText(chByRef(r))).join('; '))}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
+  const bus=m=>{const b=m.bus||{};const f=k=>b[k]?wc(b[k])[1]:'';return [b.h&&'H '+f('h'),b.l&&'L '+f('l'),b.p&&'+ '+f('p'),b.g&&'− '+f('g')].filter(Boolean).join(', ');};
+  h+=`<h2>Moduły</h2><table><tr><th>Nazwa</th><th>Typ</th><th>Opis</th><th>Miejsce</th><th>ID / MAC</th><th>Wersja</th><th>Magistrala CAN</th></tr>${A.mods.map(m=>`<tr><td><b>${esc(m.short)}</b></td><td>${esc(m.type)}</td><td>${esc(m.name)}</td><td>${esc(m.loc)}</td><td>${esc(m.addr)}</td><td>${esc(m.ver)}</td><td>${esc(bus(m))}</td></tr>`).join('')}</table>`;
+  const outs=[],ins=[],tmps=[];
+  A.mods.forEach(m=>chList(m).forEach(x=>{(x.t==='out'?outs:x.t==='tmp'?tmps:ins).push({m,...x});}));
+  const wcol=c=>esc([wNames(c.w),c.wn].filter(Boolean).join(' – '));
+  if(outs.length){h+=`<h2>Wyjścia</h2><table><tr><th>Kanał</th><th>Opis</th><th>Pomieszczenie</th><th>Obwód</th><th>Sterowane przez</th><th>Przewody</th><th>Uwagi</th></tr>`;
+    outs.forEach(x=>{const o=x.c.obw&&byIdAll(x.c.obw);h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${o?esc(C.glab[o.id]+' '+(o.name||'')):''}</td><td>${esc(usedBy(x.ref).map(chLabel).join(', '))}</td><td>${wcol(x.c)}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
+  if(ins.length){h+=`<h2>Wejścia i przyciski</h2><table><tr><th>Kanał</th><th>Opis</th><th>Pomieszczenie</th><th>Akcja</th><th>Steruje</th><th>Przewody</th><th>Uwagi</th></tr>`;
+    ins.forEach(x=>{h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${esc(x.c.act)}</td><td>${esc((x.c.tg||[]).map(r=>chText(chByRef(r))).join('; '))}</td><td>${wcol(x.c)}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
+  if(tmps.length){h+=`<h2>Czujniki temperatury</h2><table><tr><th>Kanał</th><th>Opis</th><th>Pomieszczenie</th><th>ID czujnika</th><th>Do czego</th><th>Przewody</th><th>Uwagi</th></tr>`;
+    tmps.forEach(x=>{const ow=x.m.ow||{};const o=[ow.g&&'GND '+wc(ow.g)[1],ow.d&&'DQ '+wc(ow.d)[1],ow.v&&'VDD '+wc(ow.v)[1]].filter(Boolean).join(', ');h+=`<tr><td><b>${esc(chLabel(x))}</b></td><td>${esc(x.c.n)}</td><td>${esc(x.c.room)}</td><td>${esc(x.c.addr||'')}</td><td>${esc(x.c.act)}</td><td>${wcol(x.c)||esc(o)}</td><td>${esc(x.c.note)}</td></tr>`;});h+='</table>';}
   if(A.scenes.length){h+=`<h2>Sceny i automatyka</h2>`;A.scenes.forEach(s=>{h+=`<h3>${esc(s.name)} <small>(${ST[s.st||0]})</small></h3><div>${s.trig?'<b>Wyzwalacz:</b> '+esc(s.trig)+'<br>':''}${esc(s.desc)}${(s.tg||[]).length?'<br><b>Kanały:</b> '+esc(s.tg.map(r=>chText(chByRef(r))).join('; ')):''}${s.integ?'<br><b>Integracje:</b> '+esc(s.integ):''}</div>`;});}
   const open=A.todo.filter(t=>!t.done);
   if(open.length)h+=`<h2>Do zrobienia</h2><ul>${open.map(t=>`<li>${esc(t.t)}</li>`).join('')}</ul>`;
