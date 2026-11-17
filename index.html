@@ -447,13 +447,22 @@ table.tb th{background:#eee}
       <div class="f"><label>Zasilanie / uwagi</label><textarea id="dNote" rows="2" placeholder="np. WLZ YKY 5x10, TN-S"></textarea></div>
     </div>
     <div class="card">
+      <h3>🔒 Blokada aplikacji</h3>
+      <p class="mut" id="lkState"></p>
+      <div class="bar"><button class="btn" id="bLock">Włącz PIN aplikacji</button></div>
+    </div>
+    <div class="card">
       <h3>Kopia zapasowa</h3>
       <div class="bar">
         <button class="btn" id="bExp">Pobierz plik projektu</button>
         <label class="btn">Wczytaj plik<input type="file" id="fImp" accept=".json,application/json" hidden></label>
         <button class="btn" id="bCopy">Kopiuj jako tekst</button>
       </div>
-      <p class="mut">Dane są zapisywane w tym telefonie, w tej przeglądarce. Pobierz plik projektu, żeby wysłać go koledze albo mieć kopię zapasową.</p>
+      <div class="bar">
+        <button class="btn" id="bAll">💾 Kopia całej bazy</button>
+        <label class="btn">Przywróć całą bazę<input type="file" id="fAll" accept=".json,application/json" hidden></label>
+      </div>
+      <p class="mut">Dane są zapisywane w tym telefonie, w tej przeglądarce. Pobierz plik projektu, żeby wysłać go koledze albo mieć kopię zapasową. „Kopia całej bazy” zapisuje wszystkie projekty, rzuty, zdjęcia i bibliotekę – trzymaj ją u siebie, nie wysyłaj nikomu.</p>
     </div>
   </section>
 </main>
@@ -548,12 +557,64 @@ function newItem(k,o){
   return d;
 }
 function load(){
-  try{const s=localStorage.getItem(KEY);if(s)DB=JSON.parse(s);}catch(e){}
+  try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(!o._enc)DB=o;}}catch(e){} // zaszyfrowaną bazę odszyfrowuje lockStart()
   if(!DB.projects||!DB.projects.length){const p=newProject();DB={projects:[p],current:p.id};}
   DB.projects.forEach(attachP);
   P=DB.projects.find(p=>p.id===DB.current)||DB.projects[0];DB.current=P.id;
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
+function save(){if(LOCK){saveEnc();return;}try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
+
+// ---- blokada aplikacji: cała baza (adresy, telefony, notatki…) zaszyfrowana PIN-em (AES-GCM, PBKDF2)
+let LOCK=null,SV_BUSY=false,SV_AGAIN=false;
+const isEnc=s=>{try{const o=JSON.parse(s);return !!(o&&o._enc);}catch(e){return false;}};
+async function encDB(){const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},LOCK.key,new TextEncoder().encode(JSON.stringify(DB)));
+  return {_enc:1,salt:LOCK.salt,it:LOCK.it,iv:b64(iv),ct:b64(ct)};}
+async function saveEnc(){if(SV_BUSY){SV_AGAIN=true;return;}SV_BUSY=true;
+  try{do{SV_AGAIN=false;const v=await encDB();localStorage.setItem(KEY,JSON.stringify(v));}while(SV_AGAIN);}catch(e){}SV_BUSY=false;}
+async function lockKey(pin,salt,it){return {salt:typeof salt==='string'?salt:b64(salt),it,key:await vKey(pin,typeof salt==='string'?unb64(salt):salt,it)};}
+async function lockOpen(env,pin){const L=await lockKey(pin,env.salt,env.it||V_IT);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(env.iv)},L.key,unb64(env.ct));return {L,db:JSON.parse(new TextDecoder().decode(pt))};}
+function lockStart(){return new Promise(done=>{
+  let env=null;try{const s=localStorage.getItem(KEY);if(s&&isEnc(s))env=JSON.parse(s);}catch(e){}
+  if(!env)return done();
+  const w=document.createElement('div');w.id='lockScr';
+  w.style.cssText='position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px';
+  w.innerHTML=`<div class="card" style="max-width:360px;width:100%"><h3>🔒 Projektant rozdzielnicy</h3><p class="mut">Dane są zaszyfrowane. Wpisz PIN aplikacji.</p>
+    <div class="f"><input id="lkPin" type="password" autocomplete="off" placeholder="PIN" style="font-size:22px;letter-spacing:6px;text-align:center"></div>
+    <button class="btn p" id="lkOk" style="width:100%">Otwórz</button><div id="lkMsg" class="mut" style="margin-top:6px"></div>
+    <p style="margin-top:18px"><button class="btn d sm" id="lkForgot">Nie pamiętam PIN-u</button></p></div>`;
+  document.body.appendChild(w);const pin=w.querySelector('#lkPin'),msg=w.querySelector('#lkMsg');pin.focus();
+  w.querySelector('#lkOk').onclick=async()=>{msg.textContent='Chwileczkę…';
+    try{const r=await lockOpen(env,pin.value.trim());LOCK=r.L;DB=r.db;w.remove();done();}catch(e){msg.textContent='Zły PIN.';pin.select();}};
+  pin.addEventListener('keydown',e=>{if(e.key==='Enter')w.querySelector('#lkOk').click();});
+  const fg=w.querySelector('#lkForgot');fg.onclick=()=>{
+    if(!fg.dataset.c){fg.dataset.c=1;fg.textContent='Na pewno? Usunie WSZYSTKIE dane z tego telefonu';msg.textContent='Bez PIN-u danych nie da się odczytać. Możesz potem przywrócić „Kopię całej bazy” z pliku.';return;}
+    localStorage.removeItem(KEY);IDB.clear().then(()=>location.reload());};
+});}
+// po 5 min w tle aplikacja z blokadą zamyka się (przeładowanie = ekran PIN-u)
+let LOCK_HID=0;
+document.addEventListener('visibilitychange',()=>{if(document.hidden){LOCK_HID=Date.now();return;}
+  if(LOCK&&LOCK_HID&&Date.now()-LOCK_HID>5*60*1000&&!SV_BUSY)location.reload();});
+function lockDlg(){
+  const on=!!LOCK;
+  $('dlg').innerHTML=`<h3>🔒 PIN aplikacji</h3>
+   ${on?'<p class="mut">Blokada jest włączona. Żeby ją wyłączyć albo zmienić PIN, wpisz obecny PIN.</p><div class="f"><input id="lkOld" type="password" autocomplete="off" placeholder="Obecny PIN"></div>':
+   '<p>Po włączeniu wszystkie projekty (adresy, telefony, notatki, obwody) będą zaszyfrowane i przy każdym otwarciu aplikacji trzeba wpisać PIN. Po 5 min w tle aplikacja zamknie się sama.</p><p><b>Zapomniany PIN = utracone dane.</b> Najpierw zrób „Kopię całej bazy”. Rzuty, zdjęcia i biblioteka PDF nie są szyfrowane.</p>'}
+   <div class="f"><input id="lkN1" type="password" autocomplete="off" placeholder="${on?'Nowy PIN (przy zmianie)':'PIN (min. '+V_MIN+' znaków, mogą być litery)'}"></div>
+   <div class="f"><input id="lkN2" type="password" autocomplete="off" placeholder="Powtórz PIN"></div>
+   <div class="bar">${on?'<button class="btn p" id="lkCh">Zmień PIN</button><button class="btn d" id="lkOff">Wyłącz blokadę</button>':'<button class="btn p" id="lkOn">Włącz blokadę</button>'}<button class="btn" id="lkNo">Anuluj</button></div><div id="lkM" class="mut"></div>`;
+  const M=t=>$('lkM').textContent=t;
+  const newPin=()=>{const a=$('lkN1').value.trim();if(a.length<V_MIN){M('PIN musi mieć co najmniej '+V_MIN+' znaków.');return null;}if(a!==$('lkN2').value.trim()){M('PIN-y się różnią.');return null;}return a;};
+  const oldOk=async()=>{try{await lockOpen(JSON.parse(localStorage.getItem(KEY)),$('lkOld').value.trim());return true;}catch(e){M('Zły obecny PIN.');return false;}};
+  const setPin=async a=>{LOCK=await lockKey(a,crypto.getRandomValues(new Uint8Array(16)),V_IT);await saveEnc();};
+  $('lkNo').onclick=closeDlg;
+  if($('lkOn'))$('lkOn').onclick=async()=>{const a=newPin();if(!a)return;M('Chwileczkę…');await setPin(a);closeDlg();renderLock();};
+  if($('lkCh'))$('lkCh').onclick=async()=>{const a=newPin();if(!a)return;M('Chwileczkę…');if(!await oldOk())return;await setPin(a);closeDlg();renderLock();};
+  if($('lkOff'))$('lkOff').onclick=async()=>{M('Chwileczkę…');if(!await oldOk())return;LOCK=null;save();closeDlg();renderLock();};
+  $('ov').classList.add('on');
+}
+function renderLock(){if(!$('lkState'))return;$('lkState').textContent=LOCK?'Włączona – dane projektów są zaszyfrowane.':'Wyłączona – dane leżą w telefonie bez szyfrowania.';$('bLock').textContent=LOCK?'Zmień PIN / wyłącz':'Włącz PIN aplikacji';}
 const byId=id=>P.items.find(i=>i.id===id);
 
 // ---------- fazy ----------
@@ -1230,6 +1291,41 @@ $('fImp').onchange=e=>{
   r.onload=()=>{try{importP(JSON.parse(r.result));}catch(err){}};r.readAsText(f);e.target.value='';
 };
 
+// ---- kopia całej bazy (DB + obrazy/pliki z IndexedDB); sejfy zostają zaszyfrowane
+const blobToUrl=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});
+const urlToBlob=(u,type)=>fetch(u).then(r=>r.blob()).then(b=>type&&b.type!==type?new Blob([b],{type}):b);
+$('bAll').onclick=()=>{
+  $('dlg').innerHTML=`<h3>💾 Kopia całej bazy</h3><p>Plik będzie zawierał <b>dane klientów</b>: adresy, telefony, notatki, rzuty i zdjęcia ze wszystkich projektów.</p>
+   <p class="mut">Hasła z sejfów zostają w pliku zaszyfrowane (bez PIN-u nie da się ich odczytać).${LOCK?' Dane projektów też będą zaszyfrowane PIN-em aplikacji (rzuty i zdjęcia nie).':''} Trzymaj plik u siebie (dysk, pendrive) – nie wysyłaj go klientom ani przez komunikatory.</p>
+   <div class="bar"><button class="btn p" id="aOk">Pobierz</button><button class="btn" id="aNo">Anuluj</button></div><div id="aMsg" class="mut"></div>`;
+  $('aNo').onclick=closeDlg;
+  $('aOk').onclick=async()=>{$('aMsg').textContent='Przygotowuję plik…';
+    try{const raw=await IDB.all(),idb={};
+      for(const k in raw){const v=raw[k];idb[k]=v instanceof Blob?{_blob:await blobToUrl(v),type:v.type,name:v.name||''}:v;}
+      const o={_rozdzBackup:1,date:new Date().toISOString(),idb};if(LOCK)o.dbEnc=await encDB();else o.db=DB;
+      const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:'application/json'}));
+      a.download='rozdzielnice-kopia-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();closeDlg();
+    }catch(e){$('aMsg').textContent='Nie udało się utworzyć kopii.';}};
+  $('ov').classList.add('on');
+};
+$('fAll').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;e.target.value='';const r=new FileReader();
+  r.onload=()=>{let o;try{o=JSON.parse(r.result);if(!o||!o._rozdzBackup||!(o.dbEnc&&o.dbEnc.ct||o.db&&Array.isArray(o.db.projects)))throw 0;}
+    catch(err){alert('To nie jest plik kopii całej bazy.');return;}
+    const d=(o.date||'').slice(0,10);
+    $('dlg').innerHTML=`<h3>Przywrócić całą bazę?</h3><p>Kopia${d?' z '+esc(d):''}: ${o.db?o.db.projects.length+' projekt(ów).':'zaszyfrowana – po wczytaniu wpisz PIN aplikacji z dnia kopii.'}</p>
+     <p><b>Wszystkie obecne dane w tym telefonie zostaną zastąpione</b> (projekty, rzuty, zdjęcia, biblioteka, sejfy). Jeśli nie masz pewności, najpierw zrób „Kopię całej bazy” obecnych danych.</p>
+     <div class="bar"><button class="btn d" id="aOk">Zastąp dane</button><button class="btn" id="aNo">Anuluj</button></div><div id="aMsg" class="mut"></div>`;
+    $('aNo').onclick=closeDlg;
+    $('aOk').onclick=async()=>{$('aMsg').textContent='Wczytuję…';
+      try{if(!await IDB.clear())throw 0;
+        for(const k in (o.idb||{})){let v=o.idb[k];if(v&&v._blob){const b=await urlToBlob(v._blob,v.type);v=v.name?new File([b],v.name,{type:b.type}):b;}if(!await IDB.put(k,v))throw 0;}
+        LOCK=null;localStorage.setItem(KEY,JSON.stringify(o.dbEnc||o.db));location.reload();
+      }catch(err){$('aMsg').textContent='Błąd przy wczytywaniu (za mało miejsca?). Spróbuj ponownie.';}};
+    $('ov').classList.add('on');};
+  r.readAsText(f);
+};
+
 // ---------- KILKA ROZDZIELNIC ----------
 function renderBBar(){
   $('bSel').innerHTML=P.boards.map(b=>{const f=b.feed&&byIdAll(b.feed);return `<option value="${b.id}" ${b.id===P.curB?'selected':''}>${esc(b.name)}${b.desc?' – '+esc(b.desc):''}${f?' ← '+esc(C.glab[f.id]||''):''}</option>`;}).join('');
@@ -1796,7 +1892,9 @@ const IDB={db:null,
   open(){return new Promise(res=>{if(this.db)return res(this.db);try{const r=indexedDB.open('rozdz_img',1);r.onupgradeneeded=()=>r.result.createObjectStore('img');r.onsuccess=()=>{this.db=r.result;res(this.db);};r.onerror=()=>res(null);}catch(e){res(null);}});},
   async get(k){const d=await this.open();if(!d)return null;return new Promise(res=>{try{const q=d.transaction('img').objectStore('img').get(k);q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null);}catch(e){res(null);}});},
   async put(k,v){const d=await this.open();if(!d)return false;return new Promise(res=>{try{const t=d.transaction('img','readwrite');t.objectStore('img').put(v,k);t.oncomplete=()=>res(true);t.onerror=()=>res(false);}catch(e){res(false);}});},
-  async del(k){const d=await this.open();if(!d)return;try{d.transaction('img','readwrite').objectStore('img').delete(k);}catch(e){}}
+  async del(k){const d=await this.open();if(!d)return;try{d.transaction('img','readwrite').objectStore('img').delete(k);}catch(e){}},
+  async all(){const d=await this.open();if(!d)return {};return new Promise(res=>{const o={};try{const q=d.transaction('img').objectStore('img').openCursor();q.onsuccess=()=>{const c=q.result;if(c){o[c.key]=c.value;c.continue();}else res(o);};q.onerror=()=>res(o);}catch(e){res(o);}});},
+  async clear(){const d=await this.open();if(!d)return false;return new Promise(res=>{try{const t=d.transaction('img','readwrite');t.objectStore('img').clear();t.oncomplete=()=>res(true);t.onerror=()=>res(false);}catch(e){res(false);}});}
 };
 const IMG={};
 const SYS={
@@ -2570,11 +2668,12 @@ const vGet=()=>VS==='glob'?DB.gvault:P.vault;
 function vSet(v){if(VS==='glob')DB.gvault=v;else P.vault=v;}
 const b64=a=>btoa(String.fromCharCode(...new Uint8Array(a)));
 const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-async function vKey(pin,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveKey']);
-  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
+const V_IT=600000,V_IT_OLD=200000,V_MIN=6; // stare sejfy (bez pola it) mają 200 tys. iteracji
+async function vKey(pin,salt,it){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:it||V_IT_OLD,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
 async function vSave(){if(!VAULT)return;const iv=crypto.getRandomValues(new Uint8Array(12));
   const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},VAULT.key,new TextEncoder().encode(JSON.stringify(VAULT.items)));
-  const v={salt:VAULT.salt,iv:b64(iv),ct:b64(ct)};if(VAULT.pid==='__GLOBAL__')DB.gvault=v;else{const pr=DB.projects.find(q=>q.id===VAULT.pid);if(pr)pr.vault=v;}save();}
+  const v={salt:VAULT.salt,it:VAULT.it,iv:b64(iv),ct:b64(ct)};if(VAULT.pid==='__GLOBAL__')DB.gvault=v;else{const pr=DB.projects.find(q=>q.id===VAULT.pid);if(pr)pr.vault=v;}save();}
 function vLock(){VAULT=null;VQ='';if(VTIMER)clearTimeout(VTIMER);if(document.querySelector('#s-notes.on')&&NS==='vault')renderNotes();}
 function vTouch(){if(VTIMER)clearTimeout(VTIMER);VTIMER=setTimeout(vLock,5*60*1000);}
 let VQ='';
@@ -2595,9 +2694,9 @@ function vaultHtml(){
     const has=!!vGet();const what=VS==='glob'?'ogólnego sejfu (wspólnego dla wszystkich projektów)':'sejfu tego projektu';
     return tabs+`<div class="card"><h3>🔒 ${VS==='glob'?'Hasła ogólne':'Hasła i kody projektu'}</h3>
      ${VS==='glob'?'<p class="mut">Tu trzymaj to, co przydaje się wszędzie: kody serwisowe, konta producentów (Ampio, Satel, Hikvision), hasła do programów, firmowe Wi-Fi.</p>':''}
-     <p class="mut">${has?'Wpisz PIN '+what+'.':'Ustaw PIN '+what+' (min. 4 cyfry). Hasła są zaszyfrowane i bez PIN-u nie da się ich odczytać – <b>zapomniany PIN = utracone hasła</b>.'}</p>
-     <div class="f"><input id="vPin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" style="font-size:22px;letter-spacing:6px;text-align:center"></div>
-     ${has?'':'<div class="f"><input id="vPin2" type="password" inputmode="numeric" autocomplete="off" placeholder="Powtórz PIN" style="font-size:22px;letter-spacing:6px;text-align:center"></div>'}
+     <p class="mut">${has?'Wpisz PIN '+what+'.':'Ustaw PIN lub hasło '+what+' (min. '+V_MIN+' znaków, mogą być litery). Hasła są zaszyfrowane i bez PIN-u nie da się ich odczytać – <b>zapomniany PIN = utracone hasła</b>.'}</p>
+     <div class="f"><input id="vPin" type="password" autocomplete="off" placeholder="PIN" style="font-size:22px;letter-spacing:6px;text-align:center"></div>
+     ${has?'':'<div class="f"><input id="vPin2" type="password" autocomplete="off" placeholder="Powtórz PIN" style="font-size:22px;letter-spacing:6px;text-align:center"></div>'}
      <button class="btn p" id="vOpen" style="width:100%">${has?'Otwórz':'Utwórz sejf'}</button><div id="vMsg" class="mut" style="margin-top:6px"></div></div>`;
   }
   return tabs+`<div class="bar" style="margin-top:0"><button class="btn p" id="vAdd">+ Wpis</button><button class="btn" id="vLockB">🔒 Zamknij</button></div>
@@ -2613,13 +2712,16 @@ function bindVList(){
 }
 function vaultBind(){
   if($('vOpen'))$('vOpen').onclick=async()=>{
-    const pin=$('vPin').value.trim();if(pin.length<4){$('vMsg').textContent='PIN musi mieć co najmniej 4 znaki.';return;}
+    const pin=$('vPin').value.trim(),min=vGet()?4:V_MIN;if(pin.length<min){$('vMsg').textContent='PIN musi mieć co najmniej '+min+(min<5?' znaki.':' znaków.');return;}
+    $('vMsg').textContent='Chwileczkę…';
     try{
       if(!vGet()){if(pin!==$('vPin2').value.trim()){$('vMsg').textContent='PIN-y się różnią.';return;}
-        const salt=crypto.getRandomValues(new Uint8Array(16));VAULT={pid:vPid(),salt:b64(salt),key:await vKey(pin,salt),items:[]};await vSave();}
-      else{const v=vGet();const key=await vKey(pin,unb64(v.salt));
+        const salt=crypto.getRandomValues(new Uint8Array(16));VAULT={pid:vPid(),salt:b64(salt),it:V_IT,key:await vKey(pin,salt,V_IT),items:[]};await vSave();}
+      else{const v=vGet(),it=v.it||V_IT_OLD;const key=await vKey(pin,unb64(v.salt),it);
         const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(v.iv)},key,unb64(v.ct));
-        VAULT={pid:vPid(),salt:v.salt,key,items:JSON.parse(new TextDecoder().decode(pt))};}
+        VAULT={pid:vPid(),salt:v.salt,it,key,items:JSON.parse(new TextDecoder().decode(pt))};
+        if(it<V_IT){const salt=crypto.getRandomValues(new Uint8Array(16)); // stary sejf – przeszyfruj mocniejszym kluczem (ten sam PIN)
+          Object.assign(VAULT,{salt:b64(salt),it:V_IT,key:await vKey(pin,salt,V_IT)});await vSave();}}
       vTouch();renderNotes();
     }catch(e){$('vMsg').textContent='Zły PIN.';}
   };
@@ -2934,9 +3036,12 @@ function lvNote(d){
   $('lvBody').querySelectorAll('img[data-ph]').forEach(im=>im.onclick=()=>photoView(im.dataset.ph));
 }
 // ---------- start ----------
-load();render();
+$('bLock').onclick=lockDlg;
+(async()=>{await lockStart();
+load();render();renderLock();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
 const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','notes','lib','print','proj'].includes(h))tab(h);
+})();
 </script>
 </body>
 </html>
