@@ -1921,7 +1921,7 @@ const SYM={
 };
 const RT_SYS={led:'Taśma LED',el:'230 V',al:'Alarm',pz:'Ppoż.',tv:'LAN / CCTV',kd:'Kontrola dostępu',am:'Magistrala CAN'};
 const CIRC_COL=['#e11d48','#2563eb','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#65a30d','#ea580c','#4f46e5','#0d9488','#a16207','#9333ea','#dc2626','#0284c7','#15803d'];
-let INS_SYS='el',PL=null,PM='pan',V={s:1,tx:0,ty:0},RT=null,MOVE=null,LAY={el:1,al:1,pz:1,tv:1,kd:1,am:1,led:1};
+let INS_SYS='el',PL=null,PM='pan',V={s:1,tx:0,ty:0},RT=null,MOVE=null,AIM=null,LAY={el:1,al:1,pz:1,tv:1,kd:1,am:1,led:1};
 function plans(){if(!P.plans)P.plans=[];return P.plans;}
 function curPlan(){const ps=plans();if(!PL||!ps.find(p=>p.id===PL))PL=ps[0]?ps[0].id:null;return ps.find(p=>p.id===PL)||null;}
 function circList(){return allLayout().map(byIdAll).filter(i=>i&&['mcb','rcbo','other'].includes(i.kind));}
@@ -1970,17 +1970,17 @@ function symDraw(t,c){ // rysunek w jednostkach (ok. -1..1), c = kolor
     case 'pur': return `<circle r="0.42" ${F}/><line x1="-0.75" y1="0" x2="0.75" y2="0" ${S}/><line x1="0" y1="-0.75" x2="0" y2="0.75" ${S}/>`;
     case 'odb': return box(1.8,1.3)+tx(0,0,'M',0.8);
     case 'rg': return box(2.2,1.3)+`<path d="M-1.1 0.65 L1.1 -0.65 L1.1 0.65 Z" ${F}/>`;
-    case 'pir': return `<circle cy="0.45" r="0.42" ${W}/><path d="M-0.55 -0.15 A0.8 0.8 0 0 1 0.55 -0.15" ${N}/><path d="M-0.95 -0.55 A1.3 1.3 0 0 1 0.95 -0.55" ${N}/>`;
-    case 'kon': return `<rect x="-1.1" y="-0.35" width="0.95" height="0.7" ${W}/><rect x="0.15" y="-0.35" width="0.95" height="0.7" ${F} ${S}/>`;
-    case 'man': {let h=box(1.9,1.6);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)h+=`<circle cx="${i*0.45}" cy="${j*0.42+0.05}" r="0.11" ${F}/>`;return h;}
-    case 'syg': return horn;
+    case 'pir': return `<path d="M-0.35 -0.35 L1.15 -1.15 M-0.35 0.35 L1.15 1.15" ${N} stroke-dasharray="0.25 0.18"/><path d="M0.55 -0.55 A0.78 0.78 0 0 1 0.55 0.55" ${N}/><path d="M0.95 -0.95 A1.34 1.34 0 0 1 0.95 0.95" ${N} stroke-dasharray="0.25 0.18"/><rect x="-0.55" y="-0.4" width="0.55" height="0.8" rx="0.08" ${W}/>`; // patrzy w prawo (obrót m.rot)
+    case 'kon': return box(1.9,1.1)+tx(0,0.03,'K',0.85);
+    case 'man': return box(1.7,1.7)+tx(0,0.05,'#',1.2);
+    case 'syg': return `<rect x="-1.1" y="-0.6" width="1.6" height="1.2" ${W}/><rect x="0.5" y="-0.3" width="0.55" height="0.6" ${W}/>`;
     case 'cen': return box(2.4,1.5)+`<rect x="-1.05" y="-0.6" width="2.1" height="1.2" ${N} stroke-width="0.07"/>`+tx(0,0,'CA',0.65);
     case 'dym': return `<circle r="0.95" ${W}/><circle cx="-0.32" cy="0.22" r="0.17" ${F}/><circle cx="0.32" cy="0.22" r="0.17" ${F}/><circle cx="0" cy="-0.3" r="0.17" ${F}/>`;
     case 'ciep': return `<circle r="0.95" ${W}/><line x1="0" y1="-0.6" x2="0" y2="0.2" stroke="${c}" stroke-width="0.2"/><circle cy="0.38" r="0.22" ${F}/>`;
     case 'rop': return `<rect x="-0.95" y="-0.95" width="1.9" height="1.9" ${W}/><rect x="-0.6" y="-0.6" width="1.2" height="1.2" ${N} stroke-width="0.07"/><circle r="0.3" ${F}/>`;
     case 'sp': return horn+`<path d="M0.8 -0.6 l0.35 -0.25 M0.85 0 h0.4 M0.8 0.6 l0.35 0.25" ${N}/>`;
     case 'cpp': return box(2.4,1.5)+`<rect x="-1.05" y="-0.6" width="2.1" height="1.2" ${N} stroke-width="0.07"/>`+tx(0,0,'CSP',0.55);
-    case 'cam': return `<rect x="-1.15" y="-0.5" width="1.45" height="0.8" rx="0.1" ${W}/><path d="M0.3 -0.35 L0.95 -0.6 L0.95 0.4 L0.3 0.15 Z" ${W}/><line x1="-0.45" y1="0.3" x2="-0.45" y2="0.85" ${S}/><line x1="-0.85" y1="0.9" x2="-0.05" y2="0.9" ${S}/>`;
+    case 'cam': return `<rect x="-1.25" y="-0.5" width="1.5" height="1" ${W}/><path d="M0.25 -0.28 L0.95 -0.6 L0.95 0.6 L0.25 0.28 Z" ${W}/>`; // obiektyw w prawo (obrót m.rot)
     case 'nvr': return box(2.4,1.1)+`<line x1="-0.9" y1="-0.15" x2="0.3" y2="-0.15" ${S}/><line x1="-0.9" y1="0.2" x2="0.3" y2="0.2" ${S}/><circle cx="0.75" cy="0" r="0.15" ${F}/>`;
     case 'lan': return `<rect x="-0.9" y="-0.9" width="1.8" height="1.8" rx="0.12" ${W}/><path d="M-0.5 0.45 V-0.2 H-0.25 V-0.45 H0.25 V-0.2 H0.5 V0.45 Z" ${N}/>`;
     case 'ap': return `<circle cy="0.55" r="0.2" ${F}/><path d="M-0.45 0.15 A0.6 0.6 0 0 1 0.45 0.15" ${N}/><path d="M-0.85 -0.25 A1.15 1.15 0 0 1 0.85 -0.25" ${N}/>`;
@@ -1994,11 +1994,18 @@ function symDraw(t,c){ // rysunek w jednostkach (ok. -1..1), c = kolor
     default: return box(1.6,1.2)+tx(0,0,'?');
   }
 }
+const ROT_T={cam:0,pir:-90}; // symbole z kierunkiem: domyślny kąt (stopnie, 0 = w prawo)
+const mkRot=m=>ROT_T[m.t]==null?0:(m.rot!=null?m.rot:ROT_T[m.t]);
+function camCone(m,r,c){ // pole widzenia kamery: kąt m.fov, długość m.zas (w jednostkach symbolu)
+  const f=Math.min(359,+m.fov||90)*Math.PI/360,L=r*(+m.zas||8),x0=r*0.95;
+  const ax=x0+L*Math.cos(f),ay=L*Math.sin(f);
+  return `<path d="M${x0} 0 L${ax} ${-ay} A${L} ${L} 0 ${f>Math.PI/2?1:0} 1 ${ax} ${ay} Z" fill="${c}" fill-opacity="0.08" stroke="${c}" stroke-width="${r*0.06}" stroke-dasharray="${r*0.3} ${r*0.2}"/>`;
+}
 function symSvg(m,s){
-  const c=markCol(m),r=s*0.5;
+  const c=markCol(m),r=s*0.5,rot=mkRot(m);
   const lab=markLabel(m);
   const lt=lab?`<text x="${r*1.3}" y="${r*1.6}" font-size="${s*0.6}" fill="${c}" font-weight="700" stroke="#fff" stroke-width="${s*0.12}" paint-order="stroke" font-family="Arial,sans-serif">${esc(lab)}</text>`:'';
-  return `<g transform="scale(${r})">${symDraw(m.t,c)}</g>`+lt;
+  return `<g transform="rotate(${rot})">${m.t==='cam'?camCone(m,r,c):''}<g transform="scale(${r})">${symDraw(m.t,c)}</g></g>`+lt;
 }
 function symIcon(t,px){const c=SYM[t][1]==='el'?'#111':SYS[SYM[t][1]].col;return `<svg width="${px}" height="${px}" viewBox="-1.8 -1.6 3.6 3.2">${symDraw(t,c)}</svg>`;}
 function overlaySvg(pl,forPrint){
@@ -2022,7 +2029,7 @@ function overlaySvg(pl,forPrint){
   (pl.marks||[]).forEach(m=>{
     const sy=SYM[m.t];if(!sy)return;if(!LAY[sy[1]]&&!forPrint)return;
     const info=!forPrint&&((m.ph||[]).length||m.con||(m.cab||[]).length)?`<text x="${-s*1.15}" y="${-s*0.55}" font-size="${s*0.55}">${(m.ph||[]).length?'📷':'📝'}</text>`:'';
-    h+=`<g data-mk="${m.id}" transform="translate(${m.x},${m.y})">${symSvg(m,s)}${info}${!forPrint&&MOVE===m.id?`<circle r="${s}" fill="none" stroke="#f59e0b" stroke-width="${s*0.15}" stroke-dasharray="${s*0.3}"/>`:''}</g>`;
+    h+=`<g data-mk="${m.id}" transform="translate(${m.x},${m.y})">${symSvg(m,s)}${info}${!forPrint&&(MOVE===m.id||AIM===m.id)?`<circle r="${s}" fill="none" stroke="#f59e0b" stroke-width="${s*0.15}" stroke-dasharray="${s*0.3}"/>`:''}</g>`;
   });
   if(CAL&&!forPrint&&CAL.pts.length){h+=CAL.pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${s*0.3}" fill="none" stroke="#7c3aed" stroke-width="${s*0.12}"/>`).join('')+(CAL.pts.length>1?`<line x1="${CAL.pts[0][0]}" y1="${CAL.pts[0][1]}" x2="${CAL.pts[1][0]}" y2="${CAL.pts[1][1]}" stroke="#7c3aed" stroke-width="${s*0.12}" stroke-dasharray="${s*0.4}"/>`:'');}
   if(RT&&!forPrint&&RT.pts.length){
@@ -2072,10 +2079,10 @@ async function renderPlan(keepView){
   img.style.opacity=pl.bg||1;
   if(PM==='draw'){renderDrawBar();renderPlanSum();return;}
   if(!IMG[pl.id])$('plMsg').textContent='Brak obrazu rzutu w tym telefonie – wczytaj plik projektu z obrazami albo dodaj rzut ponownie.';
-  else if(PM==='ins')$('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':'Stuknij na rzucie, żeby wstawić symbol. Stuknij symbol, żeby go edytować.';
+  else if(PM==='ins')$('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':AIM?'🎯 Stuknij miejsce, w które ma patrzeć '+(((curPlan().marks||[]).find(q=>q.id===AIM)||{}).t==='cam'?'kamera':'czujka')+'.':'Stuknij na rzucie, żeby wstawić symbol. Stuknij symbol, żeby go edytować.';
   else if(PM==='rt')$('plMsg').textContent=pl.scale?'':'Ustaw 📏 Skalę, żeby długości kabli liczyły się same.';
   else if(PM==='cal')$('plMsg').textContent=CAL&&CAL.pts.length?'📏 Teraz stuknij koniec odcinka.':'📏 Stuknij początek i koniec odcinka o znanej długości (np. ściana, drzwi 90 cm).';
-  else $('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':'Przeciągaj, żeby przesuwać, dwoma palcami przybliżaj. Stuknij symbol, żeby edytować.';
+  else $('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':AIM?'🎯 Stuknij miejsce, w które ma patrzeć '+(((curPlan().marks||[]).find(q=>q.id===AIM)||{}).t==='cam'?'kamera':'czujka')+'.':'Przeciągaj, żeby przesuwać, dwoma palcami przybliżaj. Stuknij symbol, żeby edytować.';
   renderPlanSum();
 }
 // ---- puszki, zdjęcia, skala i długości kabli
@@ -2262,7 +2269,7 @@ async function handlePlanFile(f){
     };im.src=url;
   }
 }
-$('plSel').onchange=()=>{PL=$('plSel').value;RT=null;MOVE=null;renderPlan();};
+$('plSel').onchange=()=>{PL=$('plSel').value;RT=null;MOVE=null;AIM=null;renderPlan();};
 $('plCfg').onclick=()=>{
   const pl=curPlan();if(!pl)return;
   $('dlg').innerHTML=`<h3>Rzut</h3><div class="f"><label>Nazwa</label><input id="pcN" value="${esc(pl.name)}"></div>
@@ -2285,7 +2292,7 @@ document.addEventListener('click',e=>{
   const ib=e.target.closest('[data-isym]');if(ib){$('plSym').value=ib.dataset.isym;renderPlan(true);return;}
   const so=e.target.closest('[data-solo]');if(so){Object.keys(LAY).forEach(k=>LAY[k]=k===INS_SYS?1:0);renderPlan(true);return;}
   const l=e.target.closest('[data-lay]');if(l){LAY[l.dataset.lay]=LAY[l.dataset.lay]?0:1;renderPlan(true);return;}
-  const m=e.target.closest('[data-pm]');if(m&&m.classList.contains('btn')&&m.closest('#plUI')){PM=m.dataset.pm;MOVE=null;if(PM==='draw'&&DT==='wall')WALL=WALL||{pts:[]};if(PM==='rt'){RT={sys:'el',pts:[]};}else RT=null;renderPlan(true);}
+  const m=e.target.closest('[data-pm]');if(m&&m.classList.contains('btn')&&m.closest('#plUI')){PM=m.dataset.pm;MOVE=null;AIM=null;if(PM==='draw'&&DT==='wall')WALL=WALL||{pts:[]};if(PM==='rt'){RT={sys:'el',pts:[]};}else RT=null;renderPlan(true);}
 });
 $('plFit').onclick=fitV;
 $('plCalB').onclick=startCal;
@@ -2438,6 +2445,8 @@ $('plNew').onclick=()=>{
       if(DT==='wall'){WALL=WALL||{pts:[]};WALL.pts.push(snapWall(pl,x,y));renderPlan(true);return;}
       if(DT==='text'){textDlg(pl,Math.round(x),Math.round(y),textAt(pl,x,y));return;}
       return;}
+    if(AIM){const m=(pl.marks||[]).find(q=>q.id===AIM);AIM=null;
+      if(m&&Math.hypot(x-m.x,y-m.y)>(+pl.sz||20)*0.5){m.rot=(Math.round(Math.atan2(y-m.y,x-m.x)*180/Math.PI/5)*5+360)%360;save();}renderPlan(true);return;}
     if(MOVE){const m=(pl.marks||[]).find(q=>q.id===MOVE);if(m){m.x=Math.round(x);m.y=Math.round(y);}MOVE=null;save();renderPlan(true);return;}
     const thr=Math.max(16/V.s,(+pl.sz||20)*0.7);
     let best=null,bd=thr;
@@ -2453,6 +2462,7 @@ $('plNew').onclick=()=>{
       const t=$('plSym').value;const sy=SYM[t];
       const m={id:uid(),t,x:Math.round(x),y:Math.round(y),obw:(sy[1]==='el'||sy[1]==='led')?$('plObw').value:'',lab:'',note:'',amp:''};
       if(sy[4]){let n=0;plans().forEach(p=>(p.marks||[]).forEach(q=>{if(SYM[q.t]&&SYM[q.t][4]===sy[4])n++;}));m.lab=sy[4]+(n+1);}
+      if(ROT_T[t]!=null)AIM=m.id; // od razu zapytaj, gdzie patrzy
       pl.marks=pl.marks||[];pl.marks.push(m);save();renderPlan(true);
     }
   }
@@ -2467,12 +2477,19 @@ function mkDlg(m){
    <div class="f" id="mkObwW"><label>Obwód</label><select id="mkO"><option value="">— bez obwodu —</option>${circList().map(i=>`<option value="${i.id}" ${i.id===m.obw?'selected':''}>${esc(C.glab[i.id]+' '+(i.name||'')+' '+rating(i))}</option>`).join('')}</select></div>
    <div class="g2"><div class="f"><label>Etykieta</label><input id="mkL" value="${esc(m.lab)}" placeholder="np. P3, adres pętli 1/12"></div>
    <div class="f"><label>Uwagi</label><input id="mkN" value="${esc(m.note)}" placeholder="np. h=110 cm"></div></div>
+   ${ROT_T[m.t]!=null?`<div class="f"><label>Kierunek <span class="mut" id="mkRv"></span></label><div class="bar" style="margin:0"><button class="btn" id="mkAim">🎯 Wskaż na rzucie</button><button class="btn" id="mkRl">↺ 45°</button><button class="btn" id="mkRr">↻ 45°</button></div></div>`:''}
+   ${m.t==='cam'?`<div class="g2"><div class="f"><label>Kąt widzenia</label><select id="mkFov">${[[40,'40° (wąski / tele)'],[60,'60°'],[90,'90° (typowy)'],[110,'110° (szeroki)'],[180,'180° (fisheye ściana)'],[360,'360° (fisheye sufit)']].map(([v,n])=>`<option value="${v}" ${v===(+m.fov||90)?'selected':''}>${n}</option>`).join('')}</select></div>
+   <div class="f"><label>Zasięg na rzucie</label><select id="mkZas">${[[5,'krótki'],[8,'średni'],[14,'długi'],[24,'bardzo długi']].map(([v,n])=>`<option value="${v}" ${v===(+m.zas||8)?'selected':''}>${n}</option>`).join('')}</select></div></div>`:''}
    <div id="mkBox">${BOX_T.includes(m.t)?boxSection(m):''}</div>
    ${m.t==='zasl'?psuSection(m):''}
    <datalist id="cabs2"><option value="YDYp 3x1,5"><option value="YDYp 3x2,5"><option value="YDYp 4x1,5"><option value="YDY 5x2,5"><option value="YDY 5x4"><option value="YnTKSY 1x2x0,8"><option value="YTDY 6x0,5"><option value="UTP kat. 6"><option value="Ampio CAN"></datalist>
    ${photoSection(E)}
    ${P.ampio&&P.ampio.mods.length?`<div class="f"><label>Kanał Ampio</label><select id="mkA">${ampOpts}</select></div>`:''}
    <div class="bar"><button class="btn p" id="mkOk">Zapisz</button><button class="btn" id="mkMv">Przesuń</button><button class="btn" id="mkCp">Kopiuj</button><button class="btn d" id="mkDel">Usuń</button></div>`;
+  let rot=mkRot(m);const showRot=()=>{if($('mkRv'))$('mkRv').textContent='('+((rot%360+360)%360)+'°)';};showRot();
+  if($('mkRl'))$('mkRl').onclick=()=>{rot-=45;showRot();};
+  if($('mkRr'))$('mkRr').onclick=()=>{rot+=45;showRot();};
+  if($('mkAim'))$('mkAim').onclick=()=>{AIM=m.id;MOVE=null;closeDlg();renderPlan(true);};
   const vis=()=>{const k=SYM[$('mkT').value][1];$('mkObwW').style.display=k==='el'||k==='led'?'':'none';};vis();
   const readCab=()=>{if(!$('bxCab'))return;$('bxCab').querySelectorAll('[data-bx]').forEach(r=>{const i=+r.dataset.bx;E.cab[i]={t:r.querySelector('[data-k=t]').value.trim(),d:r.querySelector('[data-k=d]').value.trim()};});};
   const bindBox=()=>{
@@ -2493,6 +2510,7 @@ function mkDlg(m){
   $('mkOk').onclick=()=>{m.t=$('mkT').value;m.obw=['el','led'].includes(SYM[m.t][1])?$('mkO').value:'';m.lab=$('mkL').value.trim();m.note=$('mkN').value.trim();if($('mkA'))m.amp=$('mkA').value;
     if(BOX_T.includes(m.t)&&$('bxH')){readCab();m.cab=E.cab.filter(c=>c.t||c.d);m.h=$('bxH').value.trim();m.bd=$('bxD').value.trim();m.con=$('bxCon').value.trim();}
     if(m.t==='zasl'&&$('zW')){m.pw=$('zW').value.trim();m.pu=$('zU').value;}
+    if(ROT_T[m.t]!=null)m.rot=(rot%360+360)%360;if($('mkFov')){m.fov=+$('mkFov').value;m.zas=+$('mkZas').value;}
     m.ph=E.ph.slice();save();closeDlg();renderPlan(true);};
   $('mkMv').onclick=()=>{MOVE=m.id;closeDlg();renderPlan(true);};
   $('mkCp').onclick=()=>{INS_SYS=SYM[m.t][1];$('plSym').value=m.t;if(m.obw)$('plObw').value=m.obw;PM='ins';closeDlg();renderPlan(true);};
