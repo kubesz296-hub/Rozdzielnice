@@ -102,6 +102,9 @@ table.tb th{background:#eee}
 #plStage img{display:block;user-select:none;-webkit-user-drag:none;pointer-events:none;background:#fff}
 #plSvg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
 #plSvg [data-mk],#plSvg [data-rt]{pointer-events:all;cursor:pointer}
+.vp .fsb{position:absolute;right:8px;top:8px;z-index:2;font-size:18px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+body.plfs{overflow:hidden}
+body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;border-radius:0;border:0}
 .btn.on{background:#1f2a37;color:#fff;border-color:#1f2a37}
 .chip.on{background:#1f2a37;color:#fff;border-color:#1f2a37}
 #planPrint{display:none}
@@ -350,7 +353,7 @@ table.tb th{background:#eee}
           <button class="btn sm p" id="plRtEnd">✔ Zakończ</button>
         </div>
         <div id="plMsg" class="mut" style="min-height:18px;margin-bottom:4px"></div>
-        <div class="vp" id="plVP"><div id="plStage"><img id="plImg" alt=""><svg id="plSvg"></svg></div></div>
+        <div class="vp" id="plVP"><div id="plStage"><img id="plImg" alt=""><svg id="plSvg"></svg></div><button class="btn sm fsb" id="plFsB" title="Pełny ekran">⛶</button></div>
         <div class="bar"><button class="btn p" id="plPrint">🖨 Drukuj rzut / PDF</button></div>
         <div class="card"><h3>Zestawienie</h3><div id="plSum"></div></div>
       </div>
@@ -1070,6 +1073,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('nav button');if(t){tab(t.dataset.t);return;}
 });
 function tab(t){
+  if(PLFS&&t!=='plan')plFull(false);
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));
   if(t==='proj')fillProj();
@@ -2027,6 +2031,19 @@ function overlaySvg(pl,forPrint){
   }
   return h;
 }
+// ---- rzut na pełny ekran
+let PLFS=false;
+function plFull(on){
+  if(on===PLFS)return;PLFS=on;
+  document.body.classList.toggle('plfs',on);$('plFsB').textContent=on?'✕':'⛶';$('plFsB').title=on?'Zamknij pełny ekran':'Pełny ekran';
+  if(on){try{history.pushState({plfs:1},'');}catch(e){}try{const d=document.documentElement;if(d.requestFullscreen)d.requestFullscreen().catch(()=>{});}catch(e){}}
+  else{try{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});}catch(e){}}
+  requestAnimationFrame(()=>{if($('plVP').getBoundingClientRect().width)fitV();}); // cały rzut na nowy rozmiar
+}
+$('plFsB').onclick=()=>{if(!PLFS){plFull(true);return;}try{if(history.state&&history.state.plfs){history.back();return;}}catch(e){}plFull(false);};
+window.addEventListener('popstate',()=>{if(PLFS)plFull(false);});
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&PLFS)$('plFsB').click();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&PLFS&&!$('ov').classList.contains('on'))$('plFsB').click();});
 function applyV(){$('plStage').style.transform=`translate(${V.tx}px,${V.ty}px) scale(${V.s})`;}
 function fitV(){const pl=curPlan();if(!pl)return;const r=$('plVP').getBoundingClientRect();const s=Math.min(r.width/pl.w,r.height/pl.h)||0.2;V={s,tx:(r.width-pl.w*s)/2,ty:(r.height-pl.h*s)/2};applyV();}
 async function renderPlan(keepView){
@@ -2327,7 +2344,7 @@ function renderDrawBar(){
   $('plDrOpts').innerHTML=(['pen','wall','text'].includes(DT)?DCOLS.map(c=>`<button class="cdot ${c===DC?'on':''}" data-dc="${c}" style="background:${c}"></button>`).join(''):'')+
     (['pen','wall','white'].includes(DT)?[['c','cienko'],['m','średnio'],['g','grubo']].filter(x=>DT!=='wall'||x[0]!=='c').map(([k,n])=>`<button class="chip ${k===DW?'on':''}" data-dw="${k}">${n}</button>`).join(''):'')+
     `<span style="flex:1"></span><button class="btn sm" id="plDrUndo">↶ Cofnij</button>`+(WALL&&WALL.pts.length?`<button class="btn sm p" id="plWallEnd">✔ Koniec ściany</button>`:'');
-  const hint={pen:'Rysuj jednym palcem. Dwoma palcami przesuwasz i przybliżasz.',wall:'Stukaj kolejne narożniki – linie przyciągają się do kątów 45°/90° i do istniejących ścian.',text:'Stuknij miejsce, żeby wpisać tekst. Stuknij istniejący tekst, żeby go zmienić.',white:'Zamaluj na biało niepotrzebne bazgroły na zdjęciu (nie zmienia oryginału).',erase:'Przeciągnij po kresce, korektorze albo tekście, żeby je usunąć.'}[DT];
+  const hint={pen:'Rysuj jednym palcem. Dwoma palcami przesuwasz i przybliżasz.',wall:'Stukaj kolejne narożniki – linie przyciągają się do kątów 45°/90° i do istniejących ścian.',text:'Stuknij miejsce, żeby wpisać tekst. Stuknij istniejący tekst, żeby go zmienić. Przeciągnij tekst palcem, żeby go przesunąć.',white:'Zamaluj na biało niepotrzebne bazgroły na zdjęciu (nie zmienia oryginału).',erase:'Przeciągnij po kresce, korektorze albo tekście, żeby je usunąć.'}[DT];
   $('plMsg').textContent=hint;
   if($('plDrUndo'))$('plDrUndo').onclick=()=>{const pl=curPlan();if(WALL&&WALL.pts.length){WALL.pts.pop();}else if(pl.draw&&pl.draw.length)pl.draw.pop();save();renderPlan(true);};
   if($('plWallEnd'))$('plWallEnd').onclick=()=>{const pl=curPlan();if(WALL.pts.length>1){pl.draw=pl.draw||[];pl.draw.push({id:uid(),k:'wall',c:DC,w:dWidth(pl,'wall'),pts:WALL.pts});save();}WALL={pts:[]};renderPlan(true);};
@@ -2366,16 +2383,20 @@ $('plNew').onclick=()=>{
   const vp=$('plVP');const pts=new Map();let st=null;
   const imgPt=(cx,cy)=>{const r=vp.getBoundingClientRect();return [(cx-r.left-V.tx)/V.s,(cy-r.top-V.ty)/V.s];};
   const drawing=()=>PM==='draw'&&['pen','white','erase'].includes(DT);
+  const textAt=(pl,x,y)=>(pl.texts||[]).find(q=>Math.hypot(q.x-x,q.y-y)<Math.max(20/V.s,q.fs));
   vp.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.fsb'))return;
     pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===1)st={x:e.clientX,y:e.clientY,tx:V.tx,ty:V.ty,t:Date.now(),moved:0};
+    if(pts.size===1&&PM==='draw'&&DT==='text'){const pl=curPlan();const [x,y]=pl?imgPt(e.clientX,e.clientY):[0,0];const t=pl&&textAt(pl,x,y);
+      if(t){st.txt=t;st.ox=t.x;st.oy=t.y;}}
     if(pts.size===1&&drawing()){const pl=curPlan();if(!pl)return;const [x,y]=imgPt(e.clientX,e.clientY);
       if(DT==='erase'){st.erase=1;if(eraseAt(pl,x,y))st.ch=1;}
       else{LIVE={id:uid(),k:DT==='white'?'white':'pen',c:DT==='white'?'#fff':DC,w:dWidth(pl,DT==='white'?'white':'pen'),pts:[[Math.round(x),Math.round(y)]]};
         const el=document.createElementNS('http://www.w3.org/2000/svg','path');el.id='livePath';el.setAttribute('fill','none');el.setAttribute('stroke',LIVE.c);el.setAttribute('stroke-width',LIVE.w);el.setAttribute('stroke-linecap','round');el.setAttribute('stroke-linejoin','round');el.setAttribute('d',pathD(LIVE.pts));
         if(LIVE.k==='white')$('plSvg').insertBefore(el,$('plSvg').firstChild);else $('plSvg').appendChild(el);st.draw=1;}
       return;}
-    if(pts.size===2){if(LIVE){LIVE=null;const lp=$('livePath');if(lp)lp.remove();}const [a,b]=[...pts.values()];st={pinch:1,d:Math.hypot(a.x-b.x,a.y-b.y),s:V.s,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,tx:V.tx,ty:V.ty,moved:99};}
+    if(pts.size===2){if(st&&st.txt){st.txt.x=st.ox;st.txt.y=st.oy;$('plSvg').innerHTML=overlaySvg(curPlan(),false);}if(LIVE){LIVE=null;const lp=$('livePath');if(lp)lp.remove();}const [a,b]=[...pts.values()];st={pinch:1,d:Math.hypot(a.x-b.x,a.y-b.y),s:V.s,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,tx:V.tx,ty:V.ty,moved:99};}
   });
   window.addEventListener('pointermove',e=>{
     if(!pts.has(e.pointerId)||!st)return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -2387,6 +2408,9 @@ $('plNew').onclick=()=>{
     }else if(st.draw&&LIVE){
       const [x,y]=imgPt(e.clientX,e.clientY);const l=LIVE.pts[LIVE.pts.length-1];
       if(Math.hypot(x-l[0],y-l[1])>2/V.s){LIVE.pts.push([Math.round(x),Math.round(y)]);const lp=$('livePath');if(lp)lp.setAttribute('d',pathD(LIVE.pts));}
+    }else if(st.txt){
+      const dx=e.clientX-st.x,dy=e.clientY-st.y;st.moved=Math.max(st.moved,Math.hypot(dx,dy));
+      if(st.moved>6){st.txt.x=Math.round(st.ox+dx/V.s);st.txt.y=Math.round(st.oy+dy/V.s);$('plSvg').innerHTML=overlaySvg(curPlan(),false);}
     }else if(st.erase){const [x,y]=imgPt(e.clientX,e.clientY);if(eraseAt(curPlan(),x,y))st.ch=1;
     }else if(!st.pinch){
       const dx=e.clientX-st.x,dy=e.clientY-st.y;st.moved=Math.max(st.moved,Math.hypot(dx,dy));
@@ -2397,6 +2421,7 @@ $('plNew').onclick=()=>{
     if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);
     if(st&&st.draw&&LIVE&&pts.size===0){const pl=curPlan();pl.draw=pl.draw||[];pl.draw.push(LIVE);LIVE=null;save();renderPlan(true);st=null;return;}
     if(st&&st.erase&&pts.size===0){if(st.ch){save();renderPlan(true);}st=null;return;}
+    if(st&&st.txt&&pts.size===0&&st.moved>6){save();renderPlan(true);st=null;return;}
     if(st&&!st.pinch&&pts.size===0&&st.moved<=6&&Date.now()-st.t<600)tap(e.clientX,e.clientY);
     if(pts.size===0)st=null;
     else if(pts.size===1){const p=[...pts.values()][0];st={x:p.x,y:p.y,tx:V.tx,ty:V.ty,t:0,moved:99};}
@@ -2411,7 +2436,7 @@ $('plNew').onclick=()=>{
     if(PM==='rt'){RT.pts.push([Math.round(x),Math.round(y)]);renderPlan(true);return;}
     if(PM==='draw'){
       if(DT==='wall'){WALL=WALL||{pts:[]};WALL.pts.push(snapWall(pl,x,y));renderPlan(true);return;}
-      if(DT==='text'){const t=(pl.texts||[]).find(q=>Math.hypot(q.x-x,q.y-y)<Math.max(20/V.s,q.fs));textDlg(pl,Math.round(x),Math.round(y),t);return;}
+      if(DT==='text'){textDlg(pl,Math.round(x),Math.round(y),textAt(pl,x,y));return;}
       return;}
     if(MOVE){const m=(pl.marks||[]).find(q=>q.id===MOVE);if(m){m.x=Math.round(x);m.y=Math.round(y);}MOVE=null;save();renderPlan(true);return;}
     const thr=Math.max(16/V.s,(+pl.sz||20)*0.7);
@@ -2422,6 +2447,7 @@ $('plNew').onclick=()=>{
     let br=null,brd=12/V.s;
     (pl.routes||[]).forEach(r=>{if(!LAY[r.sys])return;for(let i=1;i<r.pts.length;i++){const d=segD(x,y,r.pts[i-1],r.pts[i]);if(d<brd){brd=d;br=r;}}});
     if(br&&PM!=='ins'){rtDlg(br,false);return;}
+    if(PM==='pan'&&!PLFS){plFull(true);return;}
     if(PM==='ins'){
       if(x<0||y<0||x>pl.w||y>pl.h)return;
       const t=$('plSym').value;const sy=SYM[t];
