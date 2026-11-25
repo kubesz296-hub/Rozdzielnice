@@ -173,6 +173,15 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
 .ph{position:relative;width:76px;height:76px;border-radius:8px;overflow:hidden;background:#e5e7eb;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .ph img{width:100%;height:100%;object-fit:cover}
 .ph.add{display:flex!important;justify-content:center;align-items:center;margin:0;font-size:26px;color:var(--mut);border-style:dashed;flex-direction:column;line-height:1.1}.ph.add span{font-size:11px}
+.ph.add[data-cam]{font-family:inherit;padding:0}
+#camOv{position:fixed;inset:0;z-index:80;background:#000;display:flex;flex-direction:column}
+#camOv video{flex:1;min-height:0;width:100%;object-fit:contain;background:#000}
+#camOv.flash video{opacity:.3}
+#camOv .cmsg{position:absolute;left:16px;right:16px;top:30%;color:#fff;text-align:center;font-size:16px}
+#camOv .cbar{display:flex;justify-content:space-around;align-items:center;padding:14px 10px calc(14px + env(safe-area-inset-bottom));background:#000}
+#camOv .cbar button{background:transparent;border:0;color:#fff;font-size:26px;display:flex;flex-direction:column;align-items:center;min-width:70px}
+#camOv .cbar span{font-size:12px;color:#d1d5db}
+#camOv .shot{width:74px;height:74px;border-radius:50%;background:#fff!important;border:5px solid #9ca3af!important;min-width:0!important}
 .fin{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .mkm{position:absolute;z-index:6;background:#1f2937;color:#fff;border-radius:12px;padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.35);max-width:calc(100% - 8px)}
 .mkm .mt{font-size:12.5px;font-weight:700;padding:0 4px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2196,8 +2205,36 @@ function boxSection(m){
 function bxRow(c,i){return `<div class="bxr" data-bx="${i}"><input data-k="t" list="cabs2" value="${esc(c.t||'')}" placeholder="YDYp 3x1,5"><input data-k="d" value="${esc(c.d||'')}" placeholder="skąd / dokąd, np. z RG, do lampy"><button type="button" class="btn sm d" data-bxx="${i}">✕</button></div>`;}
 function photoSection(m,pre){pre=pre||'mk';
   return `<div class="f"><label>📷 Zdjęcia</label><div class="phs" id="${pre}Ph">${(m.ph||[]).map(id=>`<div class="ph" data-ph="${id}"><img data-phid="${id}" alt=""><button type="button" class="phx" data-phx="${id}">✕</button></div>`).join('')}
-   <label class="ph add">📷<span>aparat</span><input type="file" class="fin" accept="image/*" capture="environment"></label><label class="ph add">🖼<span>galeria</span><input type="file" class="fin" accept="image/*"></label></div></div>`;
+   <button type="button" class="ph add" data-cam="1">📷<span>aparat</span></button><label class="ph add">🖼<span>galeria</span><input type="file" class="fin" accept="image/*"></label></div></div>`;
 }
+// podpięcie przycisków zdjęć (aparat w aplikacji + pliki z galerii) w danym kontenerze
+function phBind(root,onId){
+  root.querySelectorAll('input[type=file]').forEach(i=>i.onchange=async e=>{const id=await photoFromInput(e);if(id)onId(id);});
+  root.querySelectorAll('[data-cam]').forEach(b=>b.onclick=async()=>{const id=await photoCamera();if(id)onId(id);});
+}
+// aparat wbudowany w aplikację (getUserMedia) – strona nie jest zamykana przez system na czas robienia zdjęcia
+let CAM_FACE='environment';
+function photoCamera(){return new Promise(done=>{
+  const ov=document.createElement('div');ov.id='camOv';
+  ov.innerHTML=`<video playsinline autoplay muted></video><div class="cmsg"></div>
+   <div class="cbar"><button type="button" data-c="x">✕<span>Anuluj</span></button><button type="button" class="shot" data-c="shot" aria-label="Zrób zdjęcie"></button><button type="button" data-c="flip">🔄<span>Przełącz</span></button></div>`;
+  document.body.appendChild(ov);
+  const v=ov.querySelector('video'),msg=ov.querySelector('.cmsg');let stream=null,busy=false;
+  const stop=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;};
+  const end=id=>{stop();ov.remove();done(id||null);};
+  const start=async()=>{stop();msg.textContent='Uruchamiam aparat…';
+    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:CAM_FACE},width:{ideal:1920},height:{ideal:1440}},audio:false});
+      v.srcObject=stream;await v.play().catch(()=>{});msg.textContent='';}
+    catch(e){fail(e&&e.name==='NotAllowedError'?'Brak zgody na aparat. Zezwól przeglądarce na dostęp do aparatu (ustawienia strony / telefonu) albo użyj aparatu telefonu:':'Nie udało się uruchomić aparatu w aplikacji. Użyj aparatu telefonu:');}};
+  const fail=t=>{msg.innerHTML=`<p>${esc(t)}</p><label class="btn p" style="display:inline-block;position:relative">📷 Aparat telefonu<input type="file" class="fin" accept="image/*" capture="environment"></label>`;
+    msg.querySelector('input').onchange=async e=>{const id=await photoFromInput(e);end(id);};};
+  ov.onclick=async e=>{const b=e.target.closest('[data-c]');if(!b)return;const c=b.dataset.c;
+    if(c==='x')end(null);
+    if(c==='flip'){CAM_FACE=CAM_FACE==='environment'?'user':'environment';start();}
+    if(c==='shot'&&stream&&v.videoWidth&&!busy){busy=true;const cv=document.createElement('canvas');cv.width=v.videoWidth;cv.height=v.videoHeight;cv.getContext('2d').drawImage(v,0,0);
+      ov.classList.add('flash');const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.9));let id=null;try{id=blob&&await photoAdd(blob);}catch(err){}end(id);}};
+  if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia))fail('Ta przeglądarka nie ma aparatu w aplikacji. Użyj aparatu telefonu:');else start();
+});}
 // wybrane zdjęcie z pola pliku → zapis; null, gdy się nie udało
 async function photoFromInput(e){const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return null;
   let id=null;try{id=await photoAdd(f);}catch(err){}
@@ -2581,14 +2618,14 @@ function mkMenu(m){
   el.innerHTML=`<div class="mt">${esc((m.lab?m.lab+' · ':'')+sy[0])}${(m.ph||[]).length?' · 📷 '+m.ph.length:''}</div><div class="mb">
    <button data-mm="ed">✏️<span>Edytuj</span></button><button data-mm="mv">✋<span>Przesuń</span></button>
    ${ROT_T[m.t]!=null?'<button data-mm="aim">🎯<span>Kierunek</span></button>':''}
-   <label>📷<span>Zdjęcie</span><input type="file" class="fin" accept="image/*"></label>
+   <button data-cam="1">📷<span>Aparat</span></button><label>🖼<span>Galeria</span><input type="file" class="fin" accept="image/*"></label>
    ${(m.ph||[]).length?'<button data-mm="ph">🖼<span>Pokaż</span></button>':''}
    <button data-mm="cp">⧉<span>Kopiuj</span></button><button data-mm="del" class="d">🗑<span>Usuń</span></button><button data-mm="x">✕<span>Zamknij</span></button></div>`;
   vp.appendChild(el);
   const s=+pl.sz||20;const sx=V.tx+m.x*V.s,syy=V.ty+m.y*V.s;const W=vp.clientWidth,H=vp.clientHeight,w=el.offsetWidth,h=el.offsetHeight;
   let top=syy-s*V.s-h-6;if(top<4)top=Math.min(H-h-4,syy+s*V.s+6);
   el.style.left=Math.max(4,Math.min(W-w-4,sx-w/2))+'px';el.style.top=Math.max(4,top)+'px';
-  el.querySelector('input').onchange=async e=>{const id=await photoFromInput(e);if(!id)return;m.ph=(m.ph||[]).concat(id);save();mkMenuHide();renderPlan(true);$('plMsg').textContent='📷 Dodano zdjęcie do '+(m.lab||sy[0])+'.';};
+  phBind(el,id=>{m.ph=(m.ph||[]).concat(id);save();mkMenuHide();renderPlan(true);$('plMsg').textContent='📷 Dodano zdjęcie do '+(m.lab||sy[0])+'.';});
   el.onclick=e=>{const b=e.target.closest('[data-mm]');if(!b)return;const a=b.dataset.mm;
     if(a==='del'){if(!b.dataset.c){b.dataset.c=1;b.querySelector('span').textContent='Na pewno?';return;}photoDrop(m.ph);pl.marks=pl.marks.filter(q=>q.id!==m.id);save();mkMenuHide();renderPlan(true);return;}
     mkMenuHide();
@@ -2655,7 +2692,7 @@ function mkDlg(m){
     fillThumbs($('mkPh'));
     $('mkPh').querySelectorAll('[data-ph]').forEach(d=>d.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(d.dataset.ph);});
     $('mkPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(x=>x!==b.dataset.phx);photoDrop([b.dataset.phx]);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();});
-    $('mkPh').querySelectorAll('input[type=file]').forEach(i=>i.onchange=async e=>{const id=await photoFromInput(e);if(!id)return;E.ph.push(id);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();});
+    phBind($('mkPh'),id=>{E.ph.push(id);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();});
   };
   bindPh();
   $('mkOk').onclick=()=>{m.t=$('mkT').value;m.obw=['el','led'].includes(SYM[m.t][1])?$('mkO').value:'';m.lab=$('mkL').value.trim();m.note=$('mkN').value.trim();if($('mkA'))m.amp=$('mkA').value;
@@ -3589,7 +3626,7 @@ function libNoteDlg(d){
     fillThumbs($('lnPh'));
     $('lnPh').querySelectorAll('[data-ph]').forEach(x=>x.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(x.dataset.ph);});
     $('lnPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(q=>q!==b.dataset.phx);photoDrop([b.dataset.phx],(d.ph||[]).includes(b.dataset.phx)?1:0);drawPh();});
-    $('lnPh').querySelectorAll('input[type=file]').forEach(i=>i.onchange=async e=>{const id=await photoFromInput(e);if(id){E.ph.push(id);drawPh();}});
+    phBind($('lnPh'),id=>{E.ph.push(id);drawPh();});
   };
   bindPh();
   $('lnNo').onclick=closeDlg;
