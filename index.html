@@ -232,6 +232,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
 .ppp{background:#374151;border:2px solid #4b5563;border-radius:6px;color:#e5e7eb;padding:3px 2px;min-height:54px;display:flex;flex-direction:column;align-items:center;font-size:10.5px;line-height:1.15;text-align:center;overflow:hidden;cursor:pointer}
 .ppp b{font-size:13px;color:#fff}.ppp span{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ppp.u{background:#fff;color:#111;border-color:#9ca3af}.ppp.u b{color:#111}.ppp.ok{border-color:#16a34a;box-shadow:inset 0 -4px 0 #16a34a}.ppp.bad{border-color:#dc2626;box-shadow:inset 0 -4px 0 #dc2626}
+.xpin{color:var(--acc);text-transform:none;cursor:pointer;font-weight:700;margin-left:4px}
 .vlb{display:inline-block;color:#fff;border-radius:4px;padding:0 4px;font-size:10.5px;font-weight:700;margin-right:2px}
 .ppl{display:flex;gap:8px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line);cursor:pointer}.ppl b.n{flex:0 0 34px;text-align:center;background:#eef2ff;border-radius:6px;padding:2px}
 #ampDoc{background:#fff;color:#000;padding:8mm;font-size:9.5pt}
@@ -1979,7 +1980,7 @@ const SYM={
   pl:['Punkt świetlny','el','lt',''],kk:['Kinkiet','el','kk',''],
   la:['Łącznik','el','sw','1'],prz:['Przycisk / dzwonek','el','sw','P'],la2:['Łącznik podwójny','el','sw','2'],lsch:['Łącznik schodowy','el','sw','S'],
   pu:['Puszka podtynkowa','el','dot','','P'],pug:['Puszka głęboka / elektroniczna','el','dot','','P'],pun:['Puszka natynkowa / hermetyczna','el','dot','','P'],pur:['Puszka rozgałęźna','el','dot','','P'],odb:['Odbiornik (płyta, piec…)','el','box','O'],rg:['Rozdzielnica','el','box','RG'],
-  pir:['Czujka ruchu PIR','al','tri','PIR','C'],kon:['Kontaktron','al','box','K','K'],man:['Manipulator','al','box','MAN','M'],syg:['Sygnalizator','al','box','SYG','S'],cen:['Centrala alarmowa','al','box','CA','CA'],
+  pir:['Czujka ruchu PIR','al','tri','PIR','C'],kon:['Kontaktron','al','box','K','K'],man:['Manipulator','al','box','MAN','M'],syg:['Sygnalizator','al','box','SYG','S'],cen:['Centrala alarmowa','al','box','CA','CA'],eks:['Ekspander','al','box','EKS','E'],
   dym:['Czujka dymu','pz','circ','D','D'],ciep:['Czujka ciepła','pz','circ','T','T'],rop:['ROP (przycisk)','pz','box','R','R'],sp:['Sygnalizator ppoż.','pz','box','SP','SP'],cpp:['Centrala ppoż.','pz','box','CSP','CSP'],
   cam:['Kamera','tv','tri','CAM','CAM'],nvr:['Rejestrator NVR','tv','box','NVR','N'],lan:['Gniazdo LAN','tv','box','RJ','L'],ap:['Access point','tv','circ','AP','AP'],
   czy:['Czytnik','kd','box','CZ','CZ'],zw:['Zwora / elektrozaczep','kd','box','ZW','ZW'],ppw:['Przycisk wyjścia','kd','box','PW','PW'],dom:['Domofon / wideo','kd','box','DOM','DOM'],
@@ -2039,6 +2040,7 @@ function symDraw(t,c){ // rysunek w jednostkach (ok. -1..1), c = kolor
     case 'rg': return box(2.2,1.3)+`<path d="M-1.1 0.65 L1.1 -0.65 L1.1 0.65 Z" ${F}/>`;
     case 'pir': return `<path d="M-0.35 -0.35 L1.15 -1.15 M-0.35 0.35 L1.15 1.15" ${N} stroke-dasharray="0.25 0.18"/><path d="M0.55 -0.55 A0.78 0.78 0 0 1 0.55 0.55" ${N}/><path d="M0.95 -0.95 A1.34 1.34 0 0 1 0.95 0.95" ${N} stroke-dasharray="0.25 0.18"/><rect x="-0.55" y="-0.4" width="0.55" height="0.8" rx="0.08" ${W}/>`; // patrzy w prawo (obrót m.rot)
     case 'kon': return box(1.9,1.1)+tx(0,0.03,'K',0.85);
+    case 'eks': return box(2.2,1.4)+tx(0,0.02,'EKS',0.6);
     case 'man': return box(1.7,1.7)+tx(0,0.05,'#',1.2);
     case 'syg': return `<rect x="-1.1" y="-0.6" width="1.6" height="1.2" ${W}/><rect x="0.5" y="-0.3" width="0.55" height="0.6" ${W}/>`;
     case 'cen': return box(2.4,1.5)+`<rect x="-1.05" y="-0.6" width="2.1" height="1.2" ${N} stroke-width="0.07"/>`+tx(0,0,'CA',0.65);
@@ -2283,20 +2285,20 @@ function ledCalcHtml(pl,rt){
 }
 // zaciski typowe dla elementów alarmowych
 const AL_TERM={pir:['+12V','COM (−)','NC 1 (alarm)','NC 2 (alarm)','TMP 1','TMP 2'],kon:['NC 1','NC 2','TMP 1','TMP 2'],
- man:['+KPD (+12V)','COM','CKM (zegar)','DTM (dane)'],syg:['+12V','COM','+SA (akust.)','+SO (opt.)','TMP 1','TMP 2'],cen:[],
+ man:['+KPD (+12V)','COM','CKM (zegar)','DTM (dane)'],syg:['+12V','COM','+SA (akust.)','+SO (opt.)','TMP 1','TMP 2'],cen:[],eks:['+12V','COM','CKE (zegar)','DTE (dane)','TMP 1','TMP 2'],
  dym:['Linia +','Linia −','Linia + (dalej)','Linia − (dalej)'],ciep:['Linia +','Linia −','Linia + (dalej)','Linia − (dalej)'],rop:['Linia +','Linia −','Linia + (dalej)','Linia − (dalej)'],sp:['+24V','0V'],cpp:[],
  czy:['+12V','GND','D0 (Wiegand)','D1 (Wiegand)','LED','BUZ'],zw:['+12V','GND'],ppw:['NO','COM'],dom:['Magistrala 1','Magistrala 2','+ zasilanie','− zasilanie']};
 // systemy z opisem przewodów: alarm, ppoż., kontrola dostępu
-const WR_SYS={al:{z:'Wejście centrali / strefa',zp:'np. Z3, ekspander CA-64 E 1',h:'🚨 Alarm – co pod którym wejściem',pr:'Alarm – podłączenie elementów',k:'wejście',main:'cen'},
- pz:{z:'Linia dozorowa / adres',zp:'np. L1, L2/adr. 5',h:'🔥 Ppoż. – co na której linii',pr:'Ppoż. – podłączenie elementów',k:'linia',main:'cpp'},
- kd:{z:'Kontroler / przejście',zp:'np. KD1 drzwi wejściowe',h:'🔑 Kontrola dostępu – co do którego kontrolera',pr:'Kontrola dostępu – podłączenie elementów',k:'kontroler',main:''}};
+const WR_SYS={al:{z:'Wejście centrali / strefa',zp:'np. Z3, ekspander CA-64 E 1',h:'🚨 Alarm – co pod którym wejściem',pr:'Alarm – podłączenie elementów',k:'wejście',main:'cen',noz:['cen','eks','man']},
+ pz:{z:'Linia dozorowa / adres',zp:'np. L1, L2/adr. 5',h:'🔥 Ppoż. – co na której linii',pr:'Ppoż. – podłączenie elementów',k:'linia',main:'cpp',noz:['cpp']},
+ kd:{z:'Kontroler / przejście',zp:'np. KD1 drzwi wejściowe',h:'🔑 Kontrola dostępu – co do którego kontrolera',pr:'Kontrola dostępu – podłączenie elementów',k:'kontroler',main:'',noz:[]}};
 const isAl=t=>!!(SYM[t]&&WR_SYS[SYM[t][1]]);
 function alDef(t){return (AL_TERM[t]||[]).map(n=>({n,w:''}));}
 function alRow(r,i){const w=wc(r.w);return `<div class="alr" data-al="${i}"><input data-k="n" value="${esc(r.n||'')}" placeholder="zacisk, np. +12V"><span class="wd" style="background:${w?w[2]:'transparent'}"></span><select data-k="w"><option value="">— kolor —</option>${WIRES.map(x=>`<option value="${x[0]}" ${x[0]===r.w?'selected':''}>${x[1]}</option>`).join('')}</select><button type="button" class="btn sm d" data-alx="${i}">✕</button></div>`;}
 function alSection(m,wr){
   return `<div class="boxs"><div class="shg" style="margin-top:4px">🎨 Przewody – zaciski i kolory</div>
    <div class="g2"><div class="f"><label>Przewód</label><input id="alC" list="cabs2" value="${esc(m.wc||'')}" placeholder="np. YTDY 6x0,5"></div>
-   <div class="f"><label>${WR_SYS[SYM[m.t][1]].z}</label><input id="alZ" list="alZs" value="${esc(m.wz||'')}" placeholder="${WR_SYS[SYM[m.t][1]].zp}"><datalist id="alZs">${[...new Set(plans().flatMap(p=>(p.marks||[]).filter(q=>SYM[q.t]&&SYM[q.t][1]===SYM[m.t][1]).map(q=>(q.wz||'').trim()).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'pl',{numeric:true})).map(z=>`<option value="${esc(z)}">`).join('')}</datalist></div></div>
+   ${m.t==='eks'?`<div class="f"><label>Ekspander z centrali</label><select id="alX"><option value="">— wybierz —</option>${(P.alc&&P.alc.exp||[]).map(e=>{const o=expPlaced(e.id,m.id);return `<option value="${e.id}" ${e.id===m.exp?'selected':''}>${esc(expName(e))}${o?' (już: '+esc(o.lab||'?')+')':''}</option>`;}).join('')}</select>${(P.alc&&P.alc.exp||[]).length?'':'<div class="mut" style="font-size:12.5px">Najpierw dodaj ekspandery w Sieć i alarm → Centrala alarmu.</div>'}</div></div>`:''}${m.t==='eks'?'<div style="display:none">':''}<div class="f"><label>${WR_SYS[SYM[m.t][1]].z}</label><input id="alZ" list="alZs" value="${esc(m.wz||'')}" placeholder="${WR_SYS[SYM[m.t][1]].zp}"><datalist id="alZs">${[...new Set(plans().flatMap(p=>(p.marks||[]).filter(q=>SYM[q.t]&&SYM[q.t][1]===SYM[m.t][1]).map(q=>(q.wz||'').trim()).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'pl',{numeric:true})).map(z=>`<option value="${esc(z)}">`).join('')}</datalist></div></div>${m.t==='eks'?'</div>':''}
    <div id="alW">${wr.map(alRow).join('')}</div>
    <div class="bar" style="margin:4px 0 8px"><button class="btn sm" type="button" id="alAdd">+ zacisk</button><button class="btn sm" type="button" id="alPrev">⟲ Jak w poprzednim</button><button class="btn sm" type="button" id="alStd">Typowe zaciski</button></div></div>`;
 }
@@ -2354,12 +2356,12 @@ function alWireHtml(m){return (m.wr||[]).filter(r=>r.n||r.w).map(r=>{const w=wc(
 function alarmSumHtml(){return Object.keys(WR_SYS).map(alarmSumSys).join('');}
 function alarmSumSys(sys){
   const L=alarmList(sys);if(!L.length)return '';const S=WR_SYS[sys];
-  const grp=[];L.forEach(x=>{const k=(x.m.wz||'').trim();const g=grp.find(q=>q.k===k);if(g)g.L.push(x);else grp.push({k,L:[x]});});
-  const noZ=L.filter(x=>!(x.m.wz||'').trim()&&x.m.t!==S.main).length;
+  const grp=[];L.forEach(x=>{const k=x.m.t==='eks'?'magistrala':(x.m.wz||'').trim();const g=grp.find(q=>q.k===k);if(g)g.L.push(x);else grp.push({k,L:[x]});});
+  const noZ=L.filter(x=>!(x.m.wz||'').trim()&&!S.noz.includes(x.m.t)).length;
   return `<h3 style="margin-top:12px">${S.h}</h3>
    ${noZ?`<p class="mut" style="margin:0 0 4px">Bez wpisanego pola „${S.z}”: <b>${noZ}</b>. Wpisz je w oknie elementu.</p>`:''}
    <table class="sumt"><tr><th>${S.k[0].toUpperCase()+S.k.slice(1)}</th><th>Element</th><th>Przewody</th></tr>${grp.map(g=>g.L.map((x,i)=>`<tr data-almk="${x.pl.id}|${x.m.id}" style="cursor:pointer">${i===0?`<td rowspan="${g.L.length}" style="vertical-align:top"><b>${g.k?esc(g.k):'<span class="mut">—</span>'}</b></td>`:''}
-     <td><b>${esc(x.m.lab||'')}</b> ${esc(SYM[x.m.t][0])}${x.multi?` <span class="mut">(${esc(x.pl.name)})</span>`:''}${x.m.note?`<div class="mut" style="font-size:12px">${esc(x.m.note)}</div>`:''}</td>
+     <td><b>${esc(x.m.lab||'')}</b> ${esc(SYM[x.m.t][0])}${x.multi?` <span class="mut">(${esc(x.pl.name)})</span>`:''}${x.m.t==='eks'?`<div style="font-size:12px">→ ${esc(expTxt(x.m)||'nie wybrano ekspandera')}</div>`:''}${x.m.note?`<div class="mut" style="font-size:12px">${esc(x.m.note)}</div>`:''}</td>
      <td style="font-size:12.5px">${x.m.wc?esc(x.m.wc)+'<br>':''}${alWireHtml(x.m)||'<span class="mut">—</span>'}</td></tr>`).join('')).join('')}</table>
    <p class="mut" style="font-size:12.5px">Stuknij wiersz, żeby otworzyć element.</p>`;
 }
@@ -2608,6 +2610,7 @@ $('plNew').onclick=()=>{
       const t=$('plSym').value;const sy=SYM[t];
       const m={id:uid(),t,x:Math.round(x),y:Math.round(y),obw:(sy[1]==='el'||sy[1]==='led')?$('plObw').value:'',lab:'',note:'',amp:''};
       if(sy[4]){let n=0;plans().forEach(p=>(p.marks||[]).forEach(q=>{if(SYM[q.t]&&SYM[q.t][4]===sy[4])n++;}));m.lab=sy[4]+(n+1);}
+      if(t==='eks'){const e=(P.alc&&P.alc.exp||[]).find(e=>!expPlaced(e.id));if(e)m.exp=e.id;}
       if(ROT_T[t]!=null)AIM=m.id; // od razu zapytaj, gdzie patrzy
       pl.marks=pl.marks||[];pl.marks.push(m);save();renderPlan(true);
     }
@@ -2692,7 +2695,7 @@ function mkDlg(m){
   };
   bindAl();
   $('mkT').onchange=()=>{vis();readAl();const nt=$('mkT').value;
-    if(isAl(nt)){if(!E.wr.some(r=>r.w))E.wr=alDef(nt);$('mkAl').innerHTML=alSection(Object.assign({},m,{wc:$('alC')?$('alC').value:m.wc,wz:$('alZ')?$('alZ').value:m.wz}),E.wr);bindAl();}else $('mkAl').innerHTML='';if(isBox()&&!$('bxAdd')){$('mkBox').innerHTML=boxSection(Object.assign({},m,{cab:E.cab}));bindBox();}if(!isBox())$('mkBox').innerHTML='';};
+    if(isAl(nt)){if(!E.wr.some(r=>r.w))E.wr=alDef(nt);$('mkAl').innerHTML=alSection(Object.assign({},m,{t:nt,wc:$('alC')?$('alC').value:m.wc,wz:$('alZ')?$('alZ').value:m.wz,exp:$('alX')?$('alX').value:m.exp}),E.wr);bindAl();}else $('mkAl').innerHTML='';if(isBox()&&!$('bxAdd')){$('mkBox').innerHTML=boxSection(Object.assign({},m,{cab:E.cab}));bindBox();}if(!isBox())$('mkBox').innerHTML='';};
   const bindPh=()=>{
     fillThumbs($('mkPh'));
     $('mkPh').querySelectorAll('[data-ph]').forEach(d=>d.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(d.dataset.ph);});
@@ -2702,7 +2705,7 @@ function mkDlg(m){
   bindPh();
   $('mkOk').onclick=()=>{m.t=$('mkT').value;m.obw=['el','led'].includes(SYM[m.t][1])?$('mkO').value:'';m.lab=$('mkL').value.trim();m.note=$('mkN').value.trim();if($('mkA'))m.amp=$('mkA').value;
     if(BOX_T.includes(m.t)&&$('bxH')){readCab();m.cab=E.cab.filter(c=>c.t||c.d);m.h=$('bxH').value.trim();m.bd=$('bxD').value.trim();m.con=$('bxCon').value.trim();}
-    if(isAl(m.t)&&$('alW')){readAl();m.wr=E.wr.filter(r=>r.n||r.w);m.wc=$('alC').value.trim();m.wz=$('alZ').value.trim();}
+    if(isAl(m.t)&&$('alW')){readAl();m.wr=E.wr.filter(r=>r.n||r.w);m.wc=$('alC').value.trim();m.wz=$('alZ').value.trim();if(m.t==='eks')m.exp=$('alX')?$('alX').value:m.exp;}
     if(m.t==='zasl'&&$('zW')){m.pw=$('zW').value.trim();m.pu=$('zU').value;}
     if(ROT_T[m.t]!=null)m.rot=(rot%360+360)%360;if($('mkFov')){m.fov=+$('mkFov').value;m.zas=+$('mkZas').value;}
     m.ph=E.ph.slice();save();closeDlg();renderPlan(true);};
@@ -2751,8 +2754,8 @@ function planBoxTable(pl){
   let h='';
   if(bx.length)h+=`<div style="page-break-before:always"></div><b style="font-size:10pt">Opis puszek – ${esc(pl.name)}</b><table><tr><th>Puszka</th><th>Typ / wys.</th><th>Przewody</th><th>Połączenia</th></tr>${bx.map(m=>`<tr><td><b>${esc(m.lab||'')}</b> ${esc(markLabel(m).replace(m.lab||'',''))}</td><td>${esc([m.bd,m.h?'h='+m.h+' cm':''].filter(Boolean).join(', '))}</td><td>${(m.cab||[]).map(c=>esc(c.t+(c.d?' – '+c.d:''))).join('<br>')}</td><td style="white-space:pre-wrap">${esc(m.con||'')}</td></tr>`).join('')}</table>`;
   Object.keys(WR_SYS).forEach(sys=>{
-  const al=alarmList(sys).filter(x=>x.pl===pl).map(x=>x.m).filter(m=>(m.wr||[]).some(r=>r.w)||m.wc||m.wz);
-  if(al.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">${WR_SYS[sys].pr}</b><table><tr><th>${WR_SYS[sys].z}</th><th>Element</th><th>Przewód</th><th>Zaciski → kolory</th><th>Uwagi</th></tr>${al.map(m=>`<tr><td><b>${esc(m.wz||'')}</b></td><td><b>${esc(m.lab||'')}</b> ${esc(SYM[m.t][0])}</td><td>${esc(m.wc||'')}</td><td>${(m.wr||[]).filter(r=>r.n||r.w).map(r=>`${wc(r.w)?`<span class="wd" style="background:${wc(r.w)[2]}"></span>`:''}${esc((r.n||'?')+' – '+(wc(r.w)?wc(r.w)[1]:'—'))}`).join('<br>')}</td><td>${esc(m.note||'')}</td></tr>`).join('')}</table>`;});
+  const al=alarmList(sys).filter(x=>x.pl===pl).map(x=>x.m).filter(m=>(m.wr||[]).some(r=>r.w)||m.wc||m.wz||m.exp);
+  if(al.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">${WR_SYS[sys].pr}</b><table><tr><th>${WR_SYS[sys].z}</th><th>Element</th><th>Przewód</th><th>Zaciski → kolory</th><th>Uwagi</th></tr>${al.map(m=>`<tr><td><b>${esc(m.t==='eks'?expTxt(m):m.wz||'')}</b></td><td><b>${esc(m.lab||'')}</b> ${esc(SYM[m.t][0])}</td><td>${esc(m.wc||'')}</td><td>${(m.wr||[]).filter(r=>r.n||r.w).map(r=>`${wc(r.w)?`<span class="wd" style="background:${wc(r.w)[2]}"></span>`:''}${esc((r.n||'?')+' – '+(wc(r.w)?wc(r.w)[1]:'—'))}`).join('<br>')}</td><td>${esc(m.note||'')}</td></tr>`).join('')}</table>`;});
   const leds=(pl.routes||[]).filter(r=>r.sys==='led');
   if(leds.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Taśmy LED</b><table><tr><th>Taśma</th><th>Długość</th><th>Moc</th><th>Zasilacz</th><th>Profil</th><th>Uwagi</th></tr>${leds.map(r=>{const L=ledDef(r),c=ledCalc(pl,r);const z=L.zas&&plans().flatMap(p=>p.marks||[]).find(m=>m.id===L.zas);return `<tr><td>${esc(L.u+'V '+L.wpm+'W/m '+L.typ+' '+(L.k||'')+' '+L.ip)}</td><td>${c.len!=null?fm(c.len)+' m':''}</td><td>${c.P!=null?Math.round(c.P)+' W':''}</td><td>${z?esc((z.lab||'ZL')+(z.pw?' '+z.pw+' W':'')):'–'}</td><td>${esc(L.prof||'')}</td><td>${esc(r.lab||'')} ${esc(r.note||'')}</td></tr>`;}).join('')}</table>`;
   if(rts.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Trasy kabli</b><table><tr><th>Instalacja</th><th>Przewód</th><th>Obwód</th><th>Długość</th><th>Uwagi</th></tr>${rts.map(r=>{const t=routeTotal(pl,r);return `<tr><td>${RT_SYS[r.sys]}</td><td>${esc(r.lab||'')}</td><td>${r.obw&&C.glab[r.obw]?esc(C.glab[r.obw]):''}</td><td>${t!=null?fm(t)+' m':''}</td><td>${esc(r.note||'')}</td></tr>`;}).join('')}</table>`;
@@ -3073,7 +3076,13 @@ function rackDoc(){
 
 // ---------- CENTRALA ALARMOWA: wejścia i wyjścia ----------
 const ZT=['','opóźniona (wejście/wyjście)','opóźniona wewnętrzna','natychmiastowa','zwykła / obwodowa','24h sabotażowa','24h napadowa','24h pożarowa','24h techniczna','zalanie','gong / informacyjna'];
-function ALC(){if(!P.alc)P.alc={model:'',zb:16,ob:4,eol:'2EOL',r:'1,1 kΩ',exp:[],zd:{},od:{}};const a=P.alc;a.exp=a.exp||[];a.zd=a.zd||{};a.od=a.od||{};return a;}
+function ALC(){if(!P.alc)P.alc={model:'',zb:16,ob:4,eol:'2EOL',r:'1,1 kΩ',exp:[],zd:{},od:{}};const a=P.alc;a.exp=a.exp||[];a.exp.forEach(e=>{if(!e.id)e.id=uid();});a.zd=a.zd||{};a.od=a.od||{};return a;}
+// ekspandery na rzucie: symbol „eks” wskazuje ekspander z centrali (m.exp = id)
+const expName=e=>(e.lab||'Ekspander')+(e.addr!==''&&e.addr!=null?' adr. '+e.addr:'');
+function expPlaced(id,skip){if(!id)return null;for(const pl of plans())for(const m of (pl.marks||[]))if(m.t==='eks'&&m.exp===id&&m.id!==skip)return Object.assign({pl},m);return null;}
+function expRange(e){if(!P.alc)return '';const G=(e.t==='o'?alcOuts():alcZones()).g.find(g=>g.e&&g.e.id===e.id);return G&&G.to>=G.from?(e.t==='o'?'O':'Z')+G.from+'–'+(e.t==='o'?'O':'Z')+G.to:'';}
+function expTxt(m){const e=m.exp&&P.alc&&(P.alc.exp||[]).find(x=>x.id===m.exp);return e?expName(e)+(expRange(e)?' ('+expRange(e)+')':''):'';}
+function expPin(e){const o=expPlaced(e.id);return o?` <span class="xpin" data-xmk="${o.pl.id}|${o.id}">📍 ${esc(o.lab||'na rzucie')}${plans().length>1?' · '+esc(o.pl.name):''}</span>`:' <span class="mut" style="text-transform:none">· nie naniesiony</span>';}
 function alcZones(){const a=ALC();const g=[{lab:'Płyta centrali',from:1,to:+a.zb||0}];let n=+a.zb||0;
   a.exp.filter(e=>e.t==='z').forEach(e=>{g.push({lab:(e.lab||'Ekspander')+(e.addr!==''&&e.addr!=null?' (adr. '+e.addr+')':''),from:n+1,to:n+(+e.n||0),e});n+=+e.n||0;});return {g,n};}
 function alcOuts(){const a=ALC();const g=[{lab:'Płyta centrali',from:1,to:+a.ob||0}];let n=+a.ob||0;
@@ -3082,7 +3091,7 @@ function zoneNum(wz){const m=String(wz||'').trim().match(/^(?:z|we|wej[a-ząćę
 function alByZone(){const r={},bad=[];alarmList('al').forEach(x=>{const n=zoneNum(x.m.wz);if(n)(r[n]=r[n]||[]).push(x);else if((x.m.wz||'').trim())bad.push(x);});return {r,bad};}
 function alcRender(){
   const a=ALC();const Z=alcZones(),O=alcOuts();const {r,bad}=alByZone();
-  const els=alarmList('al').filter(x=>x.m.t!=='cen');const free=els.filter(x=>!(x.m.wz||'').trim());
+  const els=alarmList('al').filter(x=>!WR_SYS.al.noz.includes(x.m.t));const free=els.filter(x=>!(x.m.wz||'').trim());
   const busy=Object.keys(r).filter(k=>+k<=Z.n).length;const over=Object.keys(r).filter(k=>+k>Z.n);
   let h=`<div class="card noprint"><h3 style="margin:0 0 4px">🚨 ${esc(a.model||'Centrala alarmowa')}</h3>
    <div class="mut">Wejść: <b>${Z.n}</b> (zajęte ${busy}, wolne ${Z.n-busy}) · wyjść: <b>${O.n}</b> · ${esc(a.eol)}${a.eol!=='NC'&&a.r?' '+esc(a.r):''}</div>
@@ -3090,18 +3099,19 @@ function alcRender(){
    ${over.length?`<p style="color:var(--bad);margin:4px 0">⚠ Wejścia spoza centrali: ${over.map(k=>'Z'+k).join(', ')} – dodaj ekspander albo popraw numer.</p>`:''}
    ${bad.length?`<p style="color:var(--warn);margin:4px 0">Nierozpoznany numer wejścia: ${bad.map(x=>esc((x.m.lab||'')+' „'+x.m.wz+'”')).join(', ')} – wpisz np. Z5.</p>`:''}
    <div class="bar" style="margin-bottom:0"><button class="btn sm" id="alcCfg">⚙ Centrala i ekspandery</button><button class="btn sm p" id="alcPrint">🖨 Drukuj / PDF</button></div></div>`;
-  h+=`<div class="card noprint"><h3 style="margin:0 0 6px">Wejścia (strefy)</h3>${Z.g.filter(g=>g.to>=g.from).map(g=>`<div class="shg">${esc(g.lab)} · Z${g.from}–Z${g.to}</div>
+  h+=`<div class="card noprint"><h3 style="margin:0 0 6px">Wejścia (strefy)</h3>${Z.g.filter(g=>g.to>=g.from).map(g=>`<div class="shg">${esc(g.lab)} · Z${g.from}–Z${g.to}${g.e?expPin(g.e):''}</div>
     <div class="pp n8">${rangeN(g.from,g.to).map(n=>{const L=r[n]||[];const d=a.zd[n]||{};return `<div class="ppp ${L.length?'u':''}" data-alz="${n}"><b>Z${n}</b><span>${esc(L.map(x=>x.m.lab||SYM[x.m.t][0]).join(', ')||d.d||'')}</span>${d.t?`<span style="font-size:9.5px">${esc(d.t.split(' ')[0])}</span>`:''}</div>`;}).join('')}</div>`).join('')}
     <p class="mut" style="margin:6px 0 0">Białe = podłączony element z rzutu. Stuknij wejście, żeby przypisać element, ustawić typ i opis.</p></div>`;
-  h+=`<div class="card noprint"><h3 style="margin:0 0 6px">Wyjścia</h3>${O.g.filter(g=>g.to>=g.from).map(g=>`<div class="shg">${esc(g.lab)}</div>${rangeN(g.from,g.to).map(n=>`<div class="g2" style="grid-template-columns:44px 1fr;align-items:center;margin-bottom:4px"><b>O${n}</b><input data-alo="${n}" value="${esc(a.od[n]||'')}" placeholder="np. sygnalizator zewn. SPL-5010, zasilanie czujek"></div>`).join('')}`).join('')||'<p class="mut">Ustaw liczbę wyjść w „Centrala i ekspandery”.</p>'}</div>`;
+  h+=`<div class="card noprint"><h3 style="margin:0 0 6px">Wyjścia</h3>${O.g.filter(g=>g.to>=g.from).map(g=>`<div class="shg">${esc(g.lab)}${g.e?expPin(g.e):''}</div>${rangeN(g.from,g.to).map(n=>`<div class="g2" style="grid-template-columns:44px 1fr;align-items:center;margin-bottom:4px"><b>O${n}</b><input data-alo="${n}" value="${esc(a.od[n]||'')}" placeholder="np. sygnalizator zewn. SPL-5010, zasilanie czujek"></div>`).join('')}`).join('')||'<p class="mut">Ustaw liczbę wyjść w „Centrala i ekspandery”.</p>'}</div>`;
   $('netBody').innerHTML=h;
   $('alcCfg').onclick=alcCfgDlg;$('alcPrint').onclick=netPrint;
   $('netBody').querySelectorAll('[data-alz]').forEach(x=>x.onclick=()=>alzDlg(+x.dataset.alz));
+  $('netBody').querySelectorAll('[data-xmk]').forEach(x=>x.onclick=()=>{const [p,m]=x.dataset.xmk.split('|');openMark(p,m);});
   $('netBody').querySelectorAll('[data-alo]').forEach(x=>x.oninput=()=>{const v=x.value.trim();if(v)a.od[x.dataset.alo]=v;else delete a.od[x.dataset.alo];save();});
 }
 function alcCfgDlg(){
   const a=ALC();const E=JSON.parse(JSON.stringify(a.exp));
-  const row=(e,i)=>`<div class="alr" style="grid-template-columns:1.6fr 70px 60px 74px auto" data-ex="${i}"><input data-k="lab" list="alcExp" value="${esc(e.lab||'')}" placeholder="np. CA-64 E"><input data-k="addr" value="${esc(e.addr??'')}" placeholder="adres"><input data-k="n" type="number" min="1" max="32" value="${esc(String(e.n||8))}"><select data-k="t"><option value="z" ${e.t==='z'?'selected':''}>wejść</option><option value="o" ${e.t==='o'?'selected':''}>wyjść</option></select><button type="button" class="btn sm d" data-exx="${i}">✕</button></div>`;
+  const row=(e,i)=>`<div class="alr" style="grid-template-columns:1.6fr 70px 60px 74px auto" data-ex="${i}" data-id="${e.id||''}"><input data-k="lab" list="alcExp" value="${esc(e.lab||'')}" placeholder="np. CA-64 E"><input data-k="addr" value="${esc(e.addr??'')}" placeholder="adres"><input data-k="n" type="number" min="1" max="32" value="${esc(String(e.n||8))}"><select data-k="t"><option value="z" ${e.t==='z'?'selected':''}>wejść</option><option value="o" ${e.t==='o'?'selected':''}>wyjść</option></select><button type="button" class="btn sm d" data-exx="${i}">✕</button></div>`;
   $('dlg').innerHTML=`<h3>Centrala alarmowa</h3>
    <div class="f"><label>Model</label><input id="acM" list="alcMod" value="${esc(a.model||'')}" placeholder="np. Satel INTEGRA 32"><datalist id="alcMod">${['Satel INTEGRA 32','Satel INTEGRA 64 Plus','Satel INTEGRA 128','Satel PERFECTA 16','Satel PERFECTA 32','Satel VERSA 15','Ropam NeoGSM-IP','Ropam OptimaGSM','Paradox SP6000','Ajax Hub 2'].map(x=>`<option value="${x}">`).join('')}</datalist></div>
    <div class="g2"><div class="f"><label>Wejścia na płycie</label><input id="acZ" type="number" min="0" max="64" value="${esc(String(a.zb))}"></div><div class="f"><label>Wyjścia na płycie</label><input id="acO" type="number" min="0" max="64" value="${esc(String(a.ob))}"></div></div>
@@ -3111,10 +3121,10 @@ function alcCfgDlg(){
    <button class="btn sm" type="button" id="acXa">+ ekspander</button></div>
    <p class="mut">Numeracja wejść i wyjść jest ciągła: najpierw płyta, potem ekspandery w kolejności z listy (jak w Satel DLOADX).</p>
    <div class="bar"><button class="btn p" id="acOk">Zapisz</button><button class="btn" id="acNo">Anuluj</button></div>`;
-  const read=()=>{E.length=0;$('acX').querySelectorAll('[data-ex]').forEach(r=>E.push({lab:r.querySelector('[data-k=lab]').value.trim(),addr:r.querySelector('[data-k=addr]').value.trim(),n:+r.querySelector('[data-k=n]').value||8,t:r.querySelector('[data-k=t]').value}));};
-  const draw=()=>{$('acX').innerHTML=E.map(row).join('');$('acX').querySelectorAll('[data-exx]').forEach(b=>b.onclick=()=>{read();E.splice(+b.dataset.exx,1);draw();});};
+  const read=()=>{E.length=0;$('acX').querySelectorAll('[data-ex]').forEach(r=>E.push({id:r.dataset.id||uid(),lab:r.querySelector('[data-k=lab]').value.trim(),addr:r.querySelector('[data-k=addr]').value.trim(),n:+r.querySelector('[data-k=n]').value||8,t:r.querySelector('[data-k=t]').value}));};
+  const draw=()=>{$('acX').innerHTML=E.map((e,i)=>row(e,i)+`<div class="mut" style="font-size:12px;margin:-2px 0 6px">${expPlaced(e.id)?'📍 na rzucie: '+esc(expPlaced(e.id).lab||'')+(plans().length>1?' ('+esc(expPlaced(e.id).pl.name)+')':''):'nie naniesiony na rzut – wstaw symbol „Ekspander” w Rzut → Alarm'}</div>`).join('');$('acX').querySelectorAll('[data-exx]').forEach(b=>b.onclick=()=>{read();E.splice(+b.dataset.exx,1);draw();});};
   draw();
-  $('acXa').onclick=()=>{read();E.push({lab:'CA-64 E',addr:String(E.length),n:8,t:'z'});draw();};
+  $('acXa').onclick=()=>{read();E.push({id:uid(),lab:'CA-64 E',addr:String(E.length),n:8,t:'z'});draw();};
   $('acNo').onclick=closeDlg;
   $('acOk').onclick=()=>{read();a.model=$('acM').value.trim();a.zb=Math.max(0,+$('acZ').value||0);a.ob=Math.max(0,+$('acO').value||0);a.eol=$('acE').value;a.r=$('acR').value.trim();a.exp=E;save();closeDlg();renderNet();};
   $('ov').classList.add('on');
@@ -3122,8 +3132,9 @@ function alcCfgDlg(){
 function openMark(pid,mid){const pl=plans().find(q=>q.id===pid);const m=pl&&(pl.marks||[]).find(q=>q.id===mid);if(!m)return;closeDlg();tab('plan');if(PL!==pid){PL=pid;renderPlan(true);}mkDlg(m);}
 function alzDlg(n){
   const a=ALC();const {r}=alByZone();const L=r[n]||[];const d=Object.assign({t:'',d:'',note:''},a.zd[n]||{});
-  const cand=alarmList('al').filter(x=>x.m.t!=='cen'&&zoneNum(x.m.wz)!==n);
-  $('dlg').innerHTML=`<h3>Wejście Z${n}</h3>
+  const cand=alarmList('al').filter(x=>!WR_SYS.al.noz.includes(x.m.t)&&zoneNum(x.m.wz)!==n);
+  const G=alcZones().g.find(g=>n>=g.from&&n<=g.to);const GP=G&&G.e&&expPlaced(G.e.id);
+  $('dlg').innerHTML=`<h3>Wejście Z${n}</h3><p class="mut" style="margin-top:-6px">${G?esc(G.e?expName(G.e):'Płyta centrali'):''}${GP?` · <a href="#" data-zo="${GP.pl.id}|${GP.id}">📍 ${esc(GP.lab||'na rzucie')}${plans().length>1?' ('+esc(GP.pl.name)+')':''}</a>`:''}</p>
    <div class="f"><label>Podłączone elementy</label>${L.length?L.map(x=>`<div class="ppl" style="cursor:default"><div style="flex:1;min-width:0"><b>${esc(x.m.lab||'')}</b> ${esc(SYM[x.m.t][0])}${x.multi?' <span class="mut">('+esc(x.pl.name)+')</span>':''}<div style="font-size:12.5px">${x.m.wc?esc(x.m.wc)+' ':''}${alWireHtml(x.m)}</div></div><button class="btn sm" data-zo="${x.pl.id}|${x.m.id}">Otwórz</button><button class="btn sm d" data-zr="${x.m.id}">Odłącz</button></div>`).join(''):'<div class="mut">Nic – wejście wolne.</div>'}</div>
    ${cand.length?`<div class="f"><label>Dodaj element z rzutu</label><select id="azA"><option value="">— wybierz —</option>${cand.map(x=>`<option value="${x.m.id}">${esc((x.m.lab||'')+' '+SYM[x.m.t][0]+(x.m.wz?' (teraz: '+x.m.wz+')':'')+(x.m.note?' · '+x.m.note:''))}</option>`).join('')}</select></div>`:''}
    <div class="f"><label>Typ wejścia</label><select id="azT">${ZT.map(t=>`<option value="${t}" ${t===d.t?'selected':''}>${t||'—'}</option>`).join('')}</select></div>
@@ -3142,7 +3153,7 @@ function alzDlg(n){
 function alcDoc(){
   const a=ALC();const Z=alcZones(),O=alcOuts();const {r}=alByZone();
   return `<h1>${esc(P.name)} – centrala alarmowa</h1><div>${esc([P.addr,a.model,a.eol+(a.eol!=='NC'&&a.r?' '+a.r:''),today()].filter(Boolean).join(' · '))}</div>
-   ${a.exp.length?`<p><b>Ekspandery:</b> ${a.exp.map(e=>esc((e.lab||'')+(e.addr!==''?' adr. '+e.addr:'')+' – '+e.n+(e.t==='z'?' wej.':' wyj.'))).join(', ')}</p>`:''}
+   ${a.exp.length?`<p><b>Ekspandery:</b> ${a.exp.map(e=>{const o=expPlaced(e.id);return esc(expName(e)+' – '+e.n+(e.t==='z'?' wej.':' wyj.')+(expRange(e)?' '+expRange(e):'')+(o?' – na rzucie: '+(o.lab||'')+' ('+o.pl.name+(o.note?', '+o.note:'')+')':''));}).join('; ')}</p>`:''}
    <h2 style="font-size:11pt;margin:8px 0 2px">Wejścia</h2><table><tr><th>Wej.</th><th>Moduł</th><th>Typ</th><th>Nazwa</th><th>Element</th><th>Przewód / kolory</th><th>Uwagi</th></tr>
    ${Z.g.flatMap(g=>rangeN(g.from,g.to).map(n=>{const L=r[n]||[];const d=a.zd[n]||{};return `<tr><td><b>Z${n}</b></td><td>${esc(g.e?g.e.lab||'':'płyta')}</td><td>${esc(d.t||'')}</td><td>${esc(d.d||'')}</td><td>${L.map(x=>esc((x.m.lab||'')+' '+SYM[x.m.t][0]+(x.m.note?' ('+x.m.note+')':''))).join('<br>')}</td><td>${L.map(x=>esc([x.m.wc,alWiresTxt(x.m)].filter(Boolean).join(': '))).join('<br>')}</td><td>${esc(d.note||'')}</td></tr>`;})).join('')}</table>
    ${O.n?`<h2 style="font-size:11pt;margin:8px 0 2px">Wyjścia</h2><table><tr><th>Wyj.</th><th>Moduł</th><th>Opis</th></tr>${O.g.flatMap(g=>rangeN(g.from,g.to).map(n=>`<tr><td><b>O${n}</b></td><td>${esc(g.e?g.e.lab||'':'płyta')}</td><td>${esc(a.od[n]||'')}</td></tr>`)).join('')}</table>`:''}`;
