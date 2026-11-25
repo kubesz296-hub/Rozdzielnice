@@ -206,6 +206,18 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
 .todo input{width:24px;height:24px}.todo.dn span{text-decoration:line-through;color:#9ca3af}
 .todo span{flex:1}
 .prog{height:8px;background:#e5e7eb;border-radius:4px;margin:6px 0 12px}.prog div{height:8px;background:#0f766e;border-radius:4px}
+#netDoc{background:#fff;color:#000;padding:8mm;font-size:9.5pt}
+#netDoc h1{font-size:14pt;margin:0 0 4px}#netDoc table{border-collapse:collapse;width:100%;font-size:8.5pt;margin-bottom:6px}
+#netDoc th,#netDoc td{border:1px solid #000;padding:2px 4px;text-align:left;vertical-align:top}#netDoc th{background:#eee}
+#netDoc .lstrip{display:flex;border:1px solid #000;margin:2mm 0 4mm}#netDoc .lstrip div{flex:1;min-width:0;border-right:1px solid #000;font-size:6.5pt;line-height:1.1;padding:1px;text-align:center;overflow:hidden;height:9mm}
+#netDoc .lstrip div:last-child{border-right:0}#netDoc .lstrip b{display:block;font-size:7pt}
+.pp{background:#1f2937;border-radius:10px;padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+@media(min-width:700px){.pp{grid-template-columns:repeat(12,1fr)}}
+.pp.n8{grid-template-columns:repeat(8,1fr)}
+.ppp{background:#374151;border:2px solid #4b5563;border-radius:6px;color:#e5e7eb;padding:3px 2px;min-height:54px;display:flex;flex-direction:column;align-items:center;font-size:10.5px;line-height:1.15;text-align:center;overflow:hidden;cursor:pointer}
+.ppp b{font-size:13px;color:#fff}.ppp span{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppp.u{background:#fff;color:#111;border-color:#9ca3af}.ppp.u b{color:#111}.ppp.ok{border-color:#16a34a;box-shadow:inset 0 -4px 0 #16a34a}.ppp.bad{border-color:#dc2626;box-shadow:inset 0 -4px 0 #dc2626}
+.ppl{display:flex;gap:8px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line);cursor:pointer}.ppl b.n{flex:0 0 34px;text-align:center;background:#eef2ff;border-radius:6px;padding:2px}
 #ampDoc{background:#fff;color:#000;padding:8mm;font-size:9.5pt}
 #ampDoc h1{font-size:14pt;margin:0 0 4px}#ampDoc h2{font-size:11pt;margin:12px 0 4px}#ampDoc h3{font-size:10pt;margin:8px 0 2px}
 #ampDoc table{border-collapse:collapse;width:100%;font-size:8.5pt;margin-bottom:6px}
@@ -249,7 +261,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
   header,nav,.noprint,.mvbar,.ov{display:none!important}
   .sec{display:none!important}.sec.on{display:block!important}
   main{padding:0;max-width:none}
-  #printArea,#protArea,#ampDoc{padding:0}
+  #printArea,#protArea,#ampDoc,#netDoc{padding:0}
   .card{box-shadow:none;padding:0;margin:0}
   #protArea tr{page-break-inside:avoid}
 }
@@ -266,6 +278,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
   <button data-t="plan">Rzut</button>
   <button data-t="meas">Pomiary</button>
   <button data-t="amp">Ampio</button>
+  <button data-t="net">Sieć</button>
   <button data-t="notes">Zadania</button>
   <button data-t="lib">Schematy</button>
   <button data-t="print">Wydruk</button>
@@ -387,6 +400,11 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
       <button data-as="cheat">📖 Ściągawka</button>
     </div>
     <div id="ampBody"></div>
+  </section>
+
+  <!-- SIEĆ / PATCH PANEL -->
+  <section class="sec" id="s-net">
+    <div id="netBody"></div>
   </section>
 
   <!-- ZADANIA -->
@@ -818,6 +836,7 @@ function render(){
   if(document.querySelector('#s-meas.on')&&!$('measBody').contains(document.activeElement))renderMeas();
   if(document.querySelector('#s-amp.on')&&!$('ampBody').contains(document.activeElement))renderAmp();
   if(document.querySelector('#s-plan.on'))renderPlan(true);
+  if(document.querySelector('#s-net.on')&&!$('ov').classList.contains('on'))renderNet();
   if(document.querySelector('#s-notes.on')&&!$('notesBody').contains(document.activeElement)&&!$('ov').classList.contains('on'))renderNotes();
 }
 function phCls(p){return p==='3F'?'F3':p;}
@@ -1086,6 +1105,7 @@ function tab(t){
   if(t==='plan')renderPlan();
   if(t==='lib')renderLib();
   if(t==='notes')renderNotes();
+  if(t==='net')renderNet();
   try{history.replaceState(null,'','#'+t);}catch(e){}
   window.scrollTo(0,0);
 }
@@ -1197,6 +1217,7 @@ function projHay(p){
   (p.notes||[]).forEach(n=>{add('Notatka',n.t);add('Notatka',n.x);});
   (p.kb&&p.kb.cards||[]).forEach(c=>{add('Zadanie',c.t);add('Zadanie',c.d);});
   (p.plans||[]).forEach(pl=>{add('Rzut',pl.name);(pl.marks||[]).forEach(m=>{if(m.con)add('Puszka '+(m.lab||''),m.con);(m.cab||[]).forEach(c=>add('Puszka '+(m.lab||''),c.t+' '+(c.d||'')));if(m.note)add('Rzut',m.note);if(isAl(m.t)&&((m.wr||[]).length||m.wc||m.wz))add((SYM[m.t][0])+' '+(m.lab||''),[m.wc,m.wz,alWiresTxt(m)].filter(Boolean).join(' · '));});});
+  (p.net&&p.net.pp||[]).forEach(pp=>Object.keys(pp.ports||{}).forEach(k=>{const q=pp.ports[k];add('Patch panel '+pp.name+' / '+k,[q.d,q.dev,q.sw?'switch '+q.sw:'',q.note].filter(Boolean).join(' · '));}));
   if(p.ampio)p.ampio.mods.forEach(m=>{add('Ampio',m.short+' '+m.type+' '+(m.name||''));});
   return out;
 }
@@ -2497,6 +2518,7 @@ function mkDlg(m){
    ${ROT_T[m.t]!=null?`<div class="f"><label>Kierunek <span class="mut" id="mkRv"></span></label><div class="bar" style="margin:0"><button class="btn" id="mkAim">🎯 Wskaż na rzucie</button><button class="btn" id="mkRl">↺ 45°</button><button class="btn" id="mkRr">↻ 45°</button></div></div>`:''}
    ${m.t==='cam'?`<div class="g2"><div class="f"><label>Kąt widzenia</label><select id="mkFov">${[[40,'40° (wąski / tele)'],[60,'60°'],[90,'90° (typowy)'],[110,'110° (szeroki)'],[180,'180° (fisheye ściana)'],[360,'360° (fisheye sufit)']].map(([v,n])=>`<option value="${v}" ${v===(+m.fov||90)?'selected':''}>${n}</option>`).join('')}</select></div>
    <div class="f"><label>Zasięg na rzucie</label><select id="mkZas">${[[5,'krótki'],[8,'średni'],[14,'długi'],[24,'bardzo długi']].map(([v,n])=>`<option value="${v}" ${v===(+m.zas||8)?'selected':''}>${n}</option>`).join('')}</select></div></div>`:''}
+   ${PP_LAN_T.includes(m.t)&&ppOfMark(m.id).length?`<div class="f mut">🔌 Patch panel: <b>${esc(ppOfMark(m.id).join(', '))}</b></div>`:''}
    <div id="mkBox">${BOX_T.includes(m.t)?boxSection(m):''}</div>
    <div id="mkAl">${isAl(m.t)?alSection(m,E.wr):''}</div>
    ${m.t==='zasl'?psuSection(m):''}
@@ -2606,6 +2628,111 @@ window.addEventListener('resize',()=>{if(document.querySelector('#s-plan.on'))fi
 // ---------- ZADANIA / ZAKUPY / NOTATKI / HASŁA ----------
 const KB_COLS=[['todo','Do zrobienia'],['doing','W trakcie'],['wait','Czeka (materiał / klient)'],['done','Zrobione']];
 const PRIO=[['','zwykłe','#9ca3af'],['hi','ważne','#f59e0b'],['urg','pilne','#dc2626']];
+// ---------- SIEĆ / PATCH PANEL ----------
+const PP_DEV=['Komputer','Telewizor','Kamera','Access point','Rejestrator NVR','Drukarka','Konsola','Dekoder / Smart TV box','Centrala alarmowa','Serwer Ampio','Domofon / wideodomofon','Kontrola dostępu','Router','Switch','Telefon VoIP','Zapas / wolny'];
+const PP_LAN_T=['lan','cam','ap','nvr','dom','czy'];
+let NETF='';
+function NET(){if(!P.net)P.net={pp:[],cur:''};return P.net;}
+function curPP(){const N=NET();return N.pp.find(x=>x.id===N.cur)||N.pp[0]||null;}
+function ppPort(pp,i){pp.ports=pp.ports||{};return pp.ports[i]||{};}
+function ppUsed(p){return !!(p.d||p.lan||p.dev||p.sw||p.note);}
+function lanMarks(){const out=[];const multi=plans().length>1;plans().forEach(pl=>(pl.marks||[]).forEach(m=>{if(PP_LAN_T.includes(m.t))out.push({m,pl,n:(m.lab||SYM[m.t][0])+(m.lab?' – '+SYM[m.t][0]:'')+(multi?' ('+pl.name+')':'')+(m.note?' · '+m.note:'')});}));return out;}
+function lanMarkName(id){const x=lanMarks().find(q=>q.m.id===id);return x?(x.m.lab||SYM[x.m.t][0]):'';}
+function ppOfMark(id){const r=[];NET().pp.forEach(pp=>Object.keys(pp.ports||{}).forEach(k=>{if(pp.ports[k].lan===id)r.push(pp.name+' / port '+k);}));return r;}
+function ppShort(p){return p.d||lanMarkName(p.lan)||p.dev||'';}
+function renderNet(){
+  const N=NET();const pp=curPP();
+  let h=`<div class="card noprint"><div class="chips" style="margin-bottom:8px">${N.pp.map(x=>`<button class="chip ${pp&&x.id===pp.id?'on':''}" data-ppsel="${x.id}">${esc(x.name)} <span class="mut">${x.n}</span></button>`).join('')}<button class="chip" id="ppAdd">+ Patch panel</button></div>`;
+  if(!pp){h+=`<p class="mut" style="margin:0">Dodaj patch panel i opisz, dokąd idzie każdy port: pomieszczenie, gniazdo z rzutu, urządzenie, port w switchu. Potem wydrukujesz tabelę i pasek z opisami portów.</p></div>`;$('netBody').innerHTML=h;bindNet();return;}
+  const ports=Array.from({length:pp.n},(_,i)=>i+1);const used=ports.filter(i=>ppUsed(ppPort(pp,i))).length;const ok=ports.filter(i=>ppPort(pp,i).t==='ok').length;
+  h+=`<div class="mut">${esc([pp.loc,'kat. '+pp.cat,'T568'+pp.std].filter(Boolean).join(' · '))} · opisanych <b>${used}</b> z ${pp.n}, przetestowanych <b>${ok}</b></div>
+   <div class="bar" style="margin-bottom:0"><button class="btn sm" id="ppCfg">⚙ Ustawienia</button><button class="btn sm" id="ppAuto">⇢ Gniazda z rzutu</button><button class="btn sm p" id="ppPrint">🖨 Drukuj / PDF</button></div></div>
+   <div class="card noprint"><div class="pp ${pp.n===8?'n8':''}">${ports.map(i=>{const p=ppPort(pp,i);return `<div class="ppp ${ppUsed(p)?'u':''} ${p.t==='ok'?'ok':p.t==='bad'?'bad':''}" data-pp="${i}"><b>${i}</b><span>${esc(ppShort(p))}</span>${p.poe?'<span>⚡PoE</span>':''}</div>`;}).join('')}</div>
+   <p class="mut" style="margin:6px 0 0">Stuknij port, żeby go opisać. Zielony pasek = przetestowany, czerwony = błąd.</p></div>`;
+  if(used){
+    h+=`<div class="card noprint">${used>8?`<div class="f"><input id="ppQ" type="search" value="${esc(NETF)}" placeholder="🔍 Szukaj portu: salon, kamera, L5…"></div>`:''}<div id="ppList">${ppListHtml(pp)}</div></div>`;
+  }
+  h+=`<div class="card" id="netPrintW" style="display:none"><div id="netDoc">${netDoc(pp)}</div></div>`;
+  $('netBody').innerHTML=h;bindNet();
+}
+function ppListHtml(pp){
+  const q=NETF.trim().toLowerCase();
+  return Array.from({length:pp.n},(_,i)=>i+1).filter(i=>ppUsed(ppPort(pp,i))).filter(i=>{if(!q)return true;const p=ppPort(pp,i);return [i,p.d,lanMarkName(p.lan),p.dev,p.sw,p.note].join(' ').toLowerCase().includes(q);}).map(i=>{const p=ppPort(pp,i);
+    return `<div class="ppl" data-pp="${i}"><b class="n">${i}</b><div style="flex:1;min-width:0"><b>${esc(p.d||lanMarkName(p.lan)||p.dev)}</b><div class="mut" style="font-size:13px">${esc([p.lan?'gniazdo '+lanMarkName(p.lan):'',p.dev,p.sw?'switch '+p.sw:'',p.poe?'PoE':'',p.note].filter(Boolean).join(' · '))}</div></div>${p.pc&&wc(p.pc)?`<span class="wd" title="patchcord ${wc(p.pc)[1]}" style="background:${wc(p.pc)[2]}"></span>`:''}<span>${p.t==='ok'?'✅':p.t==='bad'?'❌':''}</span></div>`;}).join('')||'<p class="mut">Nic nie pasuje.</p>';
+}
+function bindNet(){
+  const b=$('netBody');
+  b.querySelectorAll('[data-ppsel]').forEach(x=>x.onclick=()=>{NET().cur=x.dataset.ppsel;save();renderNet();});
+  if($('ppAdd'))$('ppAdd').onclick=()=>ppCfgDlg(null);
+  if($('ppCfg'))$('ppCfg').onclick=()=>ppCfgDlg(curPP());
+  b.querySelectorAll('[data-pp]').forEach(x=>x.onclick=()=>ppDlg(+x.dataset.pp));
+  if($('ppQ'))$('ppQ').oninput=()=>{NETF=$('ppQ').value;$('ppList').innerHTML=ppListHtml(curPP());$('ppList').querySelectorAll('[data-pp]').forEach(x=>x.onclick=()=>ppDlg(+x.dataset.pp));};
+  if($('ppPrint'))$('ppPrint').onclick=()=>{$('netDoc').innerHTML=netDoc(curPP());$('netPrintW').style.display='';try{window.print();}catch(e){}};
+  if($('ppAuto'))$('ppAuto').onclick=()=>{
+    const pp=curPP();const taken=new Set();NET().pp.forEach(x=>Object.values(x.ports||{}).forEach(p=>{if(p.lan)taken.add(p.lan);}));
+    const free=lanMarks().filter(x=>!taken.has(x.m.id));let n=0,i=1;
+    free.forEach(x=>{while(i<=pp.n&&ppUsed(ppPort(pp,i)))i++;if(i>pp.n)return;pp.ports[i]={lan:x.m.id,d:'',dev:x.m.t==='cam'?'Kamera':x.m.t==='ap'?'Access point':x.m.t==='nvr'?'Rejestrator NVR':x.m.t==='dom'?'Domofon / wideodomofon':x.m.t==='czy'?'Kontrola dostępu':'',poe:['cam','ap'].includes(x.m.t)};n++;i++;});
+    save();renderNet();
+    alertMsg(n?`Przypisano ${n} gniazd${n===1?'o':''} z rzutu do wolnych portów. Sprawdź i popraw kolejność.`:(lanMarks().length?'Wszystkie gniazda LAN, kamery i AP z rzutu są już przypisane albo brak wolnych portów.':'Na rzucie nie ma jeszcze gniazd LAN, kamer ani AP (system „CCTV / LAN”).'));
+  };
+}
+function alertMsg(t){$('dlg').innerHTML=`<p>${esc(t)}</p><div class="bar"><button class="btn p" id="amOk">OK</button></div>`;$('amOk').onclick=closeDlg;$('ov').classList.add('on');}
+function ppCfgDlg(pp){
+  const isNew=!pp;const N=NET();
+  const x=pp||{id:uid(),name:'PP'+(N.pp.length+1),n:24,cat:'6',std:'B',loc:'',ports:{}};
+  $('dlg').innerHTML=`<h3>${isNew?'Nowy patch panel':'Patch panel '+esc(x.name)}</h3>
+   <div class="g2"><div class="f"><label>Nazwa</label><input id="ppN" value="${esc(x.name)}" placeholder="np. PP1"></div>
+   <div class="f"><label>Liczba portów</label><select id="ppC">${[8,12,16,24,48].map(n=>`<option ${n===x.n?'selected':''}>${n}</option>`).join('')}</select></div></div>
+   <div class="g2"><div class="f"><label>Kategoria</label><select id="ppK">${['5e','6','6A','7'].map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('')}</select></div>
+   <div class="f"><label>Standard zarabiania</label><select id="ppS"><option value="B" ${x.std==='B'?'selected':''}>T568B</option><option value="A" ${x.std==='A'?'selected':''}>T568A</option></select></div></div>
+   <div class="f"><label>Gdzie jest</label><input id="ppL" value="${esc(x.loc||'')}" placeholder="np. szafa RACK 9U w garderobie"></div>
+   <div class="bar"><button class="btn p" id="ppOk">Zapisz</button><button class="btn" id="ppNo">Anuluj</button>${isNew?'':'<button class="btn d" id="ppDel">Usuń panel</button>'}</div>`;
+  $('ppNo').onclick=closeDlg;
+  $('ppOk').onclick=()=>{const n=+$('ppC').value;
+    const lost=Object.keys(x.ports||{}).filter(k=>+k>n&&ppUsed(x.ports[k]));
+    if(lost.length&&!$('ppOk').dataset.c){$('ppOk').dataset.c=1;$('ppOk').textContent=`Porty ${lost.join(', ')} zostaną usunięte – zapisz mimo to`;return;}
+    lost.forEach(k=>delete x.ports[k]);
+    x.name=$('ppN').value.trim()||x.name;x.n=n;x.cat=$('ppK').value;x.std=$('ppS').value;x.loc=$('ppL').value.trim();
+    if(isNew)N.pp.push(x);N.cur=x.id;save();closeDlg();renderNet();};
+  if($('ppDel'))$('ppDel').onclick=()=>{if(!$('ppDel').dataset.c){$('ppDel').dataset.c=1;$('ppDel').textContent='Na pewno usunąć cały panel?';return;}N.pp=N.pp.filter(q=>q.id!==x.id);N.cur=N.pp[0]?N.pp[0].id:'';save();closeDlg();renderNet();};
+  $('ov').classList.add('on');setTimeout(()=>{if(isNew&&$('ppN'))$('ppN').select();},50);
+}
+function ppDlg(i){
+  const pp=curPP();if(!pp)return;const p=Object.assign({},ppPort(pp,i));const lm=lanMarks();
+  const taken={};NET().pp.forEach(x=>Object.keys(x.ports||{}).forEach(k=>{const q=x.ports[k];if(q.lan&&!(x.id===pp.id&&+k===i))taken[q.lan]=x.name+'/'+k;}));
+  $('dlg').innerHTML=`<h3>${esc(pp.name)} – port ${i}</h3>
+   <div class="f"><label>Dokąd idzie / opis</label><input id="pD" value="${esc(p.d||'')}" placeholder="np. Salon – TV, Biuro biurko lewe"></div>
+   <div class="f"><label>Gniazdo / urządzenie z rzutu</label><select id="pL"><option value="">— brak —</option>${lm.map(x=>`<option value="${x.m.id}" ${x.m.id===p.lan?'selected':''}>${esc(x.n)}${taken[x.m.id]?' (już: '+esc(taken[x.m.id])+')':''}</option>`).join('')}</select>${lm.length?'':'<div class="mut" style="font-size:13px">Gniazda LAN, kamery i AP wstawisz na rzucie (system „CCTV / LAN”).</div>'}</div>
+   <div class="g2"><div class="f"><label>Urządzenie</label><input id="pV" list="ppDevs" value="${esc(p.dev||'')}" placeholder="np. Telewizor"><datalist id="ppDevs">${PP_DEV.map(d=>`<option value="${esc(d)}">`).join('')}</datalist></div>
+   <div class="f"><label>Port w switchu</label><input id="pS" value="${esc(p.sw||'')}" placeholder="np. SW1 / 5"></div></div>
+   <div class="g2"><div class="f"><label>Kolor patchcordu</label>${wireSelect('pC',p.pc)}</div>
+   <div class="f"><label>&nbsp;</label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pP" ${p.poe?'checked':''} style="width:22px;height:22px"> PoE</label></div></div>
+   <div class="f"><label>Test kabla</label><div class="chips">${[['','nie testowany'],['ok','✅ OK'],['bad','❌ błąd']].map(([v,n])=>`<button type="button" class="chip ${v===(p.t||'')?'on':''}" data-pt="${v}">${n}</button>`).join('')}</div></div>
+   <div class="f"><label>Uwagi</label><input id="pN" value="${esc(p.note||'')}" placeholder="np. długość 32 m, zamieniona para 3-6, VLAN 20"></div>
+   <div class="bar"><button class="btn p" id="pOk">Zapisz</button>${i<pp.n?'<button class="btn" id="pNx">Zapisz i następny ▶</button>':''}<button class="btn" id="pNo">Anuluj</button>${ppUsed(p)?'<button class="btn d" id="pClr">Wyczyść</button>':''}</div>`;
+  let T=p.t||'';
+  $('dlg').querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{T=b.dataset.pt;$('dlg').querySelectorAll('[data-pt]').forEach(q=>q.classList.toggle('on',q===b));});
+  $('pL').onchange=()=>{const x=lm.find(q=>q.m.id===$('pL').value);if(x&&!$('pV').value.trim()){const d={cam:'Kamera',ap:'Access point',nvr:'Rejestrator NVR',dom:'Domofon / wideodomofon',czy:'Kontrola dostępu'}[x.m.t];if(d)$('pV').value=d;if(['cam','ap'].includes(x.m.t))$('pP').checked=true;}};
+  const commit=()=>{const q={d:$('pD').value.trim(),lan:$('pL').value,dev:$('pV').value.trim(),sw:$('pS').value.trim(),pc:$('pC').value,poe:$('pP').checked,t:T,note:$('pN').value.trim()};
+    pp.ports=pp.ports||{};if(ppUsed(q)||q.t||q.pc||q.poe)pp.ports[i]=q;else delete pp.ports[i];save();};
+  $('pNo').onclick=closeDlg;
+  $('pOk').onclick=()=>{commit();closeDlg();renderNet();};
+  if($('pNx'))$('pNx').onclick=()=>{commit();closeDlg();renderNet();ppDlg(i+1);};
+  if($('pClr'))$('pClr').onclick=()=>{if(!$('pClr').dataset.c){$('pClr').dataset.c=1;$('pClr').textContent='Na pewno?';return;}delete pp.ports[i];save();closeDlg();renderNet();};
+  $('ov').classList.add('on');setTimeout(()=>{const e=$('pD');if(e&&!e.value)e.focus();},50);
+}
+function netDoc(pp){
+  const ports=Array.from({length:pp.n},(_,i)=>i+1);
+  const strips=[];for(let k=0;k<ports.length;k+=24)strips.push(ports.slice(k,k+24));
+  return `<h1>${esc(P.name)} – patch panel ${esc(pp.name)}</h1>
+   <div>${esc([P.addr,pp.loc,pp.n+' portów','kat. '+pp.cat,'T568'+pp.std,today()].filter(Boolean).join(' · '))}</div>
+   <div style="margin-top:3mm;font-size:8pt">Pasek opisowy (wytnij i przyklej nad portami):</div>
+   ${strips.map(st=>`<div class="lstrip">${st.map(i=>`<div><b>${i}</b>${esc(ppShort(ppPort(pp,i)))}</div>`).join('')}</div>`).join('')}
+   <table><tr><th>Port</th><th>Dokąd / opis</th><th>Gniazdo</th><th>Urządzenie</th><th>Switch</th><th>PoE</th><th>Test</th><th>Uwagi</th></tr>
+   ${ports.map(i=>{const p=ppPort(pp,i);return `<tr><td><b>${i}</b></td><td>${esc(p.d||'')}</td><td>${esc(lanMarkName(p.lan))}</td><td>${esc(p.dev||'')}</td><td>${esc(p.sw||'')}</td><td>${p.poe?'tak':''}</td><td>${p.t==='ok'?'OK':p.t==='bad'?'BŁĄD':''}</td><td>${esc(p.note||'')}</td></tr>`;}).join('')}</table>`;
+}
+window.addEventListener('beforeprint',()=>{if(document.querySelector('#s-net.on')&&curPP()){$('netDoc').innerHTML=netDoc(curPP());$('netPrintW').style.display='';}});
+window.addEventListener('afterprint',()=>{if($('netPrintW'))$('netPrintW').style.display='none';});
 let NS='kb';
 function KB(){if(!P.kb)P.kb={cards:[]};return P.kb;}
 function SHOP(){if(!P.shop)P.shop=[];return P.shop;}
@@ -3122,7 +3249,7 @@ $('bLock').onclick=lockDlg;
 (async()=>{await lockStart();
 load();render();renderLock();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
-const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','notes','lib','print','proj'].includes(h))tab(h);
+const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','net','notes','lib','print','proj'].includes(h))tab(h);
 })();
 </script>
 </body>
