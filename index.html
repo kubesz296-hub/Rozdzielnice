@@ -2298,7 +2298,8 @@ function alRow(r,i){const w=wc(r.w);return `<div class="alr" data-al="${i}"><inp
 function alSection(m,wr){
   return `<div class="boxs"><div class="shg" style="margin-top:4px">🎨 Przewody – zaciski i kolory</div>
    <div class="g2"><div class="f"><label>Przewód</label><input id="alC" list="cabs2" value="${esc(m.wc||'')}" placeholder="np. YTDY 6x0,5"></div>
-   ${m.t==='eks'?`<div class="f"><label>Ekspander z centrali</label><select id="alX"><option value="">— wybierz —</option>${(P.alc&&P.alc.exp||[]).map(e=>{const o=expPlaced(e.id,m.id);return `<option value="${e.id}" ${e.id===m.exp?'selected':''}>${esc(expName(e))}${o?' (już: '+esc(o.lab||'?')+')':''}</option>`;}).join('')}</select>${(P.alc&&P.alc.exp||[]).length?'':'<div class="mut" style="font-size:12.5px">Najpierw dodaj ekspandery w Sieć i alarm → Centrala alarmu.</div>'}</div></div>`:''}${m.t==='eks'?'<div style="display:none">':''}<div class="f"><label>${WR_SYS[SYM[m.t][1]].z}</label><input id="alZ" list="alZs" value="${esc(m.wz||'')}" placeholder="${WR_SYS[SYM[m.t][1]].zp}"><datalist id="alZs">${[...new Set(plans().flatMap(p=>(p.marks||[]).filter(q=>SYM[q.t]&&SYM[q.t][1]===SYM[m.t][1]).map(q=>(q.wz||'').trim()).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'pl',{numeric:true})).map(z=>`<option value="${esc(z)}">`).join('')}</datalist></div></div>${m.t==='eks'?'</div>':''}
+   ${m.t==='eks'?`<div class="f"><label>Obudowa / skrzynka</label><input id="alO" value="${esc(m.box||'')}" placeholder="np. OPU-4 P, z zasilaczem"></div></div>`:''}${m.t==='eks'?'<input type="hidden" id="alZ" value="">':''}<div class="f" ${m.t==='eks'?'style="display:none"':''}><label>${WR_SYS[SYM[m.t][1]].z}</label><input id="alZ" list="alZs" value="${esc(m.wz||'')}" placeholder="${WR_SYS[SYM[m.t][1]].zp}"><datalist id="alZs">${[...new Set(plans().flatMap(p=>(p.marks||[]).filter(q=>SYM[q.t]&&SYM[q.t][1]===SYM[m.t][1]).map(q=>(q.wz||'').trim()).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'pl',{numeric:true})).map(z=>`<option value="${esc(z)}">`).join('')}</datalist></div>${m.t==='eks'?'':'</div>'}
+   ${m.t==='eks'?`<div class="f"><label>Ekspandery w tej skrzynce</label><div id="alXs">${(P.alc&&P.alc.exp||[]).map(e=>{const o=expPlaced(e.id,m.id);return `<label style="display:flex;gap:8px;align-items:center;margin:4px 0;font-weight:400"><input type="checkbox" data-xe="${e.id}" ${markExps(m).includes(e.id)?'checked':''} style="width:22px;height:22px;flex:none"><span>${esc(expName(e))} <span class="mut">${esc(expRange(e))}${o?' · już w: '+esc(o.lab||'?')+(plans().length>1?' ('+esc(o.pl.name)+')':''):''}</span></span></label>`;}).join('')||'<div class="mut" style="font-size:12.5px">Najpierw dodaj ekspandery w Sieć i alarm → Centrala alarmu.</div>'}</div></div>`:''}
    <div id="alW">${wr.map(alRow).join('')}</div>
    <div class="bar" style="margin:4px 0 8px"><button class="btn sm" type="button" id="alAdd">+ zacisk</button><button class="btn sm" type="button" id="alPrev">⟲ Jak w poprzednim</button><button class="btn sm" type="button" id="alStd">Typowe zaciski</button></div></div>`;
 }
@@ -2610,7 +2611,7 @@ $('plNew').onclick=()=>{
       const t=$('plSym').value;const sy=SYM[t];
       const m={id:uid(),t,x:Math.round(x),y:Math.round(y),obw:(sy[1]==='el'||sy[1]==='led')?$('plObw').value:'',lab:'',note:'',amp:''};
       if(sy[4]){let n=0;plans().forEach(p=>(p.marks||[]).forEach(q=>{if(SYM[q.t]&&SYM[q.t][4]===sy[4])n++;}));m.lab=sy[4]+(n+1);}
-      if(t==='eks'){const e=(P.alc&&P.alc.exp||[]).find(e=>!expPlaced(e.id));if(e)m.exp=e.id;}
+      if(t==='eks'){const e=(P.alc&&P.alc.exp||[]).find(e=>!expPlaced(e.id));if(e)m.exps=[e.id];}
       if(ROT_T[t]!=null)AIM=m.id; // od razu zapytaj, gdzie patrzy
       pl.marks=pl.marks||[];pl.marks.push(m);save();renderPlan(true);
     }
@@ -2695,7 +2696,7 @@ function mkDlg(m){
   };
   bindAl();
   $('mkT').onchange=()=>{vis();readAl();const nt=$('mkT').value;
-    if(isAl(nt)){if(!E.wr.some(r=>r.w))E.wr=alDef(nt);$('mkAl').innerHTML=alSection(Object.assign({},m,{t:nt,wc:$('alC')?$('alC').value:m.wc,wz:$('alZ')?$('alZ').value:m.wz,exp:$('alX')?$('alX').value:m.exp}),E.wr);bindAl();}else $('mkAl').innerHTML='';if(isBox()&&!$('bxAdd')){$('mkBox').innerHTML=boxSection(Object.assign({},m,{cab:E.cab}));bindBox();}if(!isBox())$('mkBox').innerHTML='';};
+    if(isAl(nt)){if(!E.wr.some(r=>r.w))E.wr=alDef(nt);$('mkAl').innerHTML=alSection(Object.assign({},m,{t:nt,wc:$('alC')?$('alC').value:m.wc,wz:$('alZ')?$('alZ').value:m.wz,exps:$('alXs')?[...$('alXs').querySelectorAll('[data-xe]:checked')].map(c=>c.dataset.xe):markExps(m),box:$('alO')?$('alO').value:m.box}),E.wr);bindAl();}else $('mkAl').innerHTML='';if(isBox()&&!$('bxAdd')){$('mkBox').innerHTML=boxSection(Object.assign({},m,{cab:E.cab}));bindBox();}if(!isBox())$('mkBox').innerHTML='';};
   const bindPh=()=>{
     fillThumbs($('mkPh'));
     $('mkPh').querySelectorAll('[data-ph]').forEach(d=>d.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(d.dataset.ph);});
@@ -2705,7 +2706,7 @@ function mkDlg(m){
   bindPh();
   $('mkOk').onclick=()=>{m.t=$('mkT').value;m.obw=['el','led'].includes(SYM[m.t][1])?$('mkO').value:'';m.lab=$('mkL').value.trim();m.note=$('mkN').value.trim();if($('mkA'))m.amp=$('mkA').value;
     if(BOX_T.includes(m.t)&&$('bxH')){readCab();m.cab=E.cab.filter(c=>c.t||c.d);m.h=$('bxH').value.trim();m.bd=$('bxD').value.trim();m.con=$('bxCon').value.trim();}
-    if(isAl(m.t)&&$('alW')){readAl();m.wr=E.wr.filter(r=>r.n||r.w);m.wc=$('alC').value.trim();m.wz=$('alZ').value.trim();if(m.t==='eks')m.exp=$('alX')?$('alX').value:m.exp;}
+    if(isAl(m.t)&&$('alW')){readAl();m.wr=E.wr.filter(r=>r.n||r.w);m.wc=$('alC').value.trim();m.wz=$('alZ').value.trim();if(m.t==='eks'&&$('alXs')){m.exps=[...$('alXs').querySelectorAll('[data-xe]:checked')].map(c=>c.dataset.xe);delete m.exp;m.box=$('alO').value.trim();}}
     if(m.t==='zasl'&&$('zW')){m.pw=$('zW').value.trim();m.pu=$('zU').value;}
     if(ROT_T[m.t]!=null)m.rot=(rot%360+360)%360;if($('mkFov')){m.fov=+$('mkFov').value;m.zas=+$('mkZas').value;}
     m.ph=E.ph.slice();save();closeDlg();renderPlan(true);};
@@ -2754,7 +2755,7 @@ function planBoxTable(pl){
   let h='';
   if(bx.length)h+=`<div style="page-break-before:always"></div><b style="font-size:10pt">Opis puszek – ${esc(pl.name)}</b><table><tr><th>Puszka</th><th>Typ / wys.</th><th>Przewody</th><th>Połączenia</th></tr>${bx.map(m=>`<tr><td><b>${esc(m.lab||'')}</b> ${esc(markLabel(m).replace(m.lab||'',''))}</td><td>${esc([m.bd,m.h?'h='+m.h+' cm':''].filter(Boolean).join(', '))}</td><td>${(m.cab||[]).map(c=>esc(c.t+(c.d?' – '+c.d:''))).join('<br>')}</td><td style="white-space:pre-wrap">${esc(m.con||'')}</td></tr>`).join('')}</table>`;
   Object.keys(WR_SYS).forEach(sys=>{
-  const al=alarmList(sys).filter(x=>x.pl===pl).map(x=>x.m).filter(m=>(m.wr||[]).some(r=>r.w)||m.wc||m.wz||m.exp);
+  const al=alarmList(sys).filter(x=>x.pl===pl).map(x=>x.m).filter(m=>(m.wr||[]).some(r=>r.w)||m.wc||m.wz||markExps(m).length);
   if(al.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">${WR_SYS[sys].pr}</b><table><tr><th>${WR_SYS[sys].z}</th><th>Element</th><th>Przewód</th><th>Zaciski → kolory</th><th>Uwagi</th></tr>${al.map(m=>`<tr><td><b>${esc(m.t==='eks'?expTxt(m):m.wz||'')}</b></td><td><b>${esc(m.lab||'')}</b> ${esc(SYM[m.t][0])}</td><td>${esc(m.wc||'')}</td><td>${(m.wr||[]).filter(r=>r.n||r.w).map(r=>`${wc(r.w)?`<span class="wd" style="background:${wc(r.w)[2]}"></span>`:''}${esc((r.n||'?')+' – '+(wc(r.w)?wc(r.w)[1]:'—'))}`).join('<br>')}</td><td>${esc(m.note||'')}</td></tr>`).join('')}</table>`;});
   const leds=(pl.routes||[]).filter(r=>r.sys==='led');
   if(leds.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Taśmy LED</b><table><tr><th>Taśma</th><th>Długość</th><th>Moc</th><th>Zasilacz</th><th>Profil</th><th>Uwagi</th></tr>${leds.map(r=>{const L=ledDef(r),c=ledCalc(pl,r);const z=L.zas&&plans().flatMap(p=>p.marks||[]).find(m=>m.id===L.zas);return `<tr><td>${esc(L.u+'V '+L.wpm+'W/m '+L.typ+' '+(L.k||'')+' '+L.ip)}</td><td>${c.len!=null?fm(c.len)+' m':''}</td><td>${c.P!=null?Math.round(c.P)+' W':''}</td><td>${z?esc((z.lab||'ZL')+(z.pw?' '+z.pw+' W':'')):'–'}</td><td>${esc(L.prof||'')}</td><td>${esc(r.lab||'')} ${esc(r.note||'')}</td></tr>`;}).join('')}</table>`;
@@ -3077,11 +3078,12 @@ function rackDoc(){
 // ---------- CENTRALA ALARMOWA: wejścia i wyjścia ----------
 const ZT=['','opóźniona (wejście/wyjście)','opóźniona wewnętrzna','natychmiastowa','zwykła / obwodowa','24h sabotażowa','24h napadowa','24h pożarowa','24h techniczna','zalanie','gong / informacyjna'];
 function ALC(){if(!P.alc)P.alc={model:'',zb:16,ob:4,eol:'2EOL',r:'1,1 kΩ',exp:[],zd:{},od:{}};const a=P.alc;a.exp=a.exp||[];a.exp.forEach(e=>{if(!e.id)e.id=uid();});a.zd=a.zd||{};a.od=a.od||{};return a;}
-// ekspandery na rzucie: symbol „eks” wskazuje ekspander z centrali (m.exp = id)
+// ekspandery na rzucie: symbol „eks” (skrzynka) może mieć kilka ekspanderów z centrali (m.exps = [id]; stare m.exp)
+const markExps=m=>m.exps||(m.exp?[m.exp]:[]);
 const expName=e=>(e.lab||'Ekspander')+(e.addr!==''&&e.addr!=null?' adr. '+e.addr:'');
-function expPlaced(id,skip){if(!id)return null;for(const pl of plans())for(const m of (pl.marks||[]))if(m.t==='eks'&&m.exp===id&&m.id!==skip)return Object.assign({pl},m);return null;}
+function expPlaced(id,skip){if(!id)return null;for(const pl of plans())for(const m of (pl.marks||[]))if(m.t==='eks'&&markExps(m).includes(id)&&m.id!==skip)return Object.assign({pl},m);return null;}
 function expRange(e){if(!P.alc)return '';const G=(e.t==='o'?alcOuts():alcZones()).g.find(g=>g.e&&g.e.id===e.id);return G&&G.to>=G.from?(e.t==='o'?'O':'Z')+G.from+'–'+(e.t==='o'?'O':'Z')+G.to:'';}
-function expTxt(m){const e=m.exp&&P.alc&&(P.alc.exp||[]).find(x=>x.id===m.exp);return e?expName(e)+(expRange(e)?' ('+expRange(e)+')':''):'';}
+function expTxt(m){const L=P.alc?markExps(m).map(id=>(P.alc.exp||[]).find(x=>x.id===id)).filter(Boolean):[];return L.map(e=>expName(e)+(expRange(e)?' ('+expRange(e)+')':'')).join(', ')+(L.length&&m.box?' – '+m.box:'');}
 function expPin(e){const o=expPlaced(e.id);return o?` <span class="xpin" data-xmk="${o.pl.id}|${o.id}">📍 ${esc(o.lab||'na rzucie')}${plans().length>1?' · '+esc(o.pl.name):''}</span>`:' <span class="mut" style="text-transform:none">· nie naniesiony</span>';}
 function alcZones(){const a=ALC();const g=[{lab:'Płyta centrali',from:1,to:+a.zb||0}];let n=+a.zb||0;
   a.exp.filter(e=>e.t==='z').forEach(e=>{g.push({lab:(e.lab||'Ekspander')+(e.addr!==''&&e.addr!=null?' (adr. '+e.addr+')':''),from:n+1,to:n+(+e.n||0),e});n+=+e.n||0;});return {g,n};}
