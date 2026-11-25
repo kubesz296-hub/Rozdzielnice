@@ -2207,7 +2207,7 @@ function alRow(r,i){const w=wc(r.w);return `<div class="alr" data-al="${i}"><inp
 function alSection(m,wr){
   return `<div class="boxs"><div class="shg" style="margin-top:4px">🎨 Przewody – zaciski i kolory</div>
    <div class="g2"><div class="f"><label>Przewód</label><input id="alC" list="cabs2" value="${esc(m.wc||'')}" placeholder="np. YTDY 6x0,5"></div>
-   <div class="f"><label>Wejście centrali / strefa</label><input id="alZ" value="${esc(m.wz||'')}" placeholder="np. Z3, ekspander CA-64 E 1"></div></div>
+   <div class="f"><label>Wejście centrali / strefa</label><input id="alZ" list="alZs" value="${esc(m.wz||'')}" placeholder="np. Z3, ekspander CA-64 E 1"><datalist id="alZs">${[...new Set(plans().flatMap(p=>(p.marks||[]).map(q=>(q.wz||'').trim()).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'pl',{numeric:true})).map(z=>`<option value="${esc(z)}">`).join('')}</datalist></div></div>
    <div id="alW">${wr.map(alRow).join('')}</div>
    <div class="bar" style="margin:4px 0 8px"><button class="btn sm" type="button" id="alAdd">+ zacisk</button><button class="btn sm" type="button" id="alPrev">⟲ Jak w poprzednim</button><button class="btn sm" type="button" id="alStd">Typowe zaciski</button></div></div>`;
 }
@@ -2254,7 +2254,24 @@ function renderPlanSum(){
     +plans().flatMap(pl=>(pl.marks||[]).filter(m=>m.t==='zasl')).map(m=>{const P=stripsOfPsu(m.id).reduce((a,x)=>a+(x.c.P||0),0);return m.pw&&P&&+m.pw<P*1.1?`<p style="color:var(--bad)">⚠ Zasilacz ${esc(m.lab||'')} ${m.pw} W – za słaby na ${Math.round(P)} W taśm (zalecany ${psuFor(P)} W).</p>`:'';}).join('');}
   const boxes=plans().flatMap(pl=>(pl.marks||[]).filter(m=>BOX_T.includes(m.t)));
   if(boxes.length)h+=`<p class="mut" style="margin-top:8px">📦 Puszek: ${boxes.length}, opisanych: ${boxes.filter(m=>m.con||(m.cab||[]).length).length}, ze zdjęciem: ${boxes.filter(m=>(m.ph||[]).length).length}</p>`;
+  h+=alarmSumHtml();
   $('plSum').innerHTML=h;
+  $('plSum').querySelectorAll('[data-almk]').forEach(r=>r.onclick=()=>{const [pid,mid]=r.dataset.almk.split('|');const pl=plans().find(q=>q.id===pid);const m=pl&&(pl.marks||[]).find(q=>q.id===mid);if(!m)return;if(PL!==pid){PL=pid;renderPlan(true);}mkDlg(m);});
+}
+// zestawienie alarmu: co jest pod którym wejściem centrali
+function alarmList(){const multi=plans().length>1;const L=[];plans().forEach(pl=>(pl.marks||[]).forEach(m=>{if(isAl(m.t))L.push({m,pl,multi});}));
+  const z=x=>(x.m.wz||'').trim();L.sort((a,b)=>(!z(a))-(!z(b))||z(a).localeCompare(z(b),'pl',{numeric:true})||(a.m.lab||'').localeCompare(b.m.lab||'','pl',{numeric:true}));return L;}
+function alWireHtml(m){return (m.wr||[]).filter(r=>r.n||r.w).map(r=>{const w=wc(r.w);return `<span style="white-space:nowrap">${w?`<span class="wd" style="background:${w[2]}"></span>`:''}${esc(r.n||'?')}${w?'':' –'}</span>`;}).join(' &nbsp;');}
+function alarmSumHtml(){
+  const L=alarmList();if(!L.length)return '';
+  const grp=[];L.forEach(x=>{const k=(x.m.wz||'').trim();const g=grp.find(q=>q.k===k);if(g)g.L.push(x);else grp.push({k,L:[x]});});
+  const noZ=L.filter(x=>!(x.m.wz||'').trim()&&x.m.t!=='cen').length;
+  return `<h3 style="margin-top:12px">🚨 Alarm – co pod którym wejściem</h3>
+   ${noZ?`<p class="mut" style="margin:0 0 4px">Bez wpisanego wejścia: <b>${noZ}</b>. Wpisz je w oknie elementu („Wejście centrali / strefa”).</p>`:''}
+   <table class="sumt"><tr><th>Wejście</th><th>Element</th><th>Przewody</th></tr>${grp.map(g=>g.L.map((x,i)=>`<tr data-almk="${x.pl.id}|${x.m.id}" style="cursor:pointer">${i===0?`<td rowspan="${g.L.length}" style="vertical-align:top"><b>${g.k?esc(g.k):'<span class="mut">—</span>'}</b></td>`:''}
+     <td><b>${esc(x.m.lab||'')}</b> ${esc(SYM[x.m.t][0])}${x.multi?` <span class="mut">(${esc(x.pl.name)})</span>`:''}${x.m.note?`<div class="mut" style="font-size:12px">${esc(x.m.note)}</div>`:''}</td>
+     <td style="font-size:12.5px">${x.m.wc?esc(x.m.wc)+'<br>':''}${alWireHtml(x.m)||'<span class="mut">—</span>'}</td></tr>`).join('')).join('')}</table>
+   <p class="mut" style="font-size:12.5px">Stuknij wiersz, żeby otworzyć element.</p>`;
 }
 // ---- dodawanie rzutu
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
@@ -2614,8 +2631,8 @@ function planBoxTable(pl){
   const rts=(pl.routes||[]).filter(r=>r.sys!=='led'&&(r.lab||routeTotal(pl,r)!=null));
   let h='';
   if(bx.length)h+=`<div style="page-break-before:always"></div><b style="font-size:10pt">Opis puszek – ${esc(pl.name)}</b><table><tr><th>Puszka</th><th>Typ / wys.</th><th>Przewody</th><th>Połączenia</th></tr>${bx.map(m=>`<tr><td><b>${esc(m.lab||'')}</b> ${esc(markLabel(m).replace(m.lab||'',''))}</td><td>${esc([m.bd,m.h?'h='+m.h+' cm':''].filter(Boolean).join(', '))}</td><td>${(m.cab||[]).map(c=>esc(c.t+(c.d?' – '+c.d:''))).join('<br>')}</td><td style="white-space:pre-wrap">${esc(m.con||'')}</td></tr>`).join('')}</table>`;
-  const al=(pl.marks||[]).filter(m=>isAl(m.t)&&((m.wr||[]).some(r=>r.w)||m.wc||m.wz));
-  if(al.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Alarm – podłączenie elementów</b><table><tr><th>Element</th><th>Przewód</th><th>Wejście / strefa</th><th>Zaciski → kolory</th><th>Uwagi</th></tr>${al.map(m=>`<tr><td><b>${esc(m.lab||'')}</b> ${esc(SYM[m.t][0])}</td><td>${esc(m.wc||'')}</td><td>${esc(m.wz||'')}</td><td>${(m.wr||[]).filter(r=>r.n||r.w).map(r=>`${wc(r.w)?`<span class="wd" style="background:${wc(r.w)[2]}"></span>`:''}${esc((r.n||'?')+' – '+(wc(r.w)?wc(r.w)[1]:'—'))}`).join('<br>')}</td><td>${esc(m.note||'')}</td></tr>`).join('')}</table>`;
+  const al=alarmList().filter(x=>x.pl===pl).map(x=>x.m).filter(m=>(m.wr||[]).some(r=>r.w)||m.wc||m.wz);
+  if(al.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Alarm – podłączenie elementów</b><table><tr><th>Wejście / strefa</th><th>Element</th><th>Przewód</th><th>Zaciski → kolory</th><th>Uwagi</th></tr>${al.map(m=>`<tr><td><b>${esc(m.wz||'')}</b></td><td><b>${esc(m.lab||'')}</b> ${esc(SYM[m.t][0])}</td><td>${esc(m.wc||'')}</td><td>${(m.wr||[]).filter(r=>r.n||r.w).map(r=>`${wc(r.w)?`<span class="wd" style="background:${wc(r.w)[2]}"></span>`:''}${esc((r.n||'?')+' – '+(wc(r.w)?wc(r.w)[1]:'—'))}`).join('<br>')}</td><td>${esc(m.note||'')}</td></tr>`).join('')}</table>`;
   const leds=(pl.routes||[]).filter(r=>r.sys==='led');
   if(leds.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Taśmy LED</b><table><tr><th>Taśma</th><th>Długość</th><th>Moc</th><th>Zasilacz</th><th>Profil</th><th>Uwagi</th></tr>${leds.map(r=>{const L=ledDef(r),c=ledCalc(pl,r);const z=L.zas&&plans().flatMap(p=>p.marks||[]).find(m=>m.id===L.zas);return `<tr><td>${esc(L.u+'V '+L.wpm+'W/m '+L.typ+' '+(L.k||'')+' '+L.ip)}</td><td>${c.len!=null?fm(c.len)+' m':''}</td><td>${c.P!=null?Math.round(c.P)+' W':''}</td><td>${z?esc((z.lab||'ZL')+(z.pw?' '+z.pw+' W':'')):'–'}</td><td>${esc(L.prof||'')}</td><td>${esc(r.lab||'')} ${esc(r.note||'')}</td></tr>`;}).join('')}</table>`;
   if(rts.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Trasy kabli</b><table><tr><th>Instalacja</th><th>Przewód</th><th>Obwód</th><th>Długość</th><th>Uwagi</th></tr>${rts.map(r=>{const t=routeTotal(pl,r);return `<tr><td>${RT_SYS[r.sys]}</td><td>${esc(r.lab||'')}</td><td>${r.obw&&C.glab[r.obw]?esc(C.glab[r.obw]):''}</td><td>${t!=null?fm(t)+' m':''}</td><td>${esc(r.note||'')}</td></tr>`;}).join('')}</table>`;
