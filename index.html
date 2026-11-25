@@ -172,7 +172,13 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
 .phs{display:flex;gap:6px;flex-wrap:wrap}
 .ph{position:relative;width:76px;height:76px;border-radius:8px;overflow:hidden;background:#e5e7eb;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .ph img{width:100%;height:100%;object-fit:cover}
-.ph.add{font-size:30px;color:var(--mut);border-style:dashed}
+.ph.add{display:flex!important;justify-content:center;align-items:center;margin:0;font-size:26px;color:var(--mut);border-style:dashed;flex-direction:column;line-height:1.1}.ph.add span{font-size:11px}
+.fin{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.mkm{position:absolute;z-index:6;background:#1f2937;color:#fff;border-radius:12px;padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.35);max-width:calc(100% - 8px)}
+.mkm .mt{font-size:12.5px;font-weight:700;padding:0 4px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mkm .mb{display:flex;gap:2px;flex-wrap:wrap}
+.mkm button,.mkm label{background:transparent;border:0;color:#fff;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:20px;padding:4px 6px;border-radius:8px;min-width:48px;position:relative;cursor:pointer}
+.mkm button span,.mkm label span{font-size:10.5px;color:#d1d5db}.mkm .d span{color:#fca5a5}.mkm button:active,.mkm label:active{background:#374151}
 .phx{position:absolute;top:2px;right:2px;border:0;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;line-height:22px;padding:0}
 .phv{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 .phv.on{display:flex}.phv img{max-width:100%;max-height:85vh;object-fit:contain}
@@ -1111,6 +1117,7 @@ document.addEventListener('click',e=>{
 });
 function tab(t){
   if(PLFS&&t!=='plan')plFull(false);
+  mkMenuHide();
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));
   if(t==='proj')fillProj();
@@ -2125,10 +2132,10 @@ async function renderPlan(keepView){
   img.style.opacity=pl.bg||1;
   if(PM==='draw'){renderDrawBar();renderPlanSum();return;}
   if(!IMG[pl.id])$('plMsg').textContent='Brak obrazu rzutu w tym telefonie – wczytaj plik projektu z obrazami albo dodaj rzut ponownie.';
-  else if(PM==='ins')$('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':AIM?'🎯 Stuknij miejsce, w które ma patrzeć '+(((curPlan().marks||[]).find(q=>q.id===AIM)||{}).t==='cam'?'kamera':'czujka')+'.':'Stuknij na rzucie, żeby wstawić symbol. Stuknij symbol, żeby go edytować.';
+  else if(PM==='ins')$('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':AIM?'🎯 Stuknij miejsce, w które ma patrzeć '+(((curPlan().marks||[]).find(q=>q.id===AIM)||{}).t==='cam'?'kamera':'czujka')+'.':'Stuknij na rzucie, żeby wstawić symbol. Stuknij symbol, żeby wybrać: edytuj, przesuń, zdjęcie…';
   else if(PM==='rt')$('plMsg').textContent=pl.scale?'':'Ustaw 📏 Skalę, żeby długości kabli liczyły się same.';
   else if(PM==='cal')$('plMsg').textContent=CAL&&CAL.pts.length?'📏 Teraz stuknij koniec odcinka.':'📏 Stuknij początek i koniec odcinka o znanej długości (np. ściana, drzwi 90 cm).';
-  else $('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':AIM?'🎯 Stuknij miejsce, w które ma patrzeć '+(((curPlan().marks||[]).find(q=>q.id===AIM)||{}).t==='cam'?'kamera':'czujka')+'.':'Przeciągaj, żeby przesuwać, dwoma palcami przybliżaj. Stuknij symbol, żeby edytować.';
+  else $('plMsg').textContent=MOVE?'Stuknij nowe miejsce dla symbolu.':AIM?'🎯 Stuknij miejsce, w które ma patrzeć '+(((curPlan().marks||[]).find(q=>q.id===AIM)||{}).t==='cam'?'kamera':'czujka')+'.':'Przeciągaj, żeby przesuwać, dwoma palcami przybliżaj. Stuknij symbol, żeby wybrać: edytuj, przesuń, zdjęcie…';
   renderPlanSum();
 }
 // ---- puszki, zdjęcia, skala i długości kabli
@@ -2187,10 +2194,14 @@ function boxSection(m){
    <div class="f"><label>Połączenia / co jest w środku</label><textarea id="bxCon" rows="4" placeholder="np. L z F5 → łącznik salon (czarny), powrót do lampy szary; N mostek Wago 5x; PE razem; zapas 15 cm">${esc(m.con||'')}</textarea></div></div>`;
 }
 function bxRow(c,i){return `<div class="bxr" data-bx="${i}"><input data-k="t" list="cabs2" value="${esc(c.t||'')}" placeholder="YDYp 3x1,5"><input data-k="d" value="${esc(c.d||'')}" placeholder="skąd / dokąd, np. z RG, do lampy"><button type="button" class="btn sm d" data-bxx="${i}">✕</button></div>`;}
-function photoSection(m){
-  return `<div class="f"><label>📷 Zdjęcia</label><div class="phs" id="mkPh">${(m.ph||[]).map(id=>`<div class="ph" data-ph="${id}"><img data-phid="${id}" alt=""><button type="button" class="phx" data-phx="${id}">✕</button></div>`).join('')}
-   <label class="ph add">＋<input type="file" id="mkPhIn" accept="image/*" capture="environment" hidden></label></div></div>`;
+function photoSection(m,pre){pre=pre||'mk';
+  return `<div class="f"><label>📷 Zdjęcia</label><div class="phs" id="${pre}Ph">${(m.ph||[]).map(id=>`<div class="ph" data-ph="${id}"><img data-phid="${id}" alt=""><button type="button" class="phx" data-phx="${id}">✕</button></div>`).join('')}
+   <label class="ph add">📷<span>aparat</span><input type="file" class="fin" accept="image/*" capture="environment"></label><label class="ph add">🖼<span>galeria</span><input type="file" class="fin" accept="image/*"></label></div></div>`;
 }
+// wybrane zdjęcie z pola pliku → zapis; null, gdy się nie udało
+async function photoFromInput(e){const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return null;
+  let id=null;try{id=await photoAdd(f);}catch(err){}
+  if(!id)alert('Nie udało się wczytać zdjęcia. Spróbuj z galerii albo zrób zdjęcie jeszcze raz.');return id;}
 async function fillThumbs(root){for(const im of root.querySelectorAll('img[data-phid]')){const d=await photoGet(im.dataset.phid);if(d)im.src=d;}}
 // ---- LED: taśmy, zasilacze, obliczenia
 const LED_PSU=[30,36,60,75,100,120,150,185,200,240,320,480,600];
@@ -2484,7 +2495,8 @@ $('plNew').onclick=()=>{
   const drawing=()=>PM==='draw'&&['pen','white','erase'].includes(DT);
   const textAt=(pl,x,y)=>(pl.texts||[]).find(q=>Math.hypot(q.x-x,q.y-y)<Math.max(20/V.s,q.fs));
   vp.addEventListener('pointerdown',e=>{
-    if(e.target.closest('.fsb'))return;
+    if(e.target.closest('.fsb')||e.target.closest('.mkm'))return;
+    mkMenuHide();
     pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===1)st={x:e.clientX,y:e.clientY,tx:V.tx,ty:V.ty,t:Date.now(),moved:0};
     if(pts.size===1&&PM==='draw'&&DT==='text'){const pl=curPlan();const [x,y]=pl?imgPt(e.clientX,e.clientY):[0,0];const t=pl&&textAt(pl,x,y);
@@ -2521,7 +2533,7 @@ $('plNew').onclick=()=>{
     if(st&&st.draw&&LIVE&&pts.size===0){const pl=curPlan();pl.draw=pl.draw||[];pl.draw.push(LIVE);LIVE=null;save();renderPlan(true);st=null;return;}
     if(st&&st.erase&&pts.size===0){if(st.ch){save();renderPlan(true);}st=null;return;}
     if(st&&st.txt&&pts.size===0&&st.moved>6){save();renderPlan(true);st=null;return;}
-    if(st&&!st.pinch&&pts.size===0&&st.moved<=6&&Date.now()-st.t<600)tap(e.clientX,e.clientY);
+    if(st&&!st.pinch&&pts.size===0&&st.moved<=6&&Date.now()-st.t<600){GHOST=Date.now();tap(e.clientX,e.clientY);}
     if(pts.size===0)st=null;
     else if(pts.size===1){const p=[...pts.values()][0];st={x:p.x,y:p.y,tx:V.tx,ty:V.ty,t:0,moved:99};}
   };
@@ -2543,7 +2555,7 @@ $('plNew').onclick=()=>{
     const thr=Math.max(16/V.s,(+pl.sz||20)*0.7);
     let best=null,bd=thr;
     (pl.marks||[]).forEach(q=>{if(SYM[q.t]&&!LAY[SYM[q.t][1]])return;const d=Math.hypot(q.x-x,q.y-y);if(d<bd){bd=d;best=q;}});
-    if(best){mkDlg(best);return;}
+    if(best){mkMenu(best);return;}
     const segD=(px,py,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1];const L=dx*dx+dy*dy||1;let t=((px-a[0])*dx+(py-a[1])*dy)/L;t=Math.max(0,Math.min(1,t));return Math.hypot(px-a[0]-t*dx,py-a[1]-t*dy);};
     let br=null,brd=12/V.s;
     (pl.routes||[]).forEach(r=>{if(!LAY[r.sys])return;for(let i=1;i<r.pts.length;i++){const d=segD(x,y,r.pts[i-1],r.pts[i]);if(d<brd){brd=d;br=r;}}});
@@ -2559,6 +2571,34 @@ $('plNew').onclick=()=>{
     }
   }
 })();
+// po stuknięciu w rzut telefon wysyła jeszcze „kliknięcie” w to samo miejsce – nie może trafić w nowo otwarte okno/menu
+let GHOST=0;
+['click','mousedown','mouseup'].forEach(t=>document.addEventListener(t,e=>{if(Date.now()-GHOST<450){e.preventDefault();e.stopPropagation();}},true));
+function mkMenuHide(){const x=$('mkMenu');if(x)x.remove();}
+function mkMenu(m){
+  mkMenuHide();const pl=curPlan();const sy=SYM[m.t];if(!pl||!sy)return;
+  const vp=$('plVP');const el=document.createElement('div');el.id='mkMenu';el.className='mkm';
+  el.innerHTML=`<div class="mt">${esc((m.lab?m.lab+' · ':'')+sy[0])}${(m.ph||[]).length?' · 📷 '+m.ph.length:''}</div><div class="mb">
+   <button data-mm="ed">✏️<span>Edytuj</span></button><button data-mm="mv">✋<span>Przesuń</span></button>
+   ${ROT_T[m.t]!=null?'<button data-mm="aim">🎯<span>Kierunek</span></button>':''}
+   <label>📷<span>Zdjęcie</span><input type="file" class="fin" accept="image/*"></label>
+   ${(m.ph||[]).length?'<button data-mm="ph">🖼<span>Pokaż</span></button>':''}
+   <button data-mm="cp">⧉<span>Kopiuj</span></button><button data-mm="del" class="d">🗑<span>Usuń</span></button><button data-mm="x">✕<span>Zamknij</span></button></div>`;
+  vp.appendChild(el);
+  const s=+pl.sz||20;const sx=V.tx+m.x*V.s,syy=V.ty+m.y*V.s;const W=vp.clientWidth,H=vp.clientHeight,w=el.offsetWidth,h=el.offsetHeight;
+  let top=syy-s*V.s-h-6;if(top<4)top=Math.min(H-h-4,syy+s*V.s+6);
+  el.style.left=Math.max(4,Math.min(W-w-4,sx-w/2))+'px';el.style.top=Math.max(4,top)+'px';
+  el.querySelector('input').onchange=async e=>{const id=await photoFromInput(e);if(!id)return;m.ph=(m.ph||[]).concat(id);save();mkMenuHide();renderPlan(true);$('plMsg').textContent='📷 Dodano zdjęcie do '+(m.lab||sy[0])+'.';};
+  el.onclick=e=>{const b=e.target.closest('[data-mm]');if(!b)return;const a=b.dataset.mm;
+    if(a==='del'){if(!b.dataset.c){b.dataset.c=1;b.querySelector('span').textContent='Na pewno?';return;}photoDrop(m.ph);pl.marks=pl.marks.filter(q=>q.id!==m.id);save();mkMenuHide();renderPlan(true);return;}
+    mkMenuHide();
+    if(a==='ed')mkDlg(m);
+    if(a==='mv'){MOVE=m.id;AIM=null;renderPlan(true);}
+    if(a==='aim'){AIM=m.id;MOVE=null;renderPlan(true);}
+    if(a==='ph')photoView(m.ph[0]);
+    if(a==='cp'){INS_SYS=SYM[m.t][1];$('plSym').value=m.t;if(m.obw)$('plObw').value=m.obw;PM='ins';renderPlan(true);}
+  };
+}
 function mkDlg(m){
   if(!m)return;const pl=curPlan();const sy=SYM[m.t];
   const ampOpts=P.ampio?refOptions(m.amp||'',()=>true):'';
@@ -2615,7 +2655,7 @@ function mkDlg(m){
     fillThumbs($('mkPh'));
     $('mkPh').querySelectorAll('[data-ph]').forEach(d=>d.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(d.dataset.ph);});
     $('mkPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(x=>x!==b.dataset.phx);photoDrop([b.dataset.phx]);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();});
-    $('mkPhIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const id=await photoAdd(f);if(!id)return;E.ph.push(id);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();};
+    $('mkPh').querySelectorAll('input[type=file]').forEach(i=>i.onchange=async e=>{const id=await photoFromInput(e);if(!id)return;E.ph.push(id);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();});
   };
   bindPh();
   $('mkOk').onclick=()=>{m.t=$('mkT').value;m.obw=['el','led'].includes(SYM[m.t][1])?$('mkO').value:'';m.lab=$('mkL').value.trim();m.note=$('mkN').value.trim();if($('mkA'))m.amp=$('mkA').value;
@@ -3537,19 +3577,19 @@ function libNoteDlg(d){
    <div class="f"><label>Model / urządzenie</label><input id="lnMo" value="${esc(d.model||'')}"></div>
    <div class="f"><label>Treść</label><textarea id="lnT" rows="10" placeholder="np.&#10;Zwora 12 V: + z zasilacza na COM przekaźnika REL1, NC → zwora&#10;Czytnik: zielony = D0, biały = D1&#10;Zworka J3 na 12 V">${esc(d.text||'')}</textarea></div>
    <div class="f"><label>Tagi (oddziel przecinkami)</label><input id="lnTg" value="${esc((d.tags||[]).join(', '))}" placeholder="np. zwora, podłączenie"></div>
-   ${photoSection(E).replace('id="mkPh"','id="lnPh"').replace('id="mkPhIn"','id="lnPhIn"')}
+   ${photoSection(E,'ln')}
    <label style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input type="checkbox" id="lnFav" ${d.fav?'checked':''} style="width:22px;height:22px"> ⭐ Ulubione</label>
    <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="lnPin" ${pins().includes(d.id)?'checked':''} style="width:22px;height:22px"> 📌 Przypnij do projektu „${esc(P.name)}”</label>
    <div class="bar"><button class="btn p" id="lnOk">Zapisz</button><button class="btn" id="lnNo">Anuluj</button>${isNew?'':'<button class="btn" id="lnSh">Udostępnij</button><button class="btn d" id="lnDel">Usuń</button>'}</div><div id="lnMsg" class="mut"></div>`;
   const drawPh=()=>{
-    const html=photoSection(E).replace('id="mkPh"','id="lnPh"').replace('id="mkPhIn"','id="lnPhIn"');
+    const html=photoSection(E,'ln');
     $('lnPh').outerHTML=html.replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();
   };
   const bindPh=()=>{
     fillThumbs($('lnPh'));
     $('lnPh').querySelectorAll('[data-ph]').forEach(x=>x.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(x.dataset.ph);});
     $('lnPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(q=>q!==b.dataset.phx);photoDrop([b.dataset.phx],(d.ph||[]).includes(b.dataset.phx)?1:0);drawPh();});
-    $('lnPhIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const id=await photoAdd(f);if(id){E.ph.push(id);drawPh();}};
+    $('lnPh').querySelectorAll('input[type=file]').forEach(i=>i.onchange=async e=>{const id=await photoFromInput(e);if(id){E.ph.push(id);drawPh();}});
   };
   bindPh();
   $('lnNo').onclick=closeDlg;
