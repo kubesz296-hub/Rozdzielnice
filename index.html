@@ -217,6 +217,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
 .ppp{background:#374151;border:2px solid #4b5563;border-radius:6px;color:#e5e7eb;padding:3px 2px;min-height:54px;display:flex;flex-direction:column;align-items:center;font-size:10.5px;line-height:1.15;text-align:center;overflow:hidden;cursor:pointer}
 .ppp b{font-size:13px;color:#fff}.ppp span{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ppp.u{background:#fff;color:#111;border-color:#9ca3af}.ppp.u b{color:#111}.ppp.ok{border-color:#16a34a;box-shadow:inset 0 -4px 0 #16a34a}.ppp.bad{border-color:#dc2626;box-shadow:inset 0 -4px 0 #dc2626}
+.vlb{display:inline-block;color:#fff;border-radius:4px;padding:0 4px;font-size:10.5px;font-weight:700;margin-right:2px}
 .ppl{display:flex;gap:8px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line);cursor:pointer}.ppl b.n{flex:0 0 34px;text-align:center;background:#eef2ff;border-radius:6px;padding:2px}
 #ampDoc{background:#fff;color:#000;padding:8mm;font-size:9.5pt}
 #ampDoc h1{font-size:14pt;margin:0 0 4px}#ampDoc h2{font-size:11pt;margin:12px 0 4px}#ampDoc h3{font-size:10pt;margin:8px 0 2px}
@@ -278,7 +279,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
   <button data-t="plan">Rzut</button>
   <button data-t="meas">Pomiary</button>
   <button data-t="amp">Ampio</button>
-  <button data-t="net">Sieć</button>
+  <button data-t="net">Sieć i alarm</button>
   <button data-t="notes">Zadania</button>
   <button data-t="lib">Schematy</button>
   <button data-t="print">Wydruk</button>
@@ -404,7 +405,14 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
 
   <!-- SIEĆ / PATCH PANEL -->
   <section class="sec" id="s-net">
+    <div class="sub noprint" id="netsub">
+      <button data-nts="pp" class="on">🔌 Patch panel</button>
+      <button data-nts="sw">🖧 Switche</button>
+      <button data-nts="rack">🗄 Szafa RACK</button>
+      <button data-nts="alc">🚨 Centrala alarmu</button>
+    </div>
     <div id="netBody"></div>
+    <div class="card" id="netPrintW" style="display:none"><div id="netDoc"></div></div>
   </section>
 
   <!-- ZADANIA -->
@@ -1225,6 +1233,8 @@ function projHay(p){
   (p.kb&&p.kb.cards||[]).forEach(c=>{add('Zadanie',c.t);add('Zadanie',c.d);});
   (p.plans||[]).forEach(pl=>{add('Rzut',pl.name);(pl.marks||[]).forEach(m=>{if(m.con)add('Puszka '+(m.lab||''),m.con);(m.cab||[]).forEach(c=>add('Puszka '+(m.lab||''),c.t+' '+(c.d||'')));if(m.note)add('Rzut',m.note);if(isAl(m.t)&&((m.wr||[]).length||m.wc||m.wz))add((SYM[m.t][0])+' '+(m.lab||''),[m.wc,m.wz,alWiresTxt(m)].filter(Boolean).join(' · '));});});
   (p.net&&p.net.pp||[]).forEach(pp=>Object.keys(pp.ports||{}).forEach(k=>{const q=pp.ports[k];add('Patch panel '+pp.name+' / '+k,[q.d,q.dev,q.sw?'switch '+q.sw:'',q.note].filter(Boolean).join(' · '));}));
+  (p.net&&p.net.sw||[]).forEach(sw=>{add('Switch',[sw.name,sw.model,sw.ip,sw.loc].filter(Boolean).join(' '));Object.keys(sw.ports||{}).forEach(k=>{const q=sw.ports[k];add('Switch '+sw.name+' / '+k,[q.d,q.vl?'VLAN '+q.vl:'',q.note].filter(Boolean).join(' · '));});});
+  if(p.alc){add('Centrala alarmu',p.alc.model);Object.keys(p.alc.zd||{}).forEach(k=>add('Wejście Z'+k,[p.alc.zd[k].d,p.alc.zd[k].t,p.alc.zd[k].note].filter(Boolean).join(' · ')));Object.keys(p.alc.od||{}).forEach(k=>add('Wyjście O'+k,p.alc.od[k]));}
   if(p.ampio)p.ampio.mods.forEach(m=>{add('Ampio',m.short+' '+m.type+' '+(m.name||''));});
   return out;
 }
@@ -2220,14 +2230,20 @@ function ledCalcHtml(pl,rt){
 }
 // zaciski typowe dla elementów alarmowych
 const AL_TERM={pir:['+12V','COM (−)','NC 1 (alarm)','NC 2 (alarm)','TMP 1','TMP 2'],kon:['NC 1','NC 2','TMP 1','TMP 2'],
- man:['+KPD (+12V)','COM','CKM (zegar)','DTM (dane)'],syg:['+12V','COM','+SA (akust.)','+SO (opt.)','TMP 1','TMP 2'],cen:[]};
-const isAl=t=>SYM[t]&&SYM[t][1]==='al';
+ man:['+KPD (+12V)','COM','CKM (zegar)','DTM (dane)'],syg:['+12V','COM','+SA (akust.)','+SO (opt.)','TMP 1','TMP 2'],cen:[],
+ dym:['Linia +','Linia −','Linia + (dalej)','Linia − (dalej)'],ciep:['Linia +','Linia −','Linia + (dalej)','Linia − (dalej)'],rop:['Linia +','Linia −','Linia + (dalej)','Linia − (dalej)'],sp:['+24V','0V'],cpp:[],
+ czy:['+12V','GND','D0 (Wiegand)','D1 (Wiegand)','LED','BUZ'],zw:['+12V','GND'],ppw:['NO','COM'],dom:['Magistrala 1','Magistrala 2','+ zasilanie','− zasilanie']};
+// systemy z opisem przewodów: alarm, ppoż., kontrola dostępu
+const WR_SYS={al:{z:'Wejście centrali / strefa',zp:'np. Z3, ekspander CA-64 E 1',h:'🚨 Alarm – co pod którym wejściem',pr:'Alarm – podłączenie elementów',k:'wejście',main:'cen'},
+ pz:{z:'Linia dozorowa / adres',zp:'np. L1, L2/adr. 5',h:'🔥 Ppoż. – co na której linii',pr:'Ppoż. – podłączenie elementów',k:'linia',main:'cpp'},
+ kd:{z:'Kontroler / przejście',zp:'np. KD1 drzwi wejściowe',h:'🔑 Kontrola dostępu – co do którego kontrolera',pr:'Kontrola dostępu – podłączenie elementów',k:'kontroler',main:''}};
+const isAl=t=>!!(SYM[t]&&WR_SYS[SYM[t][1]]);
 function alDef(t){return (AL_TERM[t]||[]).map(n=>({n,w:''}));}
 function alRow(r,i){const w=wc(r.w);return `<div class="alr" data-al="${i}"><input data-k="n" value="${esc(r.n||'')}" placeholder="zacisk, np. +12V"><span class="wd" style="background:${w?w[2]:'transparent'}"></span><select data-k="w"><option value="">— kolor —</option>${WIRES.map(x=>`<option value="${x[0]}" ${x[0]===r.w?'selected':''}>${x[1]}</option>`).join('')}</select><button type="button" class="btn sm d" data-alx="${i}">✕</button></div>`;}
 function alSection(m,wr){
   return `<div class="boxs"><div class="shg" style="margin-top:4px">🎨 Przewody – zaciski i kolory</div>
    <div class="g2"><div class="f"><label>Przewód</label><input id="alC" list="cabs2" value="${esc(m.wc||'')}" placeholder="np. YTDY 6x0,5"></div>
-   <div class="f"><label>Wejście centrali / strefa</label><input id="alZ" list="alZs" value="${esc(m.wz||'')}" placeholder="np. Z3, ekspander CA-64 E 1"><datalist id="alZs">${[...new Set(plans().flatMap(p=>(p.marks||[]).map(q=>(q.wz||'').trim()).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'pl',{numeric:true})).map(z=>`<option value="${esc(z)}">`).join('')}</datalist></div></div>
+   <div class="f"><label>${WR_SYS[SYM[m.t][1]].z}</label><input id="alZ" list="alZs" value="${esc(m.wz||'')}" placeholder="${WR_SYS[SYM[m.t][1]].zp}"><datalist id="alZs">${[...new Set(plans().flatMap(p=>(p.marks||[]).filter(q=>SYM[q.t]&&SYM[q.t][1]===SYM[m.t][1]).map(q=>(q.wz||'').trim()).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'pl',{numeric:true})).map(z=>`<option value="${esc(z)}">`).join('')}</datalist></div></div>
    <div id="alW">${wr.map(alRow).join('')}</div>
    <div class="bar" style="margin:4px 0 8px"><button class="btn sm" type="button" id="alAdd">+ zacisk</button><button class="btn sm" type="button" id="alPrev">⟲ Jak w poprzednim</button><button class="btn sm" type="button" id="alStd">Typowe zaciski</button></div></div>`;
 }
@@ -2279,16 +2295,17 @@ function renderPlanSum(){
   $('plSum').querySelectorAll('[data-almk]').forEach(r=>r.onclick=()=>{const [pid,mid]=r.dataset.almk.split('|');const pl=plans().find(q=>q.id===pid);const m=pl&&(pl.marks||[]).find(q=>q.id===mid);if(!m)return;if(PL!==pid){PL=pid;renderPlan(true);}mkDlg(m);});
 }
 // zestawienie alarmu: co jest pod którym wejściem centrali
-function alarmList(){const multi=plans().length>1;const L=[];plans().forEach(pl=>(pl.marks||[]).forEach(m=>{if(isAl(m.t))L.push({m,pl,multi});}));
+function alarmList(sys){const multi=plans().length>1;const L=[];plans().forEach(pl=>(pl.marks||[]).forEach(m=>{if(isAl(m.t)&&(!sys||SYM[m.t][1]===sys))L.push({m,pl,multi});}));
   const z=x=>(x.m.wz||'').trim();L.sort((a,b)=>(!z(a))-(!z(b))||z(a).localeCompare(z(b),'pl',{numeric:true})||(a.m.lab||'').localeCompare(b.m.lab||'','pl',{numeric:true}));return L;}
 function alWireHtml(m){return (m.wr||[]).filter(r=>r.n||r.w).map(r=>{const w=wc(r.w);return `<span style="white-space:nowrap">${w?`<span class="wd" style="background:${w[2]}"></span>`:''}${esc(r.n||'?')}${w?'':' –'}</span>`;}).join(' &nbsp;');}
-function alarmSumHtml(){
-  const L=alarmList();if(!L.length)return '';
+function alarmSumHtml(){return Object.keys(WR_SYS).map(alarmSumSys).join('');}
+function alarmSumSys(sys){
+  const L=alarmList(sys);if(!L.length)return '';const S=WR_SYS[sys];
   const grp=[];L.forEach(x=>{const k=(x.m.wz||'').trim();const g=grp.find(q=>q.k===k);if(g)g.L.push(x);else grp.push({k,L:[x]});});
-  const noZ=L.filter(x=>!(x.m.wz||'').trim()&&x.m.t!=='cen').length;
-  return `<h3 style="margin-top:12px">🚨 Alarm – co pod którym wejściem</h3>
-   ${noZ?`<p class="mut" style="margin:0 0 4px">Bez wpisanego wejścia: <b>${noZ}</b>. Wpisz je w oknie elementu („Wejście centrali / strefa”).</p>`:''}
-   <table class="sumt"><tr><th>Wejście</th><th>Element</th><th>Przewody</th></tr>${grp.map(g=>g.L.map((x,i)=>`<tr data-almk="${x.pl.id}|${x.m.id}" style="cursor:pointer">${i===0?`<td rowspan="${g.L.length}" style="vertical-align:top"><b>${g.k?esc(g.k):'<span class="mut">—</span>'}</b></td>`:''}
+  const noZ=L.filter(x=>!(x.m.wz||'').trim()&&x.m.t!==S.main).length;
+  return `<h3 style="margin-top:12px">${S.h}</h3>
+   ${noZ?`<p class="mut" style="margin:0 0 4px">Bez wpisanego pola „${S.z}”: <b>${noZ}</b>. Wpisz je w oknie elementu.</p>`:''}
+   <table class="sumt"><tr><th>${S.k[0].toUpperCase()+S.k.slice(1)}</th><th>Element</th><th>Przewody</th></tr>${grp.map(g=>g.L.map((x,i)=>`<tr data-almk="${x.pl.id}|${x.m.id}" style="cursor:pointer">${i===0?`<td rowspan="${g.L.length}" style="vertical-align:top"><b>${g.k?esc(g.k):'<span class="mut">—</span>'}</b></td>`:''}
      <td><b>${esc(x.m.lab||'')}</b> ${esc(SYM[x.m.t][0])}${x.multi?` <span class="mut">(${esc(x.pl.name)})</span>`:''}${x.m.note?`<div class="mut" style="font-size:12px">${esc(x.m.note)}</div>`:''}</td>
      <td style="font-size:12.5px">${x.m.wc?esc(x.m.wc)+'<br>':''}${alWireHtml(x.m)||'<span class="mut">—</span>'}</td></tr>`).join('')).join('')}</table>
    <p class="mut" style="font-size:12.5px">Stuknij wiersz, żeby otworzyć element.</p>`;
@@ -2651,8 +2668,9 @@ function planBoxTable(pl){
   const rts=(pl.routes||[]).filter(r=>r.sys!=='led'&&(r.lab||routeTotal(pl,r)!=null));
   let h='';
   if(bx.length)h+=`<div style="page-break-before:always"></div><b style="font-size:10pt">Opis puszek – ${esc(pl.name)}</b><table><tr><th>Puszka</th><th>Typ / wys.</th><th>Przewody</th><th>Połączenia</th></tr>${bx.map(m=>`<tr><td><b>${esc(m.lab||'')}</b> ${esc(markLabel(m).replace(m.lab||'',''))}</td><td>${esc([m.bd,m.h?'h='+m.h+' cm':''].filter(Boolean).join(', '))}</td><td>${(m.cab||[]).map(c=>esc(c.t+(c.d?' – '+c.d:''))).join('<br>')}</td><td style="white-space:pre-wrap">${esc(m.con||'')}</td></tr>`).join('')}</table>`;
-  const al=alarmList().filter(x=>x.pl===pl).map(x=>x.m).filter(m=>(m.wr||[]).some(r=>r.w)||m.wc||m.wz);
-  if(al.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Alarm – podłączenie elementów</b><table><tr><th>Wejście / strefa</th><th>Element</th><th>Przewód</th><th>Zaciski → kolory</th><th>Uwagi</th></tr>${al.map(m=>`<tr><td><b>${esc(m.wz||'')}</b></td><td><b>${esc(m.lab||'')}</b> ${esc(SYM[m.t][0])}</td><td>${esc(m.wc||'')}</td><td>${(m.wr||[]).filter(r=>r.n||r.w).map(r=>`${wc(r.w)?`<span class="wd" style="background:${wc(r.w)[2]}"></span>`:''}${esc((r.n||'?')+' – '+(wc(r.w)?wc(r.w)[1]:'—'))}`).join('<br>')}</td><td>${esc(m.note||'')}</td></tr>`).join('')}</table>`;
+  Object.keys(WR_SYS).forEach(sys=>{
+  const al=alarmList(sys).filter(x=>x.pl===pl).map(x=>x.m).filter(m=>(m.wr||[]).some(r=>r.w)||m.wc||m.wz);
+  if(al.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">${WR_SYS[sys].pr}</b><table><tr><th>${WR_SYS[sys].z}</th><th>Element</th><th>Przewód</th><th>Zaciski → kolory</th><th>Uwagi</th></tr>${al.map(m=>`<tr><td><b>${esc(m.wz||'')}</b></td><td><b>${esc(m.lab||'')}</b> ${esc(SYM[m.t][0])}</td><td>${esc(m.wc||'')}</td><td>${(m.wr||[]).filter(r=>r.n||r.w).map(r=>`${wc(r.w)?`<span class="wd" style="background:${wc(r.w)[2]}"></span>`:''}${esc((r.n||'?')+' – '+(wc(r.w)?wc(r.w)[1]:'—'))}`).join('<br>')}</td><td>${esc(m.note||'')}</td></tr>`).join('')}</table>`;});
   const leds=(pl.routes||[]).filter(r=>r.sys==='led');
   if(leds.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Taśmy LED</b><table><tr><th>Taśma</th><th>Długość</th><th>Moc</th><th>Zasilacz</th><th>Profil</th><th>Uwagi</th></tr>${leds.map(r=>{const L=ledDef(r),c=ledCalc(pl,r);const z=L.zas&&plans().flatMap(p=>p.marks||[]).find(m=>m.id===L.zas);return `<tr><td>${esc(L.u+'V '+L.wpm+'W/m '+L.typ+' '+(L.k||'')+' '+L.ip)}</td><td>${c.len!=null?fm(c.len)+' m':''}</td><td>${c.P!=null?Math.round(c.P)+' W':''}</td><td>${z?esc((z.lab||'ZL')+(z.pw?' '+z.pw+' W':'')):'–'}</td><td>${esc(L.prof||'')}</td><td>${esc(r.lab||'')} ${esc(r.note||'')}</td></tr>`;}).join('')}</table>`;
   if(rts.length)h+=`<b style="font-size:10pt;display:block;margin-top:3mm">Trasy kabli</b><table><tr><th>Instalacja</th><th>Przewód</th><th>Obwód</th><th>Długość</th><th>Uwagi</th></tr>${rts.map(r=>{const t=routeTotal(pl,r);return `<tr><td>${RT_SYS[r.sys]}</td><td>${esc(r.lab||'')}</td><td>${r.obw&&C.glab[r.obw]?esc(C.glab[r.obw]):''}</td><td>${t!=null?fm(t)+' m':''}</td><td>${esc(r.note||'')}</td></tr>`;}).join('')}</table>`;
@@ -2677,7 +2695,7 @@ function lanMarks(){const out=[];const multi=plans().length>1;plans().forEach(pl
 function lanMarkName(id){const x=lanMarks().find(q=>q.m.id===id);return x?(x.m.lab||SYM[x.m.t][0]):'';}
 function ppOfMark(id){const r=[];NET().pp.forEach(pp=>Object.keys(pp.ports||{}).forEach(k=>{if(pp.ports[k].lan===id)r.push(pp.name+' / port '+k);}));return r;}
 function ppShort(p){return p.d||lanMarkName(p.lan)||p.dev||'';}
-function renderNet(){
+function ppRender(){
   const N=NET();const pp=curPP();
   let h=`<div class="card noprint"><div class="chips" style="margin-bottom:8px">${N.pp.map(x=>`<button class="chip ${pp&&x.id===pp.id?'on':''}" data-ppsel="${x.id}">${esc(x.name)} <span class="mut">${x.n}</span></button>`).join('')}<button class="chip" id="ppAdd">+ Patch panel</button></div>`;
   if(!pp){h+=`<p class="mut" style="margin:0">Dodaj patch panel i opisz, dokąd idzie każdy port: pomieszczenie, gniazdo z rzutu, urządzenie, port w switchu. Potem wydrukujesz tabelę i pasek z opisami portów.</p></div>`;$('netBody').innerHTML=h;bindNet();return;}
@@ -2689,13 +2707,12 @@ function renderNet(){
   if(used){
     h+=`<div class="card noprint">${used>8?`<div class="f"><input id="ppQ" type="search" value="${esc(NETF)}" placeholder="🔍 Szukaj portu: salon, kamera, L5…"></div>`:''}<div id="ppList">${ppListHtml(pp)}</div></div>`;
   }
-  h+=`<div class="card" id="netPrintW" style="display:none"><div id="netDoc">${netDoc(pp)}</div></div>`;
   $('netBody').innerHTML=h;bindNet();
 }
 function ppListHtml(pp){
   const q=NETF.trim().toLowerCase();
   return Array.from({length:pp.n},(_,i)=>i+1).filter(i=>ppUsed(ppPort(pp,i))).filter(i=>{if(!q)return true;const p=ppPort(pp,i);return [i,p.d,lanMarkName(p.lan),p.dev,p.sw,p.note].join(' ').toLowerCase().includes(q);}).map(i=>{const p=ppPort(pp,i);
-    return `<div class="ppl" data-pp="${i}"><b class="n">${i}</b><div style="flex:1;min-width:0"><b>${esc(p.d||lanMarkName(p.lan)||p.dev)}</b><div class="mut" style="font-size:13px">${esc([p.lan?'gniazdo '+lanMarkName(p.lan):'',p.dev,p.sw?'switch '+p.sw:'',p.poe?'PoE':'',p.note].filter(Boolean).join(' · '))}</div></div>${p.pc&&wc(p.pc)?`<span class="wd" title="patchcord ${wc(p.pc)[1]}" style="background:${wc(p.pc)[2]}"></span>`:''}<span>${p.t==='ok'?'✅':p.t==='bad'?'❌':''}</span></div>`;}).join('')||'<p class="mut">Nic nie pasuje.</p>';
+    return `<div class="ppl" data-pp="${i}"><b class="n">${i}</b><div style="flex:1;min-width:0"><b>${esc(p.d||lanMarkName(p.lan)||p.dev)}</b><div class="mut" style="font-size:13px">${esc([p.lan?'gniazdo '+lanMarkName(p.lan):'',p.dev,ppSwTxt(pp,i)?'switch '+ppSwTxt(pp,i):'',p.poe?'PoE':'',p.note].filter(Boolean).join(' · '))}</div></div>${p.pc&&wc(p.pc)?`<span class="wd" title="patchcord ${wc(p.pc)[1]}" style="background:${wc(p.pc)[2]}"></span>`:''}<span>${p.t==='ok'?'✅':p.t==='bad'?'❌':''}</span></div>`;}).join('')||'<p class="mut">Nic nie pasuje.</p>';
 }
 function bindNet(){
   const b=$('netBody');
@@ -2704,7 +2721,7 @@ function bindNet(){
   if($('ppCfg'))$('ppCfg').onclick=()=>ppCfgDlg(curPP());
   b.querySelectorAll('[data-pp]').forEach(x=>x.onclick=()=>ppDlg(+x.dataset.pp));
   if($('ppQ'))$('ppQ').oninput=()=>{NETF=$('ppQ').value;$('ppList').innerHTML=ppListHtml(curPP());$('ppList').querySelectorAll('[data-pp]').forEach(x=>x.onclick=()=>ppDlg(+x.dataset.pp));};
-  if($('ppPrint'))$('ppPrint').onclick=()=>{$('netDoc').innerHTML=netDoc(curPP());$('netPrintW').style.display='';try{window.print();}catch(e){}};
+  if($('ppPrint'))$('ppPrint').onclick=netPrint;
   if($('ppAuto'))$('ppAuto').onclick=()=>{
     const pp=curPP();const taken=new Set();NET().pp.forEach(x=>Object.values(x.ports||{}).forEach(p=>{if(p.lan)taken.add(p.lan);}));
     const free=lanMarks().filter(x=>!taken.has(x.m.id));let n=0,i=1;
@@ -2741,7 +2758,7 @@ function ppDlg(i){
    <div class="f"><label>Dokąd idzie / opis</label><input id="pD" value="${esc(p.d||'')}" placeholder="np. Salon – TV, Biuro biurko lewe"></div>
    <div class="f"><label>Gniazdo / urządzenie z rzutu</label><select id="pL"><option value="">— brak —</option>${lm.map(x=>`<option value="${x.m.id}" ${x.m.id===p.lan?'selected':''}>${esc(x.n)}${taken[x.m.id]?' (już: '+esc(taken[x.m.id])+')':''}</option>`).join('')}</select>${lm.length?'':'<div class="mut" style="font-size:13px">Gniazda LAN, kamery i AP wstawisz na rzucie (system „CCTV / LAN”).</div>'}</div>
    <div class="g2"><div class="f"><label>Urządzenie</label><input id="pV" list="ppDevs" value="${esc(p.dev||'')}" placeholder="np. Telewizor"><datalist id="ppDevs">${PP_DEV.map(d=>`<option value="${esc(d)}">`).join('')}</datalist></div>
-   <div class="f"><label>Port w switchu</label><input id="pS" value="${esc(p.sw||'')}" placeholder="np. SW1 / 5"></div></div>
+   <div class="f"><label>Port w switchu</label><input id="pS" value="${esc(p.sw||'')}" placeholder="${esc(swOfPP(pp.id,i)||'np. SW1 / 5')}"></div></div>
    <div class="g2"><div class="f"><label>Kolor patchcordu</label>${wireSelect('pC',p.pc)}</div>
    <div class="f"><label>&nbsp;</label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pP" ${p.poe?'checked':''} style="width:22px;height:22px"> PoE</label></div></div>
    <div class="f"><label>Test kabla</label><div class="chips">${[['','nie testowany'],['ok','✅ OK'],['bad','❌ błąd']].map(([v,n])=>`<button type="button" class="chip ${v===(p.t||'')?'on':''}" data-pt="${v}">${n}</button>`).join('')}</div></div>
@@ -2766,10 +2783,290 @@ function netDoc(pp){
    <div style="margin-top:3mm;font-size:8pt">Pasek opisowy (wytnij i przyklej nad portami):</div>
    ${strips.map(st=>`<div class="lstrip">${st.map(i=>`<div><b>${i}</b>${esc(ppShort(ppPort(pp,i)))}</div>`).join('')}</div>`).join('')}
    <table><tr><th>Port</th><th>Dokąd / opis</th><th>Gniazdo</th><th>Urządzenie</th><th>Switch</th><th>PoE</th><th>Test</th><th>Uwagi</th></tr>
-   ${ports.map(i=>{const p=ppPort(pp,i);return `<tr><td><b>${i}</b></td><td>${esc(p.d||'')}</td><td>${esc(lanMarkName(p.lan))}</td><td>${esc(p.dev||'')}</td><td>${esc(p.sw||'')}</td><td>${p.poe?'tak':''}</td><td>${p.t==='ok'?'OK':p.t==='bad'?'BŁĄD':''}</td><td>${esc(p.note||'')}</td></tr>`;}).join('')}</table>`;
+   ${ports.map(i=>{const p=ppPort(pp,i);return `<tr><td><b>${i}</b></td><td>${esc(p.d||'')}</td><td>${esc(lanMarkName(p.lan))}</td><td>${esc(p.dev||'')}</td><td>${esc(ppSwTxt(pp,i))}</td><td>${p.poe?'tak':''}</td><td>${p.t==='ok'?'OK':p.t==='bad'?'BŁĄD':''}</td><td>${esc(p.note||'')}</td></tr>`;}).join('')}</table>`;
 }
-window.addEventListener('beforeprint',()=>{if(document.querySelector('#s-net.on')&&curPP()){$('netDoc').innerHTML=netDoc(curPP());$('netPrintW').style.display='';}});
+// ---------- SIEĆ I ALARM: podzakładki ----------
+let NTS='pp';
+function renderNet(){
+  document.querySelectorAll('#netsub button').forEach(b=>b.classList.toggle('on',b.dataset.nts===NTS));
+  if(NTS==='sw')swRender();else if(NTS==='rack')rackRender();else if(NTS==='alc')alcRender();else ppRender();
+}
+function netPrintHtml(){
+  if(NTS==='sw')return swDoc();if(NTS==='rack')return rackDoc();if(NTS==='alc')return alcDoc();
+  return curPP()?netDoc(curPP()):'';
+}
+function netPrint(){$('netDoc').innerHTML=netPrintHtml();$('netPrintW').style.display='';try{window.print();}catch(e){}}
+window.addEventListener('beforeprint',()=>{if(document.querySelector('#s-net.on')){$('netDoc').innerHTML=netPrintHtml();$('netPrintW').style.display='';}});
 window.addEventListener('afterprint',()=>{if($('netPrintW'))$('netPrintW').style.display='none';});
+const chipsSel=(L,cur,attr,addId,addTxt)=>`<div class="chips" style="margin-bottom:8px">${L.map(x=>`<button class="chip ${cur&&x.id===cur.id?'on':''}" data-${attr}="${x.id}">${esc(x.name)}</button>`).join('')}<button class="chip" id="${addId}">${addTxt}</button></div>`;
+const rangeN=(a,b)=>Array.from({length:Math.max(0,b-a+1)},(_,i)=>a+i);
+
+// ---------- VLAN ----------
+const VL_COL=['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#be185d','#65a30d','#4b5563'];
+function VLANS(){const N=NET();if(!N.vlans)N.vlans=[];return N.vlans;}
+function vlan(id){return VLANS().find(v=>String(v.id)===String(id));}
+const vlBadge=id=>{if(!id)return '';const v=vlan(id);return `<span class="vlb" style="background:${v?v.col:'#6b7280'}">${esc(String(id))}</span>`;};
+function vlanDlg(){
+  const E=JSON.parse(JSON.stringify(VLANS()));
+  const row=(v,i)=>`<div class="alr" style="grid-template-columns:70px 1fr auto auto" data-vl="${i}"><input data-k="id" inputmode="numeric" value="${esc(String(v.id||''))}" placeholder="ID"><input data-k="n" value="${esc(v.n||'')}" placeholder="nazwa, np. Kamery"><select data-k="col">${VL_COL.map(c=>`<option value="${c}" ${c===v.col?'selected':''} style="background:${c};color:#fff">■</option>`).join('')}</select><button type="button" class="btn sm d" data-vlx="${i}">✕</button></div>`;
+  const read=()=>{E.length=0;$('vlL').querySelectorAll('[data-vl]').forEach(r=>E.push({id:r.querySelector('[data-k=id]').value.trim(),n:r.querySelector('[data-k=n]').value.trim(),col:r.querySelector('[data-k=col]').value}));};
+  const draw=()=>{$('vlL').innerHTML=E.map(row).join('');$('vlL').querySelectorAll('[data-vlx]').forEach(b=>b.onclick=()=>{read();E.splice(+b.dataset.vlx,1);draw();});};
+  $('dlg').innerHTML=`<h3>VLAN-y w projekcie</h3><p class="mut" style="margin-top:0">Numer, nazwa i kolor – potem wybierasz je przy portach switcha.</p><div id="vlL"></div>
+   <div class="bar"><button class="btn sm" id="vlAdd">+ VLAN</button><button class="btn sm" id="vlStd">Typowy zestaw</button></div>
+   <div class="bar"><button class="btn p" id="vlOk">Zapisz</button><button class="btn" id="vlNo">Anuluj</button></div>`;
+  draw();
+  $('vlAdd').onclick=()=>{read();E.push({id:'',n:'',col:VL_COL[E.length%VL_COL.length]});draw();};
+  $('vlStd').onclick=()=>{read();[[1,'Zarządzanie'],[10,'LAN'],[20,'Kamery / CCTV'],[30,'Goście Wi-Fi'],[40,'Smart home / IoT']].forEach(([id,n],k)=>{if(!E.some(v=>String(v.id)===String(id)))E.push({id:String(id),n,col:VL_COL[k]});});draw();};
+  $('vlNo').onclick=closeDlg;
+  $('vlOk').onclick=()=>{read();NET().vlans=E.filter(v=>v.id);save();closeDlg();renderNet();};
+  $('ov').classList.add('on');
+}
+
+// ---------- SWITCHE ----------
+function SWS(){const N=NET();if(!N.sw)N.sw=[];return N.sw;}
+function curSW(){const N=NET();return SWS().find(x=>x.id===N.swCur)||SWS()[0]||null;}
+const swPorts=sw=>[...rangeN(1,sw.n).map(i=>({i,l:String(i)})),...rangeN(1,+sw.sfp||0).map(k=>({i:sw.n+k,l:'SFP'+k}))];
+const swPortLab=(sw,i)=>i>sw.n?'SFP'+(i-sw.n):String(i);
+function swPort(sw,i){sw.ports=sw.ports||{};return sw.ports[i]||{};}
+const swUsed=p=>!!(p.d||p.pp||p.vl||p.note||p.up);
+function ppPortName(ref){if(!ref)return '';const [id,k]=ref.split(':');const pp=NET().pp.find(x=>x.id===id);if(!pp)return '';const s=ppShort(ppPort(pp,+k));return pp.name+'/'+k+(s?' – '+s:'');}
+function swOfPP(ppid,k){const r=[];SWS().forEach(sw=>Object.keys(sw.ports||{}).forEach(i=>{if(sw.ports[i].pp===ppid+':'+k)r.push(sw.name+'/'+swPortLab(sw,+i));}));return r.join(', ');}
+const ppSwTxt=(pp,i)=>{const p=ppPort(pp,i);return p.sw||swOfPP(pp.id,i);};
+const swShort=p=>p.d||(p.pp?ppPortName(p.pp).replace(/^[^–]*– ?/,''):'')||(p.up?'uplink':'');
+function swPoe(sw){let n=0,w=0;Object.values(sw.ports||{}).forEach(p=>{if(p.poe){n++;w+=parseFloat(String(p.w||'').replace(',','.'))||0;}});return {n,w};}
+function swRender(){
+  const sw=curSW();
+  let h=`<div class="card noprint">${chipsSel(SWS(),sw,'swsel','swAdd','+ Switch')}`;
+  if(!sw){h+=`<p class="mut" style="margin:0">Dodaj switch i opisz porty: co jest podłączone, z którego portu patch panelu, VLAN i PoE. Numery VLAN ustawisz przyciskiem „VLAN-y”.</p><div class="bar"><button class="btn sm" id="vlBtn">VLAN-y</button></div></div>`;$('netBody').innerHTML=h;bindSw();return;}
+  const P2=swPorts(sw);const used=P2.filter(x=>swUsed(swPort(sw,x.i))).length;const po=swPoe(sw);const bud=parseFloat(String(sw.poeB||'').replace(',','.'));
+  h+=`<div class="mut">${esc([sw.model,sw.loc,sw.ip?'IP '+sw.ip:''].filter(Boolean).join(' · '))}${sw.model||sw.loc||sw.ip?' · ':''}opisanych <b>${used}</b> z ${P2.length}${po.n?` · PoE: <b>${po.n}</b> port.${po.w?`, ${fm(po.w)} W`:''}${bud?` z ${fm(bud)} W`:''}`:''}</div>
+   ${bud&&po.w>bud?`<p style="color:var(--bad);margin:4px 0">⚠ Pobór PoE (${fm(po.w)} W) większy niż budżet switcha (${fm(bud)} W).</p>`:bud&&po.w>bud*0.8?`<p style="color:var(--warn);margin:4px 0">⚠ PoE ponad 80% budżetu – mały zapas.</p>`:''}
+   <div class="bar" style="margin-bottom:0"><button class="btn sm" id="swCfg">⚙ Ustawienia</button><button class="btn sm" id="vlBtn">VLAN-y</button><button class="btn sm p" id="swPrint">🖨 Drukuj / PDF</button></div></div>
+   <div class="card noprint"><div class="pp ${P2.length<=8?'n8':''}">${P2.map(x=>{const p=swPort(sw,x.i);return `<div class="ppp ${swUsed(p)?'u':''}" data-swp="${x.i}"><b>${x.l}</b><span>${esc(swShort(p))}</span><span>${vlBadge(p.vl)}${p.poe?'⚡':''}${p.up?'⇅':''}</span></div>`;}).join('')}</div>
+   ${VLANS().length?`<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${VLANS().map(v=>`<span style="font-size:13px">${vlBadge(v.id)} ${esc(v.n)}</span>`).join('')}</div>`:''}
+   <p class="mut" style="margin:6px 0 0">Stuknij port, żeby go opisać. ⚡ = PoE, ⇅ = uplink.</p></div>`;
+  if(used)h+=`<div class="card noprint">${P2.filter(x=>swUsed(swPort(sw,x.i))).map(x=>{const p=swPort(sw,x.i);return `<div class="ppl" data-swp="${x.i}"><b class="n">${x.l}</b><div style="flex:1;min-width:0"><b>${esc(swShort(p)||'—')}</b><div class="mut" style="font-size:13px">${esc([p.pp?'patch '+ppPortName(p.pp):'',p.tg?'tagged '+p.tg:'',p.poe?'PoE'+(p.w?' '+p.w+' W':''):'',p.note].filter(Boolean).join(' · '))}</div></div>${vlBadge(p.vl)}</div>`;}).join('')}</div>`;
+  $('netBody').innerHTML=h;bindSw();
+}
+function bindSw(){
+  const b=$('netBody');
+  b.querySelectorAll('[data-swsel]').forEach(x=>x.onclick=()=>{NET().swCur=x.dataset.swsel;save();renderNet();});
+  if($('swAdd'))$('swAdd').onclick=()=>swCfgDlg(null);
+  if($('swCfg'))$('swCfg').onclick=()=>swCfgDlg(curSW());
+  if($('vlBtn'))$('vlBtn').onclick=vlanDlg;
+  if($('swPrint'))$('swPrint').onclick=netPrint;
+  b.querySelectorAll('[data-swp]').forEach(x=>x.onclick=()=>swPortDlg(+x.dataset.swp));
+}
+function swCfgDlg(sw){
+  const isNew=!sw;const x=sw||{id:uid(),name:'SW'+(SWS().length+1),model:'',n:16,sfp:0,poeB:'',ip:'',loc:'',ports:{}};
+  $('dlg').innerHTML=`<h3>${isNew?'Nowy switch':'Switch '+esc(x.name)}</h3>
+   <div class="g2"><div class="f"><label>Nazwa</label><input id="swN" value="${esc(x.name)}"></div><div class="f"><label>Model</label><input id="swM" value="${esc(x.model||'')}" placeholder="np. TP-Link TL-SG2218P"></div></div>
+   <div class="g3"><div class="f"><label>Porty RJ45</label><select id="swC">${[5,8,10,16,18,24,26,28,48,52].map(n=>`<option ${n===x.n?'selected':''}>${n}</option>`).join('')}</select></div>
+   <div class="f"><label>Porty SFP</label><select id="swS">${[0,1,2,4].map(n=>`<option ${n===(+x.sfp||0)?'selected':''}>${n}</option>`).join('')}</select></div>
+   <div class="f"><label>Budżet PoE [W]</label><input id="swB" inputmode="decimal" value="${esc(x.poeB||'')}" placeholder="np. 150"></div></div>
+   <div class="g2"><div class="f"><label>Adres IP</label><input id="swI" value="${esc(x.ip||'')}" placeholder="np. 192.168.1.2"></div><div class="f"><label>Gdzie jest</label><input id="swL" value="${esc(x.loc||'')}" placeholder="np. szafa RACK"></div></div>
+   <p class="mut" style="margin-top:0">Hasło do switcha trzymaj w Zadania → 🔒 Hasła.</p>
+   <div class="bar"><button class="btn p" id="swOk">Zapisz</button><button class="btn" id="swNo">Anuluj</button>${isNew?'':'<button class="btn d" id="swDel">Usuń switch</button>'}</div>`;
+  $('swNo').onclick=closeDlg;
+  $('swOk').onclick=()=>{const n=+$('swC').value,sfp=+$('swS').value;const lost=Object.keys(x.ports||{}).filter(k=>+k>n+sfp&&swUsed(x.ports[k]));
+    if(lost.length&&!$('swOk').dataset.c){$('swOk').dataset.c=1;$('swOk').textContent='Część opisanych portów zniknie – zapisz mimo to';return;}
+    // przy zmianie liczby portów RJ45 przesuń opisy portów SFP
+    const old=x.ports||{},np={};Object.keys(old).forEach(k=>{k=+k;if(k<=x.n){if(k<=n)np[k]=old[k];}else{const s=k-x.n;if(s<=sfp)np[n+s]=old[k];}});
+    x.ports=np;x.name=$('swN').value.trim()||x.name;x.model=$('swM').value.trim();x.n=n;x.sfp=sfp;x.poeB=$('swB').value.trim();x.ip=$('swI').value.trim();x.loc=$('swL').value.trim();
+    if(isNew)SWS().push(x);NET().swCur=x.id;save();closeDlg();renderNet();};
+  if($('swDel'))$('swDel').onclick=()=>{if(!$('swDel').dataset.c){$('swDel').dataset.c=1;$('swDel').textContent='Na pewno usunąć switch?';return;}NET().sw=SWS().filter(q=>q.id!==x.id);NET().swCur='';(NET().racks||[]).forEach(r=>(r.items||[]).forEach(it=>{if(it.ref===x.id)it.ref='';}));save();closeDlg();renderNet();};
+  $('ov').classList.add('on');
+}
+function swPortDlg(i){
+  const sw=curSW();if(!sw)return;const p=Object.assign({},swPort(sw,i));const all=swPorts(sw);const k=all.findIndex(x=>x.i===i);
+  const taken={};SWS().forEach(s=>Object.keys(s.ports||{}).forEach(j=>{const q=s.ports[j];if(q.pp&&!(s.id===sw.id&&+j===i))taken[q.pp]=s.name+'/'+swPortLab(s,+j);}));
+  const ppOpts=NET().pp.map(pp=>`<optgroup label="${esc(pp.name)}">${rangeN(1,pp.n).map(j=>{const v=pp.id+':'+j;const s=ppShort(ppPort(pp,j));return `<option value="${v}" ${v===p.pp?'selected':''}>${esc(pp.name+'/'+j+(s?' – '+s:''))}${taken[v]?' (już: '+esc(taken[v])+')':''}</option>`;}).join('')}</optgroup>`).join('');
+  $('dlg').innerHTML=`<h3>${esc(sw.name)} – port ${swPortLab(sw,i)}</h3>
+   <div class="f"><label>Port patch panelu</label><select id="spP"><option value="">— brak / bezpośrednio —</option>${ppOpts}</select>${NET().pp.length?'':'<div class="mut" style="font-size:13px">Patch panele dodasz w podzakładce „Patch panel”.</div>'}</div>
+   <div class="f"><label>Co jest podłączone / opis</label><input id="spD" value="${esc(p.d||'')}" placeholder="np. router, NVR, AP salon"></div>
+   <div class="g2"><div class="f"><label>VLAN (untagged)</label><select id="spV"><option value="">—</option>${VLANS().map(v=>`<option value="${esc(String(v.id))}" ${String(v.id)===String(p.vl||'')?'selected':''}>${esc(v.id+' – '+v.n)}</option>`).join('')}</select></div>
+   <div class="f"><label>VLAN-y tagged</label><input id="spT" value="${esc(p.tg||'')}" placeholder="np. 10,20,30"></div></div>
+   <div class="g3"><div class="f"><label>&nbsp;</label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="spPo" ${p.poe?'checked':''} style="width:22px;height:22px"> PoE</label></div>
+   <div class="f"><label>Moc PoE [W]</label><input id="spW" inputmode="decimal" value="${esc(p.w||'')}" placeholder="np. 7"></div>
+   <div class="f"><label>&nbsp;</label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="spU" ${p.up?'checked':''} style="width:22px;height:22px"> Uplink</label></div></div>
+   <div class="f"><label>Uwagi</label><input id="spN" value="${esc(p.note||'')}" placeholder="np. LACP z SW2, port wyłączony"></div>
+   <div class="bar"><button class="btn p" id="spOk">Zapisz</button>${k<all.length-1?'<button class="btn" id="spNx">Zapisz i następny ▶</button>':''}<button class="btn" id="spNo">Anuluj</button>${swUsed(p)?'<button class="btn d" id="spClr">Wyczyść</button>':''}</div>`;
+  $('spP').onchange=()=>{const ref=$('spP').value;if(!ref)return;const [id,j]=ref.split(':');const pp=NET().pp.find(x=>x.id===id);const q=pp&&ppPort(pp,+j);if(q&&q.poe)$('spPo').checked=true;if(q&&!$('spW').value&&q.poe)$('spW').value={Kamera:7,'Access point':12}[q.dev]||'';};
+  const commit=()=>{const q={pp:$('spP').value,d:$('spD').value.trim(),vl:$('spV').value,tg:$('spT').value.trim(),poe:$('spPo').checked,w:$('spW').value.trim(),up:$('spU').checked,note:$('spN').value.trim()};
+    sw.ports=sw.ports||{};if(swUsed(q)||q.poe)sw.ports[i]=q;else delete sw.ports[i];save();};
+  $('spNo').onclick=closeDlg;
+  $('spOk').onclick=()=>{commit();closeDlg();renderNet();};
+  if($('spNx'))$('spNx').onclick=()=>{commit();closeDlg();renderNet();swPortDlg(all[k+1].i);};
+  if($('spClr'))$('spClr').onclick=()=>{if(!$('spClr').dataset.c){$('spClr').dataset.c=1;$('spClr').textContent='Na pewno?';return;}delete sw.ports[i];save();closeDlg();renderNet();};
+  $('ov').classList.add('on');
+}
+function swDoc(){
+  const L=SWS();if(!L.length)return '';
+  return `<h1>${esc(P.name)} – switche</h1><div>${esc([P.addr,today()].filter(Boolean).join(' · '))}</div>`+
+   (VLANS().length?`<p><b>VLAN-y:</b> ${VLANS().map(v=>esc(v.id+' – '+v.n)).join(', ')}</p>`:'')+
+   L.map(sw=>{const po=swPoe(sw);return `<h2 style="font-size:11pt;margin:10px 0 2px">${esc(sw.name)} ${esc(sw.model||'')}</h2><div style="font-size:8.5pt">${esc([sw.loc,sw.ip?'IP '+sw.ip:'',po.n?'PoE '+po.n+' port.'+(po.w?', '+fm(po.w)+' W':'')+(sw.poeB?' / '+sw.poeB+' W':''):''].filter(Boolean).join(' · '))}</div>
+    <table><tr><th>Port</th><th>Patch panel</th><th>Opis</th><th>VLAN</th><th>Tagged</th><th>PoE</th><th>Uwagi</th></tr>${swPorts(sw).map(x=>{const p=swPort(sw,x.i);return `<tr><td><b>${x.l}</b>${p.up?' ⇅':''}</td><td>${esc(ppPortName(p.pp))}</td><td>${esc(p.d||'')}</td><td>${p.vl?esc(p.vl+(vlan(p.vl)?' '+vlan(p.vl).n:'')):''}</td><td>${esc(p.tg||'')}</td><td>${p.poe?'tak'+(p.w?' '+esc(p.w)+' W':''):''}</td><td>${esc(p.note||'')}</td></tr>`;}).join('')}</table>`;}).join('');
+}
+
+// ---------- SZAFA RACK ----------
+const RK_T={pp:['Patch panel',1,'#1f2937'],sw:['Switch',1,'#1e3a8a'],router:['Router / firewall',1,'#0f766e'],nvr:['Rejestrator NVR',2,'#374151'],srv:['Serwer / NAS',2,'#4b5563'],
+ ups:['UPS',2,'#7c2d12'],pdu:['Listwa zasilająca',1,'#991b1b'],org:['Organizer kabli',1,'#6b7280'],shelf:['Półka',1,'#9ca3af'],fan:['Panel wentylatorów',1,'#64748b'],blank:['Zaślepka',1,'#d1d5db'],other:['Inne',1,'#57534e']};
+function RACKS(){const N=NET();if(!N.racks)N.racks=[];return N.racks;}
+function curRack(){const N=NET();return RACKS().find(x=>x.id===N.rkCur)||RACKS()[0]||null;}
+function rkItemName(it){if(it.t==='pp'){const p=NET().pp.find(x=>x.id===it.ref);if(p)return p.name+(it.d?' – '+it.d:'');}if(it.t==='sw'){const s=SWS().find(x=>x.id===it.ref);if(s)return s.name+(s.model?' '+s.model:'')+(it.d?' – '+it.d:'');}return it.d||RK_T[it.t][0];}
+function rkFree(rk,u,h,skip){if(u<1||u+h-1>rk.u)return false;return !(rk.items||[]).some(it=>it.id!==skip&&u<=it.u+it.h-1&&it.u<=u+h-1);}
+function rackSvg(rk){
+  const UH=22,W=300,X=34,top=8,H=rk.u*UH;
+  let s=`<svg viewBox="0 0 ${W+X+10} ${H+top*2}" style="width:100%;max-width:420px;display:block;margin:0 auto" font-family="Arial,sans-serif"><rect x="${X-6}" y="0" width="${W+12}" height="${H+top*2}" rx="6" fill="#111827"/>`;
+  for(let u=1;u<=rk.u;u++){const y=top+(rk.u-u)*UH;s+=`<text x="${X-12}" y="${y+UH*0.68}" font-size="10" fill="#6b7280" text-anchor="end">${u}</text><rect data-rku="${u}" x="${X}" y="${y+1}" width="${W}" height="${UH-2}" fill="#1f2937" stroke="#374151" stroke-dasharray="3 3"/>`;}
+  (rk.items||[]).forEach(it=>{const y=top+(rk.u-(it.u+it.h-1))*UH;const T=RK_T[it.t]||RK_T.other;const light=['blank','shelf'].includes(it.t);
+    s+=`<g data-rki="${it.id}" style="cursor:pointer"><rect x="${X}" y="${y+1}" width="${W}" height="${it.h*UH-2}" rx="3" fill="${T[2]}" stroke="#e5e7eb" stroke-width="0.8"/>
+     <text x="${X+8}" y="${y+it.h*UH/2+4}" font-size="11.5" fill="${light?'#111':'#fff'}" font-weight="700">${esc(rkItemName(it).slice(0,40))}</text>
+     <text x="${X+W-6}" y="${y+it.h*UH/2+4}" font-size="9.5" fill="${light?'#374151':'#d1d5db'}" text-anchor="end">${it.h}U</text></g>`;});
+  return s+'</svg>';
+}
+function rackRender(){
+  const rk=curRack();
+  let h=`<div class="card noprint">${chipsSel(RACKS(),rk,'rksel','rkAdd','+ Szafa RACK')}`;
+  if(!rk){h+=`<p class="mut" style="margin:0">Dodaj szafę i poukładaj w niej urządzenia: patch panele, switche, router, NVR, UPS, listwy, organizery. Potem wydrukujesz rysunek dla klienta albo do dokumentacji.</p></div>`;$('netBody').innerHTML=h;bindRack();return;}
+  const usedU=(rk.items||[]).reduce((a,it)=>a+it.h,0);
+  h+=`<div class="mut">${esc([rk.loc,rk.u+'U',rk.dep?'gł. '+rk.dep+' mm':''].filter(Boolean).join(' · '))} · zajęte <b>${usedU}U</b>, wolne <b>${rk.u-usedU}U</b></div>
+   <div class="bar" style="margin-bottom:0"><button class="btn sm" id="rkCfg">⚙ Ustawienia</button><button class="btn sm p" id="rkPrint">🖨 Drukuj / PDF</button></div></div>
+   <div class="card noprint">${rackSvg(rk)}<p class="mut" style="margin:6px 0 0">Stuknij wolne miejsce, żeby wstawić urządzenie, albo urządzenie, żeby je zmienić. Numeracja U od dołu.</p></div>`;
+  $('netBody').innerHTML=h;bindRack();
+}
+function bindRack(){
+  const b=$('netBody');
+  b.querySelectorAll('[data-rksel]').forEach(x=>x.onclick=()=>{NET().rkCur=x.dataset.rksel;save();renderNet();});
+  if($('rkAdd'))$('rkAdd').onclick=()=>rkCfgDlg(null);
+  if($('rkCfg'))$('rkCfg').onclick=()=>rkCfgDlg(curRack());
+  if($('rkPrint'))$('rkPrint').onclick=netPrint;
+  b.querySelectorAll('[data-rku]').forEach(x=>x.addEventListener('click',()=>rkItemDlg(null,+x.dataset.rku)));
+  b.querySelectorAll('[data-rki]').forEach(x=>x.addEventListener('click',()=>rkItemDlg(x.dataset.rki)));
+}
+function rkCfgDlg(rk){
+  const isNew=!rk;const x=rk||{id:uid(),name:'RACK'+(RACKS().length?RACKS().length+1:''),u:12,dep:'',loc:'',items:[]};
+  $('dlg').innerHTML=`<h3>${isNew?'Nowa szafa RACK':'Szafa '+esc(x.name)}</h3>
+   <div class="g3"><div class="f"><label>Nazwa</label><input id="rkN" value="${esc(x.name)}"></div>
+   <div class="f"><label>Wysokość</label><select id="rkU">${[4,6,9,12,15,18,22,27,32,42,47].map(n=>`<option value="${n}" ${n===x.u?'selected':''}>${n}U</option>`).join('')}</select></div>
+   <div class="f"><label>Głębokość [mm]</label><input id="rkD" inputmode="numeric" value="${esc(x.dep||'')}" placeholder="np. 450"></div></div>
+   <div class="f"><label>Gdzie stoi</label><input id="rkL" value="${esc(x.loc||'')}" placeholder="np. garderoba, wisząca 19&quot;"></div>
+   <div class="bar"><button class="btn p" id="rkOk">Zapisz</button><button class="btn" id="rkNo">Anuluj</button>${isNew?'':'<button class="btn d" id="rkDel">Usuń szafę</button>'}</div>`;
+  $('rkNo').onclick=closeDlg;
+  $('rkOk').onclick=()=>{const u=+$('rkU').value;if((x.items||[]).some(it=>it.u+it.h-1>u)){$('rkOk').textContent='Urządzenia nie mieszczą się w '+u+'U – przesuń je najpierw';return;}
+    x.name=$('rkN').value.trim()||x.name;x.u=u;x.dep=$('rkD').value.trim();x.loc=$('rkL').value.trim();if(isNew)RACKS().push(x);NET().rkCur=x.id;save();closeDlg();renderNet();};
+  if($('rkDel'))$('rkDel').onclick=()=>{if(!$('rkDel').dataset.c){$('rkDel').dataset.c=1;$('rkDel').textContent='Na pewno usunąć szafę?';return;}NET().racks=RACKS().filter(q=>q.id!==x.id);NET().rkCur='';save();closeDlg();renderNet();};
+  $('ov').classList.add('on');
+}
+function rkItemDlg(id,atU){
+  const rk=curRack();if(!rk)return;rk.items=rk.items||[];
+  const isNew=!id;const it=isNew?{id:uid(),t:'pp',h:1,u:atU,ref:'',d:''}:rk.items.find(q=>q.id===id);if(!it)return;
+  const E=Object.assign({},it);
+  const refOpts=t=>t==='pp'?NET().pp.map(p=>`<option value="${p.id}" ${p.id===E.ref?'selected':''}>${esc(p.name)} (${p.n} port.)</option>`).join(''):t==='sw'?SWS().map(s=>`<option value="${s.id}" ${s.id===E.ref?'selected':''}>${esc(s.name+' '+(s.model||''))}</option>`).join(''):'';
+  $('dlg').innerHTML=`<h3>${isNew?'Wstaw do szafy':'Urządzenie w szafie'}</h3>
+   <div class="g2"><div class="f"><label>Rodzaj</label><select id="riT">${Object.keys(RK_T).map(k=>`<option value="${k}" ${k===E.t?'selected':''}>${RK_T[k][0]}</option>`).join('')}</select></div>
+   <div class="f"><label>Wysokość</label><select id="riH">${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${n===E.h?'selected':''}>${n}U</option>`).join('')}</select></div></div>
+   <div class="f" id="riRW"><label id="riRL">Który</label><select id="riR"></select></div>
+   <div class="g2"><div class="f"><label>Opis / model</label><input id="riD" value="${esc(E.d||'')}" placeholder="np. UPS 1000VA, MikroTik hEX"></div>
+   <div class="f"><label>Pozycja (dolne U)</label><input id="riU" type="number" min="1" max="${rk.u}" value="${E.u}"></div></div>
+   <div id="riM" class="mut"></div>
+   <div class="bar"><button class="btn p" id="riOk">Zapisz</button><button class="btn" id="riNo">Anuluj</button>${isNew?'':'<button class="btn d" id="riDel">Usuń</button>'}</div>`;
+  const upd=()=>{const t=$('riT').value;const has=t==='pp'||t==='sw';$('riRW').style.display=has?'':'none';
+    if(has){$('riRL').textContent=t==='pp'?'Który patch panel':'Który switch';$('riR').innerHTML='<option value="">—</option>'+refOpts(t);}};
+  upd();
+  $('riT').onchange=()=>{E.ref='';upd();if(isNew)$('riH').value=RK_T[$('riT').value][1];};
+  $('riNo').onclick=closeDlg;
+  $('riOk').onclick=()=>{const h=+$('riH').value,u=+$('riU').value;
+    if(!rkFree(rk,u,h,it.id)){$('riM').innerHTML='<span style="color:var(--bad)">To miejsce jest zajęte albo wychodzi poza szafę.</span>';return;}
+    Object.assign(it,{t:$('riT').value,h,u,ref:$('riRW').style.display===''?$('riR').value:'',d:$('riD').value.trim()});if(isNew)rk.items.push(it);save();closeDlg();renderNet();};
+  if($('riDel'))$('riDel').onclick=()=>{rk.items=rk.items.filter(q=>q.id!==it.id);save();closeDlg();renderNet();};
+  $('ov').classList.add('on');
+}
+function rackDoc(){
+  const L=RACKS();if(!L.length)return '';
+  return L.map((rk,k)=>`${k?'<div style="page-break-before:always"></div>':''}<h1>${esc(P.name)} – szafa ${esc(rk.name)}</h1><div>${esc([P.addr,rk.loc,rk.u+'U',rk.dep?'gł. '+rk.dep+' mm':'',today()].filter(Boolean).join(' · '))}</div>
+   <div style="display:flex;gap:6mm;margin-top:3mm;align-items:flex-start"><div style="flex:0 0 75mm">${rackSvg(rk)}</div>
+   <table style="flex:1"><tr><th>U</th><th>Urządzenie</th><th>Opis</th></tr>${(rk.items||[]).slice().sort((a,b)=>b.u-a.u).map(it=>`<tr><td>${it.h>1?it.u+'–'+(it.u+it.h-1):it.u}</td><td>${esc(RK_T[it.t][0])}</td><td>${esc(rkItemName(it))}</td></tr>`).join('')}</table></div>`).join('');
+}
+
+// ---------- CENTRALA ALARMOWA: wejścia i wyjścia ----------
+const ZT=['','opóźniona (wejście/wyjście)','opóźniona wewnętrzna','natychmiastowa','zwykła / obwodowa','24h sabotażowa','24h napadowa','24h pożarowa','24h techniczna','zalanie','gong / informacyjna'];
+function ALC(){if(!P.alc)P.alc={model:'',zb:16,ob:4,eol:'2EOL',r:'1,1 kΩ',exp:[],zd:{},od:{}};const a=P.alc;a.exp=a.exp||[];a.zd=a.zd||{};a.od=a.od||{};return a;}
+function alcZones(){const a=ALC();const g=[{lab:'Płyta centrali',from:1,to:+a.zb||0}];let n=+a.zb||0;
+  a.exp.filter(e=>e.t==='z').forEach(e=>{g.push({lab:(e.lab||'Ekspander')+(e.addr!==''&&e.addr!=null?' (adr. '+e.addr+')':''),from:n+1,to:n+(+e.n||0),e});n+=+e.n||0;});return {g,n};}
+function alcOuts(){const a=ALC();const g=[{lab:'Płyta centrali',from:1,to:+a.ob||0}];let n=+a.ob||0;
+  a.exp.filter(e=>e.t==='o').forEach(e=>{g.push({lab:(e.lab||'Ekspander wyjść')+(e.addr!==''&&e.addr!=null?' (adr. '+e.addr+')':''),from:n+1,to:n+(+e.n||0),e});n+=+e.n||0;});return {g,n};}
+function zoneNum(wz){const m=String(wz||'').trim().match(/^(?:z|we|wej[a-ząćęłńóśźż]*\.?|strefa|linia)?\s*(\d+)\s*$/i);return m?+m[1]:null;}
+function alByZone(){const r={},bad=[];alarmList('al').forEach(x=>{const n=zoneNum(x.m.wz);if(n)(r[n]=r[n]||[]).push(x);else if((x.m.wz||'').trim())bad.push(x);});return {r,bad};}
+function alcRender(){
+  const a=ALC();const Z=alcZones(),O=alcOuts();const {r,bad}=alByZone();
+  const els=alarmList('al').filter(x=>x.m.t!=='cen');const free=els.filter(x=>!(x.m.wz||'').trim());
+  const busy=Object.keys(r).filter(k=>+k<=Z.n).length;const over=Object.keys(r).filter(k=>+k>Z.n);
+  let h=`<div class="card noprint"><h3 style="margin:0 0 4px">🚨 ${esc(a.model||'Centrala alarmowa')}</h3>
+   <div class="mut">Wejść: <b>${Z.n}</b> (zajęte ${busy}, wolne ${Z.n-busy}) · wyjść: <b>${O.n}</b> · ${esc(a.eol)}${a.eol!=='NC'&&a.r?' '+esc(a.r):''}</div>
+   ${free.length?`<p style="color:var(--warn);margin:4px 0">Elementy bez wejścia: ${free.map(x=>esc(x.m.lab||SYM[x.m.t][0])).join(', ')} – stuknij wolne wejście, żeby je przypisać.</p>`:''}
+   ${over.length?`<p style="color:var(--bad);margin:4px 0">⚠ Wejścia spoza centrali: ${over.map(k=>'Z'+k).join(', ')} – dodaj ekspander albo popraw numer.</p>`:''}
+   ${bad.length?`<p style="color:var(--warn);margin:4px 0">Nierozpoznany numer wejścia: ${bad.map(x=>esc((x.m.lab||'')+' „'+x.m.wz+'”')).join(', ')} – wpisz np. Z5.</p>`:''}
+   <div class="bar" style="margin-bottom:0"><button class="btn sm" id="alcCfg">⚙ Centrala i ekspandery</button><button class="btn sm p" id="alcPrint">🖨 Drukuj / PDF</button></div></div>`;
+  h+=`<div class="card noprint"><h3 style="margin:0 0 6px">Wejścia (strefy)</h3>${Z.g.filter(g=>g.to>=g.from).map(g=>`<div class="shg">${esc(g.lab)} · Z${g.from}–Z${g.to}</div>
+    <div class="pp n8">${rangeN(g.from,g.to).map(n=>{const L=r[n]||[];const d=a.zd[n]||{};return `<div class="ppp ${L.length?'u':''}" data-alz="${n}"><b>Z${n}</b><span>${esc(L.map(x=>x.m.lab||SYM[x.m.t][0]).join(', ')||d.d||'')}</span>${d.t?`<span style="font-size:9.5px">${esc(d.t.split(' ')[0])}</span>`:''}</div>`;}).join('')}</div>`).join('')}
+    <p class="mut" style="margin:6px 0 0">Białe = podłączony element z rzutu. Stuknij wejście, żeby przypisać element, ustawić typ i opis.</p></div>`;
+  h+=`<div class="card noprint"><h3 style="margin:0 0 6px">Wyjścia</h3>${O.g.filter(g=>g.to>=g.from).map(g=>`<div class="shg">${esc(g.lab)}</div>${rangeN(g.from,g.to).map(n=>`<div class="g2" style="grid-template-columns:44px 1fr;align-items:center;margin-bottom:4px"><b>O${n}</b><input data-alo="${n}" value="${esc(a.od[n]||'')}" placeholder="np. sygnalizator zewn. SPL-5010, zasilanie czujek"></div>`).join('')}`).join('')||'<p class="mut">Ustaw liczbę wyjść w „Centrala i ekspandery”.</p>'}</div>`;
+  $('netBody').innerHTML=h;
+  $('alcCfg').onclick=alcCfgDlg;$('alcPrint').onclick=netPrint;
+  $('netBody').querySelectorAll('[data-alz]').forEach(x=>x.onclick=()=>alzDlg(+x.dataset.alz));
+  $('netBody').querySelectorAll('[data-alo]').forEach(x=>x.oninput=()=>{const v=x.value.trim();if(v)a.od[x.dataset.alo]=v;else delete a.od[x.dataset.alo];save();});
+}
+function alcCfgDlg(){
+  const a=ALC();const E=JSON.parse(JSON.stringify(a.exp));
+  const row=(e,i)=>`<div class="alr" style="grid-template-columns:1.6fr 70px 60px 74px auto" data-ex="${i}"><input data-k="lab" list="alcExp" value="${esc(e.lab||'')}" placeholder="np. CA-64 E"><input data-k="addr" value="${esc(e.addr??'')}" placeholder="adres"><input data-k="n" type="number" min="1" max="32" value="${esc(String(e.n||8))}"><select data-k="t"><option value="z" ${e.t==='z'?'selected':''}>wejść</option><option value="o" ${e.t==='o'?'selected':''}>wyjść</option></select><button type="button" class="btn sm d" data-exx="${i}">✕</button></div>`;
+  $('dlg').innerHTML=`<h3>Centrala alarmowa</h3>
+   <div class="f"><label>Model</label><input id="acM" list="alcMod" value="${esc(a.model||'')}" placeholder="np. Satel INTEGRA 32"><datalist id="alcMod">${['Satel INTEGRA 32','Satel INTEGRA 64 Plus','Satel INTEGRA 128','Satel PERFECTA 16','Satel PERFECTA 32','Satel VERSA 15','Ropam NeoGSM-IP','Ropam OptimaGSM','Paradox SP6000','Ajax Hub 2'].map(x=>`<option value="${x}">`).join('')}</datalist></div>
+   <div class="g2"><div class="f"><label>Wejścia na płycie</label><input id="acZ" type="number" min="0" max="64" value="${esc(String(a.zb))}"></div><div class="f"><label>Wyjścia na płycie</label><input id="acO" type="number" min="0" max="64" value="${esc(String(a.ob))}"></div></div>
+   <div class="g2"><div class="f"><label>Konfiguracja linii</label><select id="acE">${[['NC','NC (bez rezystorów)'],['EOL','EOL (1 rezystor)'],['2EOL','2EOL (2 rezystory)']].map(([v,n])=>`<option value="${v}" ${v===a.eol?'selected':''}>${n}</option>`).join('')}</select></div>
+   <div class="f"><label>Rezystory</label><input id="acR" value="${esc(a.r||'')}" placeholder="np. 1,1 kΩ / 2× 1,1 kΩ"></div></div>
+   <div class="f"><label>Ekspandery (nazwa · adres · liczba · rodzaj)</label><div id="acX"></div><datalist id="alcExp"><option value="CA-64 E"><option value="CA-64 EPS"><option value="CA-64 O"><option value="CA-64 OPS"><option value="INT-E"><option value="INT-O"><option value="INT-ORS"><option value="INT-RX"></datalist>
+   <button class="btn sm" type="button" id="acXa">+ ekspander</button></div>
+   <p class="mut">Numeracja wejść i wyjść jest ciągła: najpierw płyta, potem ekspandery w kolejności z listy (jak w Satel DLOADX).</p>
+   <div class="bar"><button class="btn p" id="acOk">Zapisz</button><button class="btn" id="acNo">Anuluj</button></div>`;
+  const read=()=>{E.length=0;$('acX').querySelectorAll('[data-ex]').forEach(r=>E.push({lab:r.querySelector('[data-k=lab]').value.trim(),addr:r.querySelector('[data-k=addr]').value.trim(),n:+r.querySelector('[data-k=n]').value||8,t:r.querySelector('[data-k=t]').value}));};
+  const draw=()=>{$('acX').innerHTML=E.map(row).join('');$('acX').querySelectorAll('[data-exx]').forEach(b=>b.onclick=()=>{read();E.splice(+b.dataset.exx,1);draw();});};
+  draw();
+  $('acXa').onclick=()=>{read();E.push({lab:'CA-64 E',addr:String(E.length),n:8,t:'z'});draw();};
+  $('acNo').onclick=closeDlg;
+  $('acOk').onclick=()=>{read();a.model=$('acM').value.trim();a.zb=Math.max(0,+$('acZ').value||0);a.ob=Math.max(0,+$('acO').value||0);a.eol=$('acE').value;a.r=$('acR').value.trim();a.exp=E;save();closeDlg();renderNet();};
+  $('ov').classList.add('on');
+}
+function openMark(pid,mid){const pl=plans().find(q=>q.id===pid);const m=pl&&(pl.marks||[]).find(q=>q.id===mid);if(!m)return;closeDlg();tab('plan');if(PL!==pid){PL=pid;renderPlan(true);}mkDlg(m);}
+function alzDlg(n){
+  const a=ALC();const {r}=alByZone();const L=r[n]||[];const d=Object.assign({t:'',d:'',note:''},a.zd[n]||{});
+  const cand=alarmList('al').filter(x=>x.m.t!=='cen'&&zoneNum(x.m.wz)!==n);
+  $('dlg').innerHTML=`<h3>Wejście Z${n}</h3>
+   <div class="f"><label>Podłączone elementy</label>${L.length?L.map(x=>`<div class="ppl" style="cursor:default"><div style="flex:1;min-width:0"><b>${esc(x.m.lab||'')}</b> ${esc(SYM[x.m.t][0])}${x.multi?' <span class="mut">('+esc(x.pl.name)+')</span>':''}<div style="font-size:12.5px">${x.m.wc?esc(x.m.wc)+' ':''}${alWireHtml(x.m)}</div></div><button class="btn sm" data-zo="${x.pl.id}|${x.m.id}">Otwórz</button><button class="btn sm d" data-zr="${x.m.id}">Odłącz</button></div>`).join(''):'<div class="mut">Nic – wejście wolne.</div>'}</div>
+   ${cand.length?`<div class="f"><label>Dodaj element z rzutu</label><select id="azA"><option value="">— wybierz —</option>${cand.map(x=>`<option value="${x.m.id}">${esc((x.m.lab||'')+' '+SYM[x.m.t][0]+(x.m.wz?' (teraz: '+x.m.wz+')':'')+(x.m.note?' · '+x.m.note:''))}</option>`).join('')}</select></div>`:''}
+   <div class="f"><label>Typ wejścia</label><select id="azT">${ZT.map(t=>`<option value="${t}" ${t===d.t?'selected':''}>${t||'—'}</option>`).join('')}</select></div>
+   <div class="g2"><div class="f"><label>Nazwa w centrali</label><input id="azD" value="${esc(d.d)}" placeholder="np. PIR salon"></div><div class="f"><label>Uwagi</label><input id="azN" value="${esc(d.note)}" placeholder="np. partycja 1, czas 30 s"></div></div>
+   <div class="bar"><button class="btn p" id="azOk">Zapisz</button>${n<alcZones().n?'<button class="btn" id="azNx">Zapisz i następne ▶</button>':''}<button class="btn" id="azNo">Anuluj</button></div>`;
+  const marks=()=>plans().flatMap(p=>p.marks||[]);
+  const commit=()=>{const q={t:$('azT').value,d:$('azD').value.trim(),note:$('azN').value.trim()};if(q.t||q.d||q.note)a.zd[n]=q;else delete a.zd[n];
+    const id=$('azA')&&$('azA').value;if(id){const m=marks().find(x=>x.id===id);if(m)m.wz='Z'+n;}save();};
+  $('dlg').querySelectorAll('[data-zo]').forEach(b=>b.onclick=()=>{commit();const [p,m]=b.dataset.zo.split('|');openMark(p,m);});
+  $('dlg').querySelectorAll('[data-zr]').forEach(b=>b.onclick=()=>{commit();const m=marks().find(x=>x.id===b.dataset.zr);if(m)m.wz='';save();alzDlg(n);});
+  $('azNo').onclick=closeDlg;
+  $('azOk').onclick=()=>{commit();closeDlg();renderNet();};
+  if($('azNx'))$('azNx').onclick=()=>{commit();closeDlg();renderNet();alzDlg(n+1);};
+  $('ov').classList.add('on');
+}
+function alcDoc(){
+  const a=ALC();const Z=alcZones(),O=alcOuts();const {r}=alByZone();
+  return `<h1>${esc(P.name)} – centrala alarmowa</h1><div>${esc([P.addr,a.model,a.eol+(a.eol!=='NC'&&a.r?' '+a.r:''),today()].filter(Boolean).join(' · '))}</div>
+   ${a.exp.length?`<p><b>Ekspandery:</b> ${a.exp.map(e=>esc((e.lab||'')+(e.addr!==''?' adr. '+e.addr:'')+' – '+e.n+(e.t==='z'?' wej.':' wyj.'))).join(', ')}</p>`:''}
+   <h2 style="font-size:11pt;margin:8px 0 2px">Wejścia</h2><table><tr><th>Wej.</th><th>Moduł</th><th>Typ</th><th>Nazwa</th><th>Element</th><th>Przewód / kolory</th><th>Uwagi</th></tr>
+   ${Z.g.flatMap(g=>rangeN(g.from,g.to).map(n=>{const L=r[n]||[];const d=a.zd[n]||{};return `<tr><td><b>Z${n}</b></td><td>${esc(g.e?g.e.lab||'':'płyta')}</td><td>${esc(d.t||'')}</td><td>${esc(d.d||'')}</td><td>${L.map(x=>esc((x.m.lab||'')+' '+SYM[x.m.t][0]+(x.m.note?' ('+x.m.note+')':''))).join('<br>')}</td><td>${L.map(x=>esc([x.m.wc,alWiresTxt(x.m)].filter(Boolean).join(': '))).join('<br>')}</td><td>${esc(d.note||'')}</td></tr>`;})).join('')}</table>
+   ${O.n?`<h2 style="font-size:11pt;margin:8px 0 2px">Wyjścia</h2><table><tr><th>Wyj.</th><th>Moduł</th><th>Opis</th></tr>${O.g.flatMap(g=>rangeN(g.from,g.to).map(n=>`<tr><td><b>O${n}</b></td><td>${esc(g.e?g.e.lab||'':'płyta')}</td><td>${esc(a.od[n]||'')}</td></tr>`)).join('')}</table>`:''}`;
+}
+
+$('netsub').addEventListener('click',e=>{const b=e.target.closest('[data-nts]');if(!b)return;NTS=b.dataset.nts;renderNet();window.scrollTo(0,0);});
 let NS='kb';
 function KB(){if(!P.kb)P.kb={cards:[]};return P.kb;}
 function SHOP(){if(!P.shop)P.shop=[];return P.shop;}
