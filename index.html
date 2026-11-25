@@ -586,7 +586,14 @@ function load(){
   DB.projects.forEach(attachP);
   P=DB.projects.find(p=>p.id===DB.current)||DB.projects[0];DB.current=P.id;
 }
-function save(){if(LOCK){saveEnc();return;}try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
+function save(){if(LOCK){saveEnc();return;}try{localStorage.setItem(KEY,JSON.stringify(DB));saveErr(false);}catch(e){saveErr(true);}}
+// gdy pamięć jest pełna, zapis się nie udaje – pokaż to wyraźnie, zamiast cicho gubić zmiany
+function saveErr(on){let b=document.getElementById('saveErr');
+  if(!on){if(b)b.remove();return;}
+  if(b)return;b=document.createElement('div');b.id='saveErr';b.className='noprint';
+  b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:60;background:#991b1b;color:#fff;border-radius:10px;padding:10px 12px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+  b.innerHTML='⚠ <b>Zmiany się NIE zapisują</b> – brak miejsca w pamięci aplikacji. Zrób „Kopię całej bazy” (zakładka Dane), potem przenieś stare projekty do pliku i usuń je albo usuń zbędne pliki z biblioteki.';
+  document.body.appendChild(b);}
 
 // ---- blokada aplikacji: cała baza (adresy, telefony, notatki…) zaszyfrowana PIN-em (AES-GCM, PBKDF2)
 let LOCK=null,SV_BUSY=false,SV_AGAIN=false;
@@ -595,7 +602,7 @@ async function encDB(){const iv=crypto.getRandomValues(new Uint8Array(12));
   const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},LOCK.key,new TextEncoder().encode(JSON.stringify(DB)));
   return {_enc:1,salt:LOCK.salt,it:LOCK.it,iv:b64(iv),ct:b64(ct)};}
 async function saveEnc(){if(SV_BUSY){SV_AGAIN=true;return;}SV_BUSY=true;
-  try{do{SV_AGAIN=false;const v=await encDB();localStorage.setItem(KEY,JSON.stringify(v));}while(SV_AGAIN);}catch(e){}SV_BUSY=false;}
+  try{do{SV_AGAIN=false;const v=await encDB();localStorage.setItem(KEY,JSON.stringify(v));}while(SV_AGAIN);saveErr(false);}catch(e){saveErr(true);}SV_BUSY=false;}
 async function lockKey(pin,salt,it){return {salt:typeof salt==='string'?salt:b64(salt),it,key:await vKey(pin,typeof salt==='string'?unb64(salt):salt,it)};}
 async function lockOpen(env,pin){const L=await lockKey(pin,env.salt,env.it||V_IT);
   const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(env.iv)},L.key,unb64(env.ct));return {L,db:JSON.parse(new TextDecoder().decode(pt))};}
@@ -1280,10 +1287,11 @@ function projMenu(p){
   $('pmB').onclick=projDlg;
   $('pmO').onclick=()=>{DB.current=p.id;P=p;P.used=Date.now();SEL=null;closeDlg();render();};
   $('pmA').onclick=()=>{p.arch=!p.arch;save();projDlg();};
-  $('pmC').onclick=()=>{const c=attachP(JSON.parse(JSON.stringify(p)));c.id=uid();c.name+=' (kopia)';c.arch=false;c.used=Date.now();(c.plans||[]).forEach(pl=>{const nid=uid();const old=pl.id;pl.id=nid;IDB.get(old).then(d=>{if(d){IMG[nid]=d;IDB.put(nid,d);}});});DB.projects.unshift(c);save();projDlg();};
+  $('pmC').onclick=async()=>{const c=attachP(JSON.parse(JSON.stringify(p)));c.id=uid();c.name+=' (kopia)';c.arch=false;c.used=Date.now();for(const pl of (c.plans||[])){const nid=uid();const d=IMG[pl.id]||await IDB.get(pl.id);pl.id=nid;if(d){IMG[nid]=d;await IDB.put(nid,d);}}await photoClone(c);DB.projects.unshift(c);save();projDlg();};
   if($('pmD'))$('pmD').onclick=()=>{
     if(!$('pmD').dataset.c){$('pmD').dataset.c=1;$('pmD').textContent='🗑 Na pewno usunąć? (nie da się cofnąć)';return;}
-    DB.projects=DB.projects.filter(x=>x.id!==p.id);if(P.id===p.id){P=DB.projects[0];DB.current=P.id;}render();projDlg();
+    DB.projects=DB.projects.filter(x=>x.id!==p.id);if(P.id===p.id){P=DB.projects[0];DB.current=P.id;}
+    (p.plans||[]).forEach(pl=>{IDB.del(pl.id);delete IMG[pl.id];});photoDrop((p.plans||[]).flatMap(pl=>(pl.marks||[]).flatMap(m=>m.ph||[])));render();projDlg();
   };
   $('ov').classList.add('on');
 }
@@ -1311,7 +1319,7 @@ function importP(o){
   attachP(o);
   const imgs=o._imgs||{};delete o._imgs;
   (o.plans||[]).forEach(pl=>{const nid=uid();if(imgs[pl.id]){IMG[nid]=imgs[pl.id];IDB.put(nid,imgs[pl.id]);}pl.id=nid;
-    (pl.marks||[]).forEach(m=>(m.ph||[]).forEach(id=>{const q=imgs['ph_'+id];if(q){IMG['ph_'+id]=q;IDB.put('ph_'+id,q);}}));});
+    (pl.marks||[]).forEach(m=>{m.ph=(m.ph||[]).map(id=>{const q=imgs['ph_'+id];if(!q)return null;const n=uid();IMG['ph_'+n]=q;IDB.put('ph_'+n,q);return n;}).filter(Boolean);});});
   o.id=uid();DB.projects.unshift(o);DB.current=o.id;P=o;SEL=null;render();tab('board');
 }
 $('fImp').onchange=e=>{
@@ -1440,7 +1448,7 @@ rcd:`<ol>
 </ol>`
 };
 function helpBox(){return `<details class="help noprint"><summary>ℹ Jak mierzyć – Sonel MPI-520</summary>${HELP_HEAD}${HELP[MS]}<p class="mut">To skrót. Szczegóły i pozycje pokrętła znajdziesz w instrukcji miernika.</p></details>`;}
-const MEAS_DEF={nr:'',rodzaj:'odbiorcze',client:'',date:'',siec:'TN-S',u0:230,corr:false,isoU:500,tmax:300,ul:50,
+const MEAS_DEF={nr:'',rodzaj:'odbiorcze',client:'',date:'',siec:'TN-S',u0:230,corr:false,isoU:500,tmax:300,ul:50,rcdw:'sin',
   instr:[{n:'Sonel MPI-520',nr:'',w:''}],who:'',certE:'',certD:'',next:'',verdict:'',note:''};
 const ME_KEYS=['who','certE','certD','instr'];
 function MP(){
@@ -1468,12 +1476,16 @@ function isoEval(it){
   const m=IM(it),mn=isoMin();const v=isoFields(it).map(f=>num(m[f])).filter(x=>x!=null);
   return {mn,ok:v.length?v.every(x=>x>=mn):null};
 }
+// granice prądu zadziałania RCD: prąd sinusoidalny 0,5–1·IΔn; jednopołówkowy (typ A/F/B) 0,35–1,4·IΔn (2·IΔn dla 10 mA)
+function rcdLim(it){if(MP().rcdw==='pul'&&['A','F','B'].includes(it.rtype))return [0.35,+it.idn<=10?2:1.4];return [0.5,1];}
+const rcdLimTxt=()=>MP().rcdw==='pul'?'0,5·IΔn ≤ IΔ ≤ IΔn (AC); 0,35·IΔn ≤ IΔ ≤ 1,4·IΔn (typ A/F/B, prąd jednopołówkowy)':'0,5·IΔn ≤ IΔ ≤ IΔn';
 function rcdEval(it){
   const m=IM(it),mp=MP(),idn=+it.idn;
   const ia=num(m.ia),ta=num(m.ta),ub=num(m.ub);
   if(ia==null&&ta==null&&ub==null)return {ok:null};
   let ok=true;
-  if(ia!=null&&(ia<0.5*idn||ia>idn))ok=false;
+  const [lo,hi]=rcdLim(it);
+  if(ia!=null&&(ia<lo*idn||ia>hi*idn))ok=false;
   if(ta!=null&&ta>+mp.tmax)ok=false;
   if(ub!=null&&ub>+mp.ul)ok=false;
   return {ok};
@@ -1508,7 +1520,7 @@ function renderMeas(){
       <div class="mi">${inp(it,'lpe','L-PE')}${inp(it,'npe','N-PE')}${inp(it,'ln','L-N')}${it.poles>=3?inp(it,'ll','L-L'):''}</div></div>`;});
   }
   if(MS==='rcd'){
-    h=helpBox()+sumBox()+`<p class="mut">Warunki: 0,5·IΔn ≤ IΔ ≤ IΔn, czas ≤ ${m.tmax} ms, U<sub>B</sub> ≤ ${m.ul} V.</p>`;
+    h=helpBox()+sumBox()+`<p class="mut">Warunki: ${rcdLimTxt()}, czas ≤ ${m.tmax} ms, U<sub>B</sub> ≤ ${m.ul} V.</p>`;
     rcdItems().forEach(it=>{const e=rcdEval(it);
       h+=`<div class="mc"><div class="hd"><b>${esc(C.glab[it.id])}</b><span class="nm">${esc(it.kind==='rcbo'?circName(it):'RCD '+poleTxt(it))}</span><span id="bd-rcd-${it.id}">${badge(e.ok)}</span></div>
       <div class="inf">${esc(rating(it))} · IΔ powinno być ${fmt(it.idn*0.5,0)}–${it.idn} mA</div>
@@ -1524,7 +1536,7 @@ function renderMeas(){
       <p class="mut" style="margin-top:0">Obiekt i adres są brane z zakładki „Dane”.</p></div>
      <div class="card"><h3>Parametry</h3>
       <div class="g3">${s('siec','Układ sieci',[['TN-S','TN-S'],['TN-C-S','TN-C-S'],['TN-C','TN-C'],['TT','TT']])}${f('u0','U₀ [V]','number')}${s('isoU','Nap. probiercze',[[250,'250 V'],[500,'500 V'],[1000,'1000 V']])}</div>
-      <div class="g2">${f('tmax','Max czas RCD [ms]','number')}${f('ul','UL [V]','number')}</div>
+      <div class="g3">${f('tmax','Max czas RCD [ms]','number')}${f('ul','UL [V]','number')}${s('rcdw','Prąd testu RCD typu A',[['sin','sinusoidalny'],['pul','jednopołówkowy']])}</div>
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-md="corr" ${m.corr?'checked':''} style="width:22px;height:22px"> Poprawka 2/3 dla Zs (nagrzewanie przewodów)</label></div>
      <div class="card"><h3>Przyrządy pomiarowe</h3>
       ${m.instr.map((x,i)=>`<div class="g3"><div class="f"><label>Miernik</label><input data-mi="${i}" data-k="n" value="${esc(x.n)}" placeholder="np. Sonel MPI-530"></div><div class="f"><label>Nr fabryczny</label><input data-mi="${i}" data-k="nr" value="${esc(x.nr)}"></div><div class="f"><label>Świadectwo ważne do</label><input data-mi="${i}" data-k="w" type="date" value="${esc(x.w)}"></div></div>`).join('')}
@@ -1581,7 +1593,7 @@ function protocol(){
     h+=`<h2>3. Badanie wyłączników różnicowoprądowych</h2>
     <table><tr><th>Lp</th><th>Ozn.</th><th>Typ</th><th>I<sub>n</sub> [A]</th><th>I<sub>Δn</sub> [mA]</th><th>I<sub>Δ</sub> zmierz. [mA]</th><th>t<sub>a</sub> [ms]</th><th>U<sub>B</sub> [V]</th><th>Ocena</th></tr>`;
     rc.forEach((it,i)=>{const mm=IM(it),e=rcdEval(it);h+=`<tr><td>${i+1}</td><td>${esc(C.glab[it.id])}</td><td>${it.kind==='rcbo'?'RCBO':'RCD'} ${poleTxt(it)} ${esc(it.rtype)}</td><td>${v(it.In)}</td><td>${it.idn}</td><td>${v(mm.ia)}</td><td>${v(mm.ta)}</td><td>${v(mm.ub)}</td><td>${ev(e.ok)}</td></tr>`;});
-    h+=`</table><div class="note">Warunki: 0,5·I<sub>Δn</sub> ≤ I<sub>Δ</sub> ≤ I<sub>Δn</sub>; t<sub>a</sub> ≤ ${m.tmax} ms; U<sub>B</sub> ≤ U<sub>L</sub> = ${m.ul} V.</div>`;
+    h+=`</table><div class="note">Warunki: ${rcdLimTxt()}; t<sub>a</sub> ≤ ${m.tmax} ms; U<sub>B</sub> ≤ U<sub>L</sub> = ${m.ul} V.</div>`;
   }
   h+=`<h2>Orzeczenie</h2><p>${esc(m.verdict||autoVerdict())}</p>${m.note?`<p><b>Uwagi:</b> ${esc(m.note)}</p>`:''}
   ${m.next?`<p><b>Następne badanie:</b> ${esc(m.next)}</p>`:''}
@@ -1604,7 +1616,7 @@ $('measBody').addEventListener('input',e=>{
   if(t.dataset.md){m[t.dataset.md]=t.type==='checkbox'?t.checked:t.value;if(ME_KEYS.includes(t.dataset.md))saveMe();save();return;}
   if(t.dataset.mi){m.instr[+t.dataset.mi][t.dataset.k]=t.value;saveMe();save();}
 });
-$('measBody').addEventListener('change',e=>{const t=e.target;if(t.dataset.md==='corr'){MP().corr=t.checked;save();}});
+$('measBody').addEventListener('change',e=>{const t=e.target;if(t.dataset.md==='corr'){MP().corr=t.checked;save();}if(t.dataset.md==='rcdw'){MP().rcdw=t.value;save();renderMeas();}});
 $('measBody').addEventListener('keydown',e=>{
   if(e.key!=='Enter'||!e.target.dataset.mid)return;e.preventDefault();
   const all=[...$('measBody').querySelectorAll('input[data-mid]')];const i=all.indexOf(e.target);
@@ -2125,6 +2137,14 @@ function cableStats(){
   }));
   return {per,noScale};
 }
+// zdjęcie usuwamy z pamięci tylko wtedy, gdy nie używa go już nic innego (np. kopia projektu)
+function photoRefs(){const r={};const add=id=>{r[id]=(r[id]||0)+1;};
+  (DB.projects||[]).forEach(p=>(p.plans||[]).forEach(pl=>(pl.marks||[]).forEach(m=>(m.ph||[]).forEach(add))));
+  (DB.lib||[]).forEach(d=>(d.ph||[]).forEach(add));return r;}
+function photoDrop(ids,own){setTimeout(()=>{const r=photoRefs();(ids||[]).forEach(id=>{if((r[id]||0)<=(own||0)){IDB.del('ph_'+id);delete IMG['ph_'+id];}});},0);}
+// nowe identyfikatory zdjęć w skopiowanym/wczytanym projekcie, żeby usunięcie w jednym nie kasowało w drugim
+async function photoClone(p,imgs){for(const pl of (p.plans||[]))for(const m of (pl.marks||[])){if(!(m.ph||[]).length)continue;const nw=[];
+  for(const id of m.ph){const d=(imgs&&imgs['ph_'+id])||await photoGet(id);if(!d)continue;const nid=uid();IMG['ph_'+nid]=d;await IDB.put('ph_'+nid,d);nw.push(nid);}m.ph=nw;}}
 async function photoAdd(file){
   const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(file);});
   const im=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=url;});if(!im)return null;
@@ -2338,7 +2358,7 @@ $('plCfg').onclick=()=>{
   $('pcOk').onclick=()=>{pl.name=$('pcN').value.trim()||pl.name;save();closeDlg();renderPlan(true);};
   $('pcNo').onclick=()=>{closeDlg();renderPlan(true);};
   $('pcDel').onclick=()=>{if(!$('pcDel').dataset.c){$('pcDel').dataset.c=1;$('pcDel').textContent='Na pewno? (symbole też)';return;}
-    P.plans=plans().filter(x=>x.id!==pl.id);IDB.del(pl.id);delete IMG[pl.id];PL=null;$('plImg').dataset.pid='';save();closeDlg();renderPlan();};
+    P.plans=plans().filter(x=>x.id!==pl.id);IDB.del(pl.id);delete IMG[pl.id];photoDrop((pl.marks||[]).flatMap(m=>m.ph||[]));PL=null;$('plImg').dataset.pid='';save();closeDlg();renderPlan();};
   $('ov').classList.add('on');
 };
 document.addEventListener('click',e=>{
@@ -2577,7 +2597,7 @@ function mkDlg(m){
   const bindPh=()=>{
     fillThumbs($('mkPh'));
     $('mkPh').querySelectorAll('[data-ph]').forEach(d=>d.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(d.dataset.ph);});
-    $('mkPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(x=>x!==b.dataset.phx);IDB.del('ph_'+b.dataset.phx);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();});
+    $('mkPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(x=>x!==b.dataset.phx);photoDrop([b.dataset.phx]);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();});
     $('mkPhIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const id=await photoAdd(f);if(!id)return;E.ph.push(id);m.ph=E.ph.slice();save();$('mkPh').outerHTML=photoSection(E).replace(/^<div class="f"><label>📷 Zdjęcia<\/label>/,'').replace(/<\/div>$/,'');bindPh();};
   };
   bindPh();
@@ -2589,7 +2609,7 @@ function mkDlg(m){
     m.ph=E.ph.slice();save();closeDlg();renderPlan(true);};
   $('mkMv').onclick=()=>{MOVE=m.id;closeDlg();renderPlan(true);};
   $('mkCp').onclick=()=>{INS_SYS=SYM[m.t][1];$('plSym').value=m.t;if(m.obw)$('plObw').value=m.obw;PM='ins';closeDlg();renderPlan(true);};
-  $('mkDel').onclick=()=>{if(!$('mkDel').dataset.c&&((m.ph||[]).length||m.con)){$('mkDel').dataset.c=1;$('mkDel').textContent='Usunąć z opisem i zdjęciami?';return;}(m.ph||[]).forEach(id=>IDB.del('ph_'+id));pl.marks=pl.marks.filter(q=>q.id!==m.id);save();closeDlg();renderPlan(true);};
+  $('mkDel').onclick=()=>{if(!$('mkDel').dataset.c&&((m.ph||[]).length||m.con)){$('mkDel').dataset.c=1;$('mkDel').textContent='Usunąć z opisem i zdjęciami?';return;}photoDrop(m.ph);pl.marks=pl.marks.filter(q=>q.id!==m.id);save();closeDlg();renderPlan(true);};
   $('ov').classList.add('on');
 }
 $('phX').onclick=()=>$('phView').classList.remove('on');
@@ -3231,7 +3251,7 @@ function libNoteDlg(d){
   const bindPh=()=>{
     fillThumbs($('lnPh'));
     $('lnPh').querySelectorAll('[data-ph]').forEach(x=>x.onclick=e=>{if(e.target.closest('[data-phx]'))return;photoView(x.dataset.ph);});
-    $('lnPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(q=>q!==b.dataset.phx);IDB.del('ph_'+b.dataset.phx);drawPh();});
+    $('lnPh').querySelectorAll('[data-phx]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!b.dataset.c){b.dataset.c=1;b.textContent='?';return;}E.ph=E.ph.filter(q=>q!==b.dataset.phx);photoDrop([b.dataset.phx],(d.ph||[]).includes(b.dataset.phx)?1:0);drawPh();});
     $('lnPhIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const id=await photoAdd(f);if(id){E.ph.push(id);drawPh();}};
   };
   bindPh();
@@ -3247,7 +3267,7 @@ function libNoteDlg(d){
   };
   if($('lnSh'))$('lnSh').onclick=async()=>{const t=d.name+'\n\n'+(d.text||'');try{if(navigator.share){await navigator.share({title:d.name,text:t});return;}}catch(e){if(e&&e.name==='AbortError')return;}try{await navigator.clipboard.writeText(t);$('lnMsg').textContent='Skopiowano treść.';}catch(e){}};
   if($('lnDel'))$('lnDel').onclick=()=>{if(!$('lnDel').dataset.c){$('lnDel').dataset.c=1;$('lnDel').textContent='Na pewno usunąć?';return;}
-    (d.ph||[]).forEach(id=>IDB.del('ph_'+id));DB.lib=LIB().filter(x=>x.id!==d.id);DB.projects.forEach(p=>{if(p.libPins)p.libPins=p.libPins.filter(x=>x!==d.id);});
+    photoDrop(d.ph);DB.lib=LIB().filter(x=>x.id!==d.id);DB.projects.forEach(p=>{if(p.libPins)p.libPins=p.libPins.filter(x=>x!==d.id);});
     IDB.del('libtxt_'+d.id);delete LIBTXT[d.id];save();closeDlg();if(LV)lvClose();else renderLib();};
   $('ov').classList.add('on');
 }
@@ -3263,7 +3283,8 @@ function lvNote(d){
 }
 // ---------- start ----------
 $('bLock').onclick=lockDlg;
-(async()=>{await lockStart();
+(async()=>{try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+await lockStart();
 load();render();renderLock();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
 const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','net','notes','lib','print','proj'].includes(h))tab(h);
