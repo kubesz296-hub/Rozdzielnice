@@ -1124,6 +1124,10 @@ document.addEventListener('click',e=>{
   const ed=e.target.closest('[data-ed]');if(ed){openEdit(byId(ed.dataset.ed),false);return;}
   const t=e.target.closest('nav button');if(t){tab(t.dataset.t);return;}
 });
+// ostatnio otwarta zakładka i podzakładki – tylko wygoda, osobno od danych
+const LAST_KEY='rozdzielnica_last';let BOOT=true;
+function lastSave(){try{const a=document.querySelector('nav button.on');localStorage.setItem(LAST_KEY,JSON.stringify({t:a?a.dataset.t:'plan',ms:MS,as:AS,ns:NS,nts:NTS}));}catch(e){}}
+function lastLoad(){try{return JSON.parse(localStorage.getItem(LAST_KEY)||'null')||{};}catch(e){return {};}}
 function tab(t){
   if(PLFS&&t!=='plan')plFull(false);
   mkMenuHide();
@@ -1138,6 +1142,7 @@ function tab(t){
   if(t==='notes')renderNotes();
   if(t==='net')renderNet();
   try{history.replaceState(null,'','#'+t);}catch(e){}
+  if(!BOOT)lastSave();
   window.scrollTo(0,0);
 }
 
@@ -1627,7 +1632,7 @@ function protocol(){
   <div class="sign"><div>Pomiary wykonał:<br><b>${esc(m.who)}</b><br>${m.certE?'świad. E nr '+esc(m.certE):''}${m.certD?'<br>świad. D nr '+esc(m.certD):''}</div><div>Podpis<br><br></div></div>`;
   return h;
 }
-$('msub').addEventListener('click',e=>{const b=e.target.closest('[data-ms]');if(!b)return;MS=b.dataset.ms;renderMeas();window.scrollTo(0,0);});
+$('msub').addEventListener('click',e=>{const b=e.target.closest('[data-ms]');if(!b)return;MS=b.dataset.ms;lastSave();renderMeas();window.scrollTo(0,0);});
 function saveMe(){const m=MP();DB.me=DB.me||{};ME_KEYS.forEach(k=>DB.me[k]=JSON.parse(JSON.stringify(m[k])));}
 $('measBody').addEventListener('input',e=>{
   const t=e.target;
@@ -1943,7 +1948,7 @@ function ampDoc(){
   if(open.length)h+=`<h2>Do zrobienia</h2><ul>${open.map(t=>`<li>${esc(t.t)}</li>`).join('')}</ul>`;
   return h;
 }
-$('asub').addEventListener('click',e=>{const b=e.target.closest('[data-as]');if(!b)return;AS=b.dataset.as;renderAmp();window.scrollTo(0,0);});
+$('asub').addEventListener('click',e=>{const b=e.target.closest('[data-as]');if(!b)return;AS=b.dataset.as;lastSave();renderAmp();window.scrollTo(0,0);});
 $('ampBody').addEventListener('click',e=>{
   const ch=e.target.closest('[data-ch]');if(ch){chDlg(ch.dataset.ch);return;}
   const md=e.target.closest('[data-mod]');if(md){modDlg(ampMod(md.dataset.mod));return;}
@@ -3143,7 +3148,7 @@ function alcDoc(){
    ${O.n?`<h2 style="font-size:11pt;margin:8px 0 2px">Wyjścia</h2><table><tr><th>Wyj.</th><th>Moduł</th><th>Opis</th></tr>${O.g.flatMap(g=>rangeN(g.from,g.to).map(n=>`<tr><td><b>O${n}</b></td><td>${esc(g.e?g.e.lab||'':'płyta')}</td><td>${esc(a.od[n]||'')}</td></tr>`)).join('')}</table>`:''}`;
 }
 
-$('netsub').addEventListener('click',e=>{const b=e.target.closest('[data-nts]');if(!b)return;NTS=b.dataset.nts;renderNet();window.scrollTo(0,0);});
+$('netsub').addEventListener('click',e=>{const b=e.target.closest('[data-nts]');if(!b)return;NTS=b.dataset.nts;lastSave();renderNet();window.scrollTo(0,0);});
 let NS='kb';
 function KB(){if(!P.kb)P.kb={cards:[]};return P.kb;}
 function SHOP(){if(!P.shop)P.shop=[];return P.shop;}
@@ -3279,7 +3284,7 @@ $('notesBody').addEventListener('click',e=>{
   const nt=e.target.closest('[data-note]');if(nt){noteDlg(NOTES().find(x=>x.id===nt.dataset.note));return;}
 });
 $('notesBody').addEventListener('change',e=>{const t=e.target;if(t.dataset.shd){const x=SHOP().find(q=>q.id===t.dataset.shd);x.done=t.checked;save();renderNotes();}});
-$('nsub').addEventListener('click',e=>{const b=e.target.closest('[data-ns]');if(!b)return;NS=b.dataset.ns;renderNotes();});
+$('nsub').addEventListener('click',e=>{const b=e.target.closest('[data-ns]');if(!b)return;NS=b.dataset.ns;lastSave();renderNotes();});
 
 // ---- sejf na hasła (AES-GCM, klucz z PIN-u)
 let VAULT=null,VTIMER=null,VS='proj';
@@ -3661,7 +3666,9 @@ $('bLock').onclick=lockDlg;
 await lockStart();
 load();render();renderLock();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
-const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','net','notes','lib','print','proj'].includes(h))tab(h);else tab('plan');
+const TABS=['board','list','plan','meas','amp','net','notes','lib','print','proj'];const L0=lastLoad();
+if(L0.ms)MS=L0.ms;if(L0.as)AS=L0.as;if(L0.ns)NS=L0.ns;if(L0.nts)NTS=L0.nts;
+const h=(location.hash||'').slice(1);tab(TABS.includes(h)?h:TABS.includes(L0.t)?L0.t:'plan');BOOT=false;lastSave();
 })();
 </script>
 </body>
