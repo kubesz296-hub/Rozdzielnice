@@ -289,16 +289,16 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
   <button class="btn sm" id="bProj">Projekty</button>
 </header>
 <nav>
-  <button data-t="board" class="on">Tablica</button>
-  <button data-t="list">Obwody</button>
   <button data-t="plan">Rzut</button>
-  <button data-t="meas">Pomiary</button>
-  <button data-t="amp">Ampio</button>
   <button data-t="net">Sieć i alarm</button>
+  <button data-t="amp">Ampio</button>
   <button data-t="notes">Zadania</button>
   <button data-t="lib">Schematy</button>
-  <button data-t="print">Wydruk</button>
   <button data-t="proj">Dane</button>
+  <button data-t="board" class="on">Tablica</button>
+  <button data-t="list">Obwody</button>
+  <button data-t="meas">Pomiary</button>
+  <button data-t="print">Wydruk</button>
 </nav>
 <main>
   <div class="bbar noprint" id="bBar">
@@ -3661,7 +3661,7 @@ $('bLock').onclick=lockDlg;
 await lockStart();
 load();render();renderLock();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
-const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','net','notes','lib','print','proj'].includes(h))tab(h);
+const h=(location.hash||'').slice(1);if(['board','list','plan','meas','amp','net','notes','lib','print','proj'].includes(h))tab(h);else tab('plan');
 })();
 </script>
 </body>
