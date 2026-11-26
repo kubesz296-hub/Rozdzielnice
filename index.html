@@ -474,6 +474,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
 
   <!-- DANE PROJEKTU -->
   <section class="sec" id="s-proj">
+    <div class="card" id="scopeCard"></div>
     <div class="card">
       <h3>Dane obiektu / klienta</h3>
       <div class="f"><label>Nazwa / klient</label><input id="dName"></div>
@@ -483,6 +484,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
         <div class="f"><label>Wykonał</label><input id="dAuthor"></div>
         <div class="f"><label>Data</label><input id="dDate" type="date"></div>
       </div>
+      <div id="dBoardSet">
       <div class="g2">
         <div class="f"><label>Modułów w rzędzie</label><select id="dMpr"><option>12</option><option>14</option><option>18</option><option>24</option></select></div>
         <div class="f"><label>Liczba rzędów tablicy</label><select id="dRows"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
@@ -493,6 +495,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
         <div class="f"><label>Max obwodów na jeden RCD</label><select id="dRcdMax"><option>3</option><option>4</option><option>5</option><option selected>6</option><option>8</option></select></div>
       </div>
       <div class="f"><label>Najmniejszy prąd RCD</label><select id="dRcdMin"><option value="25">25 A</option><option value="40" selected>40 A</option><option value="63">63 A</option></select></div>
+      </div>
       <div class="f"><label>Zasilanie / uwagi</label><textarea id="dNote" rows="2" placeholder="np. WLZ YKY 5x10, TN-S"></textarea></div>
     </div>
     <div class="card">
@@ -869,6 +872,7 @@ function render(){
   if(document.querySelector('#s-amp.on')&&!$('ampBody').contains(document.activeElement))renderAmp();
   if(document.querySelector('#s-plan.on'))renderPlan(true);
   if(document.querySelector('#s-net.on')&&!$('ov').classList.contains('on'))renderNet();
+  applyScope();
   if(document.querySelector('#s-notes.on')&&!$('notesBody').contains(document.activeElement)&&!$('ov').classList.contains('on'))renderNotes();
 }
 function phCls(p){return p==='3F'?'F3':p;}
@@ -1126,6 +1130,42 @@ document.addEventListener('click',e=>{
   const ed=e.target.closest('[data-ed]');if(ed){openEdit(byId(ed.dataset.ed),false);return;}
   const t=e.target.closest('nav button');if(t){tab(t.dataset.t);return;}
 });
+// ---------- zakres prac u klienta: które zakładki są w projekcie ----------
+const SCOPES=[['plan','🗺 Rzut','rzut budynku, symbole, trasy'],['al','🚨 Alarm','centrala, moduły, wejścia'],['net','🔌 Sieć','patch panel, switche, szafa RACK'],
+ ['el','⚡ Rozdzielnica','tablica, obwody, wydruk opisu'],['meas','📏 Pomiary','protokół pomiarów'],['amp','🏠 Ampio','moduły, kanały, sceny'],
+ ['notes','📋 Zadania','tablica zadań, zakupy, notatki, hasła'],['lib','📚 Schematy','instrukcje i schematy PDF']];
+const SCOPE_PRE=[['Tylko alarm',['plan','al','notes','lib']],['Alarm + sieć / CCTV',['plan','al','net','notes','lib']],['Sieć / CCTV',['plan','net','notes','lib']],
+ ['Elektryka',['plan','el','meas','notes','lib']],['Smart home Ampio',['plan','el','amp','notes','lib']],['Wszystko',SCOPES.map(x=>x[0])]];
+const scopeOn=k=>!P.scope||P.scope.includes(k);
+function tabsOn(){const t=[];if(scopeOn('plan'))t.push('plan');if(scopeOn('net')||scopeOn('al'))t.push('net');if(scopeOn('amp'))t.push('amp');if(scopeOn('notes'))t.push('notes');if(scopeOn('lib'))t.push('lib');
+  t.push('proj');if(scopeOn('el'))t.push('board','list');if(scopeOn('meas'))t.push('meas');if(scopeOn('el'))t.push('print');return t;}
+function ntsOn(){return [...(scopeOn('net')?['pp','sw','rack']:[]),...(scopeOn('al')?['alc']:[])];}
+function applyScope(){
+  const T=tabsOn();document.querySelectorAll('nav button').forEach(b=>b.style.display=T.includes(b.dataset.t)?'':'none');
+  {const nb=document.querySelector('nav [data-t="net"]');if(nb)nb.textContent=scopeOn('net')&&scopeOn('al')?'Sieć i alarm':scopeOn('al')?'Alarm':'Sieć';}
+  const N=ntsOn();document.querySelectorAll('#netsub button').forEach(b=>b.style.display=N.includes(b.dataset.nts)?'':'none');
+  if(N.length&&!N.includes(NTS)){NTS=N[0];if(document.querySelector('#s-net.on'))renderNet();}
+  if($('dBoardSet'))$('dBoardSet').style.display=scopeOn('el')?'':'none';
+  {const c=document.querySelector('nav button.on');$('bBar').style.display=c&&['board','list','print','proj'].includes(c.dataset.t)&&scopeOn('el')?'':'none';}
+  const cur=document.querySelector('nav button.on');if(!BOOT&&cur&&!T.includes(cur.dataset.t))tab(T[0]);
+  renderScope();
+}
+function renderScope(){if(!$('scopeCard'))return;
+  $('scopeCard').innerHTML=`<h3 style="margin-top:0">🧰 Zakres prac u tego klienta</h3><p class="mut" style="margin-top:0">Zaznacz, co robisz w tym projekcie – reszta zakładek się schowa. Dane nie znikają, możesz je włączyć w każdej chwili.</p>
+   ${SCOPES.map(([k,n,d])=>`<label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-sc="${k}" ${scopeOn(k)?'checked':''} style="width:22px;height:22px;flex:none"><span><b>${n}</b> <span class="mut" style="font-size:13px">${d}</span></span></label>`).join('')}`;
+  $('scopeCard').querySelectorAll('[data-sc]').forEach(c=>c.onchange=()=>{P.scope=[...$('scopeCard').querySelectorAll('[data-sc]:checked')].map(x=>x.dataset.sc);if(P.scope.length===SCOPES.length)delete P.scope;save();applyScope();});
+}
+function scopeDlg(after){
+  const sel=new Set(P.scope||SCOPES.map(x=>x[0]));
+  const draw=()=>{$('dlg').innerHTML=`<h3>Co robisz u tego klienta?</h3><p class="mut" style="margin-top:0">Pokażę tylko potrzebne zakładki. Zmienisz to później w zakładce Dane.</p>
+   <div class="chips" style="margin-bottom:8px">${SCOPE_PRE.map(([n,L],i)=>`<button type="button" class="chip ${L.length===sel.size&&L.every(k=>sel.has(k))?'on':''}" data-spre="${i}">${n}</button>`).join('')}</div>
+   ${SCOPES.map(([k,n,d])=>`<label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-sk="${k}" ${sel.has(k)?'checked':''} style="width:22px;height:22px;flex:none"><span><b>${n}</b> <span class="mut" style="font-size:13px">${d}</span></span></label>`).join('')}
+   <div class="bar"><button class="btn p" id="scOk">Gotowe</button></div>`;
+    $('dlg').querySelectorAll('[data-spre]').forEach(b=>b.onclick=()=>{sel.clear();SCOPE_PRE[+b.dataset.spre][1].forEach(k=>sel.add(k));draw();});
+    $('dlg').querySelectorAll('[data-sk]').forEach(c=>c.onchange=()=>{if(c.checked)sel.add(c.dataset.sk);else sel.delete(c.dataset.sk);draw();});
+    $('scOk').onclick=()=>{P.scope=[...sel];if(P.scope.length===SCOPES.length)delete P.scope;save();closeDlg();applyScope();if(after)after();};};
+  draw();$('ov').classList.add('on');
+}
 // ostatnio otwarta zakładka i podzakładki – tylko wygoda, osobno od danych
 const LAST_KEY='rozdzielnica_last';let BOOT=true;
 function lastSave(){try{const a=document.querySelector('nav button.on');localStorage.setItem(LAST_KEY,JSON.stringify({t:a?a.dataset.t:'plan',ms:MS,as:AS,ns:NS,nts:NTS}));}catch(e){}}
@@ -1136,7 +1176,7 @@ function tab(t){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));
   if(t==='proj')fillProj();
-  $('bBar').style.display=['board','list','print','proj'].includes(t)?'':'none';
+  $('bBar').style.display=['board','list','print','proj'].includes(t)&&scopeOn('el')?'':'none';
   if(t==='meas')renderMeas();
   if(t==='amp')renderAmp();
   if(t==='plan')renderPlan();
@@ -1281,7 +1321,7 @@ function projRows(){
     const nb=p.boards.length,na=p.boards.reduce((a,b)=>a+b.items.length,0);
     return `<div class="proj ${p.id===P.id?'cur':''}" data-po="${p.id}" style="cursor:pointer"><div class="tx"><b>${p.arch?'🗄 ':''}${esc(p.name||'(bez nazwy)')}</b>
       <small class="mut" style="display:block">${esc([p.addr,p.phone].filter(Boolean).join(' · '))}</small>
-      <small class="mut" style="display:block">${nb>1?nb+' rozdz. · ':''}${na} ap.${open?` · 📋 ${open}`:''}${p.used?' · otw. '+new Date(p.used).toLocaleDateString('pl-PL'):''}</small>
+      <small class="mut" style="display:block">${p.scope?p.scope.map(k=>(SCOPES.find(x=>x[0]===k)||['',''])[1].split(' ')[0]).join('')+' · ':''}${nb>1?nb+' rozdz. · ':''}${na} ap.${open?` · 📋 ${open}`:''}${p.used?' · otw. '+new Date(p.used).toLocaleDateString('pl-PL'):''}</small>
       ${hit?`<small class="sn" style="display:block;color:#92400e;background:#fffbeb;border-radius:4px;padding:2px 4px;margin-top:2px">${esc(hit)}</small>`:''}</div>
       <button class="btn sm" data-pm2="${p.id}">⋯</button></div>`;
   }).join('')||'<p class="mut">Nic nie znaleziono.</p>';
@@ -1299,7 +1339,7 @@ function projDlg(){
    <div id="pList">${projRows()}</div>
    <div class="bar"><button class="btn p" id="pNew">+ Nowy projekt</button><button class="btn" id="pClose">Zamknij</button></div>`;
   $('pQ').oninput=()=>{PQ=$('pQ').value;$('pList').innerHTML=projRows();};
-  $('pNew').onclick=()=>{const p=newProject();p.used=Date.now();DB.projects.unshift(p);DB.current=p.id;P=p;SEL=null;PQ='';closeDlg();render();tab('proj');};
+  $('pNew').onclick=()=>{const p=newProject();p.used=Date.now();DB.projects.unshift(p);DB.current=p.id;P=p;SEL=null;PQ='';closeDlg();render();scopeDlg(()=>{tab('proj');setTimeout(()=>{const e=$('dName');if(e){e.focus();e.select();}},50);});};
   $('pClose').onclick=closeDlg;
   $('dlg').querySelectorAll('[data-pf]').forEach(b=>b.onclick=()=>{PF=b.dataset.pf;projDlg();});
   $('dlg').querySelector('[data-ps]').onclick=()=>{PS=PS==='name'?'used':'name';projDlg();};
@@ -3707,7 +3747,7 @@ load();render();renderLock();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
 const TABS=['board','list','plan','meas','amp','net','notes','lib','print','proj'];const L0=lastLoad();
 if(L0.ms)MS=L0.ms;if(L0.as)AS=L0.as;if(L0.ns)NS=L0.ns;if(L0.nts)NTS=L0.nts;
-const h=(location.hash||'').slice(1);tab(TABS.includes(h)?h:TABS.includes(L0.t)?L0.t:'plan');BOOT=false;lastSave();
+const h=(location.hash||'').slice(1);const T0=tabsOn();tab(T0.includes(h)?h:T0.includes(L0.t)?L0.t:T0[0]);BOOT=false;applyScope();lastSave();
 })();
 </script>
 </body>
