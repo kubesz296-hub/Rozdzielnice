@@ -182,6 +182,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
 #camOv .cbar button{background:transparent;border:0;color:#fff;font-size:26px;display:flex;flex-direction:column;align-items:center;min-width:70px}
 #camOv .cbar span{font-size:12px;color:#d1d5db}
 #camOv .shot{width:74px;height:74px;border-radius:50%;background:#fff!important;border:5px solid #9ca3af!important;min-width:0!important}
+.btn,label.btn{position:relative}
 .fin{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .mkm{position:absolute;z-index:6;background:#1f2937;color:#fff;border-radius:12px;padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.35);max-width:calc(100% - 8px)}
 .mkm .mt{font-size:12.5px;font-weight:700;padding:0 4px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -447,7 +448,7 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
   <section class="sec" id="s-lib">
     <div class="bar" style="margin-top:0">
       <input id="libQ" type="search" placeholder="Szukaj: zwora, INTEGRA, OUT2, M-SERV…" style="flex:1;min-width:150px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px">
-      <label class="btn p">+ Plik<input type="file" id="libFile" accept="application/pdf,image/*" multiple hidden></label>
+      <label class="btn p">+ Plik<input type="file" id="libFile" accept="application/pdf,image/*" multiple class="fin"></label>
       <button class="btn p" id="libNoteB">📝 Notatka</button>
     </div>
     <div class="chips" id="libTags" style="margin-bottom:8px"></div>
@@ -507,13 +508,14 @@ body.plfs #plVP{position:fixed;inset:0;height:auto;min-height:0;z-index:15;borde
       <h3>Kopia zapasowa</h3>
       <div class="bar">
         <button class="btn" id="bExp">Pobierz plik projektu</button>
-        <label class="btn">Wczytaj plik<input type="file" id="fImp" accept=".json,application/json" hidden></label>
+        <label class="btn">Wczytaj plik<input type="file" id="fImp" accept=".json,.txt,application/json,text/plain" class="fin"></label>
         <button class="btn" id="bCopy">Kopiuj jako tekst</button>
       </div>
       <div class="bar">
-        <button class="btn" id="bAll">💾 Kopia całej bazy</button>
-        <label class="btn">Przywróć całą bazę<input type="file" id="fAll" accept=".json,application/json" hidden></label>
+        <button class="btn p" id="bAll">💾 Kopia całej bazy</button>
+        <label class="btn">Przywróć całą bazę<input type="file" id="fAll" accept=".json,.txt,application/json,text/plain" class="fin"></label>
       </div>
+      <div id="bkInfo" style="margin:4px 0 8px"></div>
       <p class="mut">Dane są zapisywane w tym telefonie, w tej przeglądarce. Pobierz plik projektu, żeby wysłać go koledze albo mieć kopię zapasową. „Kopia całej bazy” zapisuje wszystkie projekty, rzuty, zdjęcia i bibliotekę – trzymaj ją u siebie, nie wysyłaj nikomu.</p>
     </div>
   </section>
@@ -1175,7 +1177,7 @@ function tab(t){
   mkMenuHide();
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));
-  if(t==='proj')fillProj();
+  if(t==='proj'){fillProj();renderBkInfo();}
   $('bBar').style.display=['board','list','print','proj'].includes(t)&&scopeOn('el')?'':'none';
   if(t==='meas')renderMeas();
   if(t==='amp')renderAmp();
@@ -1403,20 +1405,53 @@ $('fImp').onchange=e=>{
 // ---- kopia całej bazy (DB + obrazy/pliki z IndexedDB); sejfy zostają zaszyfrowane
 const blobToUrl=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});
 const urlToBlob=(u,type)=>fetch(u).then(r=>r.blob()).then(b=>type&&b.type!==type?new Blob([b],{type}):b);
-$('bAll').onclick=()=>{
-  $('dlg').innerHTML=`<h3>💾 Kopia całej bazy</h3><p>Plik będzie zawierał <b>dane klientów</b>: adresy, telefony, notatki, rzuty i zdjęcia ze wszystkich projektów.</p>
-   <p class="mut">Hasła z sejfów zostają w pliku zaszyfrowane (bez PIN-u nie da się ich odczytać).${LOCK?' Dane projektów też będą zaszyfrowane PIN-em aplikacji (rzuty i zdjęcia nie).':''} Trzymaj plik u siebie (dysk, pendrive) – nie wysyłaj go klientom ani przez komunikatory.</p>
-   <div class="bar"><button class="btn p" id="aOk">Pobierz</button><button class="btn" id="aNo">Anuluj</button></div><div id="aMsg" class="mut"></div>`;
-  $('aNo').onclick=closeDlg;
-  $('aOk').onclick=async()=>{$('aMsg').textContent='Przygotowuję plik…';
-    try{const raw=await IDB.all(),idb={};
-      for(const k in raw){const v=raw[k];idb[k]=v instanceof Blob?{_blob:await blobToUrl(v),type:v.type,name:v.name||''}:v;}
-      const o={_rozdzBackup:1,date:new Date().toISOString(),idb};if(LOCK)o.dbEnc=await encDB();else o.db=DB;
-      const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:'application/json'}));
-      a.download='rozdzielnice-kopia-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();closeDlg();
-    }catch(e){$('aMsg').textContent='Nie udało się utworzyć kopii.';}};
+// ---- kopia zapasowa: przygotowanie pliku, zapis poza telefon (udostępnianie) albo do Pobranych, przypomnienie
+function BKP(){if(!DB.bk)DB.bk={last:0,every:7};return DB.bk;}
+const BK_SNOOZE='rozdzielnica_bksnooze';
+async function backupBlob(){const raw=await IDB.all(),idb={};
+  for(const k in raw){const v=raw[k];idb[k]=v instanceof Blob?{_blob:await blobToUrl(v),type:v.type,name:v.name||''}:v;}
+  const o={_rozdzBackup:1,date:new Date().toISOString(),idb};if(LOCK)o.dbEnc=await encDB();else o.db=DB;
+  return JSON.stringify(o);}
+function backupDone(how){BKP().last=Date.now();BKP().how=how;save();bkBanner();renderBkInfo();}
+const agoTxt=t=>{if(!t)return 'jeszcze nie było';const d=Math.floor((Date.now()-t)/864e5);return d<=0?'dzisiaj':d===1?'wczoraj':d+' dni temu';};
+function backupDlg(){
+  $('dlg').innerHTML=`<h3>💾 Kopia całej bazy</h3><p>Plik zawiera <b>dane klientów</b>: adresy, telefony, notatki, rzuty i zdjęcia ze wszystkich projektów.</p>
+   <p class="mut">Hasła z sejfów są w pliku zaszyfrowane.${LOCK?' Dane projektów też są zaszyfrowane PIN-em aplikacji (rzuty i zdjęcia nie).':''} Ostatnia kopia: <b>${agoTxt(BKP().last)}</b>.</p>
+   <div id="aMsg" class="mut">Przygotowuję plik…</div><div id="aBtns"></div>`;
   $('ov').classList.add('on');
-};
+  backupBlob().then(txt=>{
+    const d=new Date().toISOString().slice(0,10);const MB=(txt.length/1048576).toFixed(1).replace('.',',');
+    const fileTxt=new File([txt],`rozdzielnice-kopia-${d}.txt`,{type:'text/plain'});
+    let canShare=false;try{canShare=!!(navigator.canShare&&navigator.canShare({files:[fileTxt]}));}catch(e){}
+    $('aMsg').innerHTML=`Plik gotowy (${MB} MB). Gdzie zapisać?`;
+    $('aBtns').innerHTML=`${canShare?`<button class="btn p" id="aSh" style="width:100%;margin-top:8px;text-align:left">☁️ Na Dysk Google / OneDrive / mailem do siebie<br><small style="font-weight:400">otworzy się menu udostępniania – wybierz Dysk albo swoją pocztę</small></button>`:''}
+     <button class="btn ${canShare?'':'p'}" id="aDl" style="width:100%;margin-top:8px;text-align:left">⬇ Do telefonu (folder Pobrane / Download)<br><small style="font-weight:400">kopia zginie razem z telefonem – potem przenieś ją na dysk albo komputer</small></button>
+     <button class="btn" id="aNo" style="width:100%;margin-top:8px">Zamknij</button>
+     <p class="mut" style="font-size:12.5px">Kopię wysyłaj tylko do siebie – nie klientom i nie na grupy w komunikatorach.</p>`;
+    $('aNo').onclick=closeDlg;
+    if($('aSh'))$('aSh').onclick=async()=>{try{await navigator.share({files:[fileTxt],title:'Kopia Rozdzielnice '+d});backupDone('share');$('aMsg').innerHTML='✅ Wysłano. Sprawdź, czy plik jest na Dysku / w poczcie.';}
+      catch(e){if(e&&e.name==='AbortError')$('aMsg').textContent='Anulowano – kopia nie została zapisana.';else $('aMsg').textContent='Udostępnianie nie zadziałało – użyj „Do telefonu”.';}};
+    $('aDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download=`rozdzielnice-kopia-${d}.json`;document.body.appendChild(a);a.click();a.remove();
+      backupDone('download');$('aMsg').innerHTML='✅ Zapisano w folderze <b>Pobrane</b> (Download). Najlepiej przenieś plik na Dysk Google albo komputer.';};
+  }).catch(()=>{$('aMsg').textContent='Nie udało się utworzyć kopii (za mało pamięci?).';$('aBtns').innerHTML='<button class="btn" id="aNo">Zamknij</button>';$('aNo').onclick=closeDlg;});
+}
+$('bAll').onclick=backupDlg;
+function renderBkInfo(){if(!$('bkInfo'))return;const b=BKP();
+  $('bkInfo').innerHTML=`<div>Ostatnia kopia: <b>${agoTxt(b.last)}</b>${b.last?(b.how==='share'?' (na Dysk / mailem)':' (do telefonu)'):''}</div>
+   <div class="f" style="margin:6px 0 0"><label>Przypominaj o kopii</label><select id="bkEv">${[[3,'co 3 dni'],[7,'co tydzień'],[14,'co 2 tygodnie'],[30,'co miesiąc'],[0,'nie przypominaj']].map(([v,n])=>`<option value="${v}" ${v===+b.every?'selected':''}>${n}</option>`).join('')}</select></div>`;
+  $('bkEv').onchange=()=>{BKP().every=+$('bkEv').value;save();bkBanner();};}
+function hasData(){return DB.projects.some(p=>p.boards.some(b=>b.items.length)||(p.plans||[]).length||p.alc||p.net||(p.notes||[]).length||(p.kb&&p.kb.cards.length));}
+function bkBanner(){
+  const old=$('bkBan');if(old)old.remove();const b=BKP();if(!+b.every||!hasData())return;
+  if(Date.now()-(b.last||0)<+b.every*864e5)return;
+  let sn=0;try{sn=+localStorage.getItem(BK_SNOOZE)||0;}catch(e){}if(Date.now()<sn)return;
+  const el=document.createElement('div');el.id='bkBan';el.className='noprint';
+  el.style.cssText='background:#fef3c7;border:1px solid #f59e0b;color:#78350f;border-radius:10px;padding:8px 10px;margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px';
+  el.innerHTML=`<span style="flex:1;min-width:180px">💾 Kopia zapasowa: <b>${agoTxt(b.last)}</b>. Zrób kopię, żeby nie stracić projektów razem z telefonem.</span><button class="btn sm p" id="bkGo">Zrób kopię</button><button class="btn sm" id="bkLater">Jutro</button>`;
+  document.querySelector('main').prepend(el);
+  $('bkGo').onclick=backupDlg;
+  $('bkLater').onclick=()=>{try{localStorage.setItem(BK_SNOOZE,String(Date.now()+864e5));}catch(e){}el.remove();};
+}
 $('fAll').onchange=e=>{
   const f=e.target.files[0];if(!f)return;e.target.value='';const r=new FileReader();
   r.onload=()=>{let o;try{o=JSON.parse(r.result);if(!o||!o._rozdzBackup||!(o.dbEnc&&o.dbEnc.ct||o.db&&Array.isArray(o.db.projects)))throw 0;}
@@ -2560,8 +2595,8 @@ function blankSheet(fmt){
 }
 $('plNew').onclick=()=>{
   $('dlg').innerHTML=`<h3>Nowy rzut / szkic</h3>
-   <div class="nopt"><label class="btn" style="text-align:left">📄 Projekt z pliku (PDF / zdjęcie / zrzut z CAD)<input type="file" id="plFile2" accept="application/pdf,image/*" hidden></label>
-   <label class="btn" style="text-align:left">📷 Zrób zdjęcie (ściana, pomieszczenie, papierowy rzut)<input type="file" id="plCam" accept="image/*" capture="environment" hidden></label>
+   <div class="nopt"><label class="btn" style="text-align:left">📄 Projekt z pliku (PDF / zdjęcie / zrzut z CAD)<input type="file" id="plFile2" accept="application/pdf,image/*" class="fin"></label>
+   <label class="btn" style="text-align:left">📷 Zrób zdjęcie (ściana, pomieszczenie, papierowy rzut)<input type="file" id="plCam" accept="image/*" capture="environment" class="fin"></label>
    <button class="btn" style="text-align:left" id="plBlank">✏️ Pusta kartka w kratkę – narysuję sam</button></div>
    <div class="f" id="plBlankW" style="display:none;margin-top:10px"><label>Nazwa szkicu</label><input id="plBN" value="Szkic ${plans().length+1}">
     <div class="bar"><button class="btn p" data-bl="l">Poziomo</button><button class="btn p" data-bl="p">Pionowo</button></div></div>
@@ -3747,7 +3782,7 @@ load();render();renderLock();
 try{if('serviceWorker' in navigator&&window.isSecureContext&&location.protocol!=='file:'&&!/claude/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
 const TABS=['board','list','plan','meas','amp','net','notes','lib','print','proj'];const L0=lastLoad();
 if(L0.ms)MS=L0.ms;if(L0.as)AS=L0.as;if(L0.ns)NS=L0.ns;if(L0.nts)NTS=L0.nts;
-const h=(location.hash||'').slice(1);const T0=tabsOn();tab(T0.includes(h)?h:T0.includes(L0.t)?L0.t:T0[0]);BOOT=false;applyScope();lastSave();
+const h=(location.hash||'').slice(1);const T0=tabsOn();tab(T0.includes(h)?h:T0.includes(L0.t)?L0.t:T0[0]);BOOT=false;applyScope();lastSave();bkBanner();
 })();
 </script>
 </body>
