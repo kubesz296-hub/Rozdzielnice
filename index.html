@@ -3267,7 +3267,9 @@ let NS='kb';
 function KB(){if(!P.kb)P.kb={cards:[]};return P.kb;}
 function SHOP(){if(!P.shop)P.shop=[];return P.shop;}
 function NOTES(){if(!P.notes)P.notes=[];return P.notes;}
+let KBX=0; // przewinięcie tablicy zadań w bok – zostaje po odświeżeniu
 function renderNotes(){
+  {const k=document.querySelector('#notesBody .kb');if(k)KBX=k.scrollLeft;}
   document.querySelectorAll('#nsub button').forEach(b=>b.classList.toggle('on',b.dataset.ns===NS));
   let h='';
   if(NS==='kb'){
@@ -3304,6 +3306,7 @@ function renderNotes(){
   }
   if(NS==='vault')h=vaultHtml();
   $('notesBody').innerHTML=h;
+  {const k=$('notesBody').querySelector('.kb');if(k){k.style.scrollSnapType='none';k.scrollLeft=KBX;requestAnimationFrame(()=>{k.scrollLeft=KBX;k.style.scrollSnapType='';});k.addEventListener('scroll',()=>{KBX=k.scrollLeft;},{passive:true});}}
   bindNotes();
 }
 function cardDlg(x,col){
